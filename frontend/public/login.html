@@ -1,32 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/login.css"> 
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập | DH.story</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <header>
-    <h1>Trang Đăng Nhập</h1>
-    <form action="/login" method="POST"> 
-        <label for="username">Tên đăng nhập:</label>
-        <input type="username" id="username" name="username" required><br><br>
-        <label for="password">Mật khẩu:</label>
-        <input type="password" id="password" name="password" required><br><br>
-        <div class="link">
-            <a href="forgot-password.html">Quên mật khẩu?</a>
+
+<body class="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
+  <!-- MAIN -->
+  <main class="flex-grow flex justify-center items-center px-4 py-8">
+    <div class="bg-white shadow-lg rounded-2xl w-full max-w-md p-8 border border-gray-100">
+      <h2 class="text-center text-2xl font-bold text-indigo-600 mb-6">Đăng nhập vào tài khoản</h2>
+
+      <form id="loginForm" method="POST" class="space-y-4">
+        <!-- Email -->
+        <div>
+          <label for="username" class="block text-gray-700 font-medium mb-1">Email</label>
+          <input type="text" id="username" name="username" placeholder="Nhập email..." required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none">
         </div>
-        <button type="submit">Đăng nhập</button>
-        <div class="link">
-            <label for="register" > Chưa có tài khoản? </label>
-            <a href="register.html">Đăng ký</a>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="block text-gray-700 font-medium mb-1">Mật khẩu</label>
+          <input type="password" id="password" name="password" placeholder="Nhập mật khẩu..." required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none">
         </div>
-    </form>
-    
-    <div class="link">
-        <a href="index.html">Quay lại trang chủ</a>
+
+        <!-- Forgot Password -->
+        <div class="flex justify-end">
+          <a href="forgot-password.html" class="text-sm text-indigo-600 hover:underline">Quên mật khẩu?</a>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-all">
+          Đăng Nhập
+        </button>
+      </form>
+
+      <!-- Message -->
+      <div id="message" class="mt-4 text-center text-sm"></div>
+
+      <!-- Links -->
+      <div class="mt-6 text-center space-y-2">
+        <p class="text-gray-600">Chưa có tài khoản?
+          <a href="register.html" class="text-indigo-600 font-medium hover:underline">Đăng ký</a>
+        </p>
+        <a href="index.html" class="text-gray-500 text-sm hover:underline">← Quay lại trang chủ</a>
+      </div>
     </div>
-    
-</div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white shadow-inner py-4 text-center text-gray-600 text-sm">
+    <p>© 2025 <span class="font-semibold text-indigo-600">DH.story</span></p>
+  </footer>
+
+  <!-- SCRIPT -->
+  <script>
+    const form = document.getElementById('loginForm');
+    const messageContainer = document.getElementById('message');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+
+        messageContainer.innerHTML = '';
+        const messageDiv = document.createElement('div');
+        messageDiv.textContent = data.message;
+        messageDiv.className = data.message.includes('thành công')
+          ? 'text-green-600 font-semibold'
+          : 'text-red-500';
+        messageContainer.appendChild(messageDiv);
+
+        if (data.message === 'Đăng nhập thành công!') {
+          setTimeout(() => window.location.href = '/index.html', 2000);
+        }
+      } catch (error) {
+        console.error('Có lỗi xảy ra:', error);
+      }
+    });
+  </script>
 </body>
 </html>

@@ -1,0 +1,5 @@
+{
+    "watch": ["controller/", "routers/", "public/", "src/", "app.js"],
+    "ext": "js,json,html,css",
+    "exec": "node app.js"
+  }
