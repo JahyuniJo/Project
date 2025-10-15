@@ -16,5 +16,17 @@ const sequelize = new Sequelize(
 sequelize.authenticate()
   .then(() => console.log('✅ Đã kết nối với PostgreSQL'))
   .catch(err => console.error('❌ Kết nối không thành công với PostgreSQL', err));
-
 module.exports = sequelize;
+
+// backend/db.js
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  user: 'story_user',      // Tên user PostgreSQL của bạn
+  host: 'localhost',     // hoặc địa chỉ server DB
+  database: 'story_db',      // Tên database
+  password: '002016',
+  port: 5432,
+});
+
+module.exports = pool;

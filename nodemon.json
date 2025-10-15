@@ -1,5 +1,5 @@
-{
-    "watch": ["controller/", "routers/", "public/", "src/", "app.js"],
-    "ext": "js,json,html,css",
-    "exec": "node app.js"
-  }
+ {
+  "watch": ["backend/routers", "frontend/public", "backend/app.js"],
+  "ext": "js,json,html,css",
+  "exec": "node backend/app.js"
+}
