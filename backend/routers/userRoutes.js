@@ -34,6 +34,32 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Lỗi server!' });
   }
 });
-console.log('✅ userRoutes loaded');
+
+
+// Đăng nhập
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: 'Sai tài khoản hoặc mật khẩu!' });
+    }
+
+    const user = result.rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Sai tài khoản hoặc mật khẩu!' });
+    }
+
+     req.session.userId = user.id; //Lưu session
+
+    res.json({ message: 'Đăng nhập thành công!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server!' });
+  }
+});
 
 module.exports = router;
+

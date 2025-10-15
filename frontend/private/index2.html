@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web của Diệu Hoàng</title>
+  <link rel="icon" type="image/png" href="/Logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="bg-white shadow-md">
+    <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
+      
+      <!-- Logo -->
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="flex items-center gap-2">
+          <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+          <span class="text-2xl font-bold text-indigo-600">DH.story</span>
+        </a>
+      </div>
+
+      <!-- Slogan -->
+      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
+        Chúc các bạn đọc truyện vui vẻ!
+      </p>
+
+      <!-- Search bar + Menu -->
+      <div class="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
+
+        <!-- Search -->
+        <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
+          <input type="text" placeholder="Tìm kiếm truyện..."
+                 class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
+          <button class="px-3 text-indigo-600 hover:text-indigo-800">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </button>
+        </div>
+
+        <!-- Menu -->
+        <nav>
+          <ul class="flex flex-wrap justify-center md:justify-start gap-4 text-sm font-medium text-gray-700">
+            <li><a href="Truyện hài.html" class="hover:text-indigo-600">Truyện hài</a></li>
+            <li><a href="Truyện ngôn tình.html" class="hover:text-indigo-600">Truyện ngôn tình</a></li>
+            <li><a href="Truyện kinh dị.html" class="hover:text-indigo-600">Truyện kinh dị</a></li>
+            <li><a href="Truyện trinh thám.html" class="hover:text-indigo-600">Truyện trinh thám</a></li>
+          </ul>
+        </nav>
+      </div> 
+    </div>
+  </header>
+
+  <!-- Nội dung chính (placeholder nếu cần) -->
+  <main class="flex-grow"></main>
+
+  <!-- Footer -->
+  <footer class="bg-white mt-10 shadow-inner">
+    <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
+      
+      <!-- Logo -->
+      <div class="flex items-center gap-2 mb-4 md:mb-0">
+        <img src="/components/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
+        <span class="font-bold text-indigo-600 text-lg">DH.story</span>
+      </div>
+
+      <!-- Contact -->
+      <div class="text-center md:text-right text-gray-600 text-sm">
+        <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
+        <a href="https://github.com/JahyuniJo" target="_blank" 
+           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+          <span>Github</span>
+          <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
+        </a>
+        <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
+        <p class="mt-2 text-xs text-gray-400">Copyright © 2025 DieuHoang</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
