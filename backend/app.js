@@ -26,6 +26,13 @@ app.get('/index2.html', (req, res) => {
   }
   res.sendFile(path.join(__dirname, '../frontend/private/index2.html'));
 });
+
+app.get('/admin.html', (req,res) =>{
+  if(!req.session.userId || req.session.role !== 'admin'){
+    return res.status(403).send('Bạn không có quyền truy cập trang này');
+  }
+  res.sendFile(path.join(__dirname, '../frontend/private/admin.html'));
+});
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 app.use('/components', express.static(path.join(__dirname, '../frontend/src/components')));
 

@@ -24,12 +24,12 @@
       </div>
 
       <!-- Slogan -->
-      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
+      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0 text-center">
         Chúc các bạn đọc truyện vui vẻ!
       </p>
 
-      <!-- Search bar + Menu -->
-      <div class="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
+      <!-- Thanh công cụ (Search + Menu + Avatar) -->
+      <div class="flex items-center gap-4 mt-4 md:mt-0 ml-auto">
 
         <!-- Search -->
         <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
@@ -49,11 +49,43 @@
             <li><a href="Truyện trinh thám.html" class="hover:text-indigo-600">Truyện trinh thám</a></li>
           </ul>
         </nav>
+
+        <!-- Avatar dropdown menu (sát phải header) -->
+        <div class="relative">
+          <!-- Avatar Button -->
+          <button id="avatarButton" class="focus:outline-none">
+            <img id="avatarImage" src="/components/default-avt.jpg" alt="Avatar" 
+                 class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:opacity-90">
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div id="dropdownMenu" 
+               class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
+            <label class="flex flex-col items-center cursor-pointer px-4 py-2 hover:bg-indigo-50">
+              <input type="file" accept="image/*" id="uploadAvatar" class="hidden">
+              <span class="text-sm text-indigo-600 font-medium"><i class="fa-solid fa-upload mr-2"></i>Tải ảnh đại diện</span>
+            </label>
+            <hr class="my-1">
+            <a href="/frontend/private/info.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+              <i class="fa-solid fa-user mr-2 text-indigo-500"></i>Thông tin cá nhân
+            </a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+              <i class="fa-solid fa-heart mr-2 text-pink-500"></i>Danh sách yêu thích
+            </a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+              <i class="fa-solid fa-triangle-exclamation mr-2 text-yellow-500"></i>Báo lỗi
+            </a>
+            <a href="/api/users/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+               <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
+            </a>
+          </div>
+        </div>
+
       </div> 
     </div>
   </header>
 
-  <!-- Nội dung chính (placeholder nếu cần) -->
+  <!-- Nội dung chính -->
   <main class="flex-grow"></main>
 
   <!-- Footer -->
@@ -79,5 +111,38 @@
       </div>
     </div>
   </footer>
+
+  <!-- Script điều khiển menu -->
+  <script>
+    const avatarBtn = document.getElementById('avatarButton');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const uploadInput = document.getElementById('uploadAvatar');
+    const avatarImg = document.getElementById('avatarImage');
+
+    // Ẩn/hiện menu khi click vào avatar
+    avatarBtn.addEventListener('click', () => {
+      dropdownMenu.classList.toggle('hidden');
+    });
+
+    // Ẩn menu khi click ra ngoài
+    window.addEventListener('click', (e) => {
+      if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+        dropdownMenu.classList.add('hidden');
+      }
+    });
+
+    // Xử lý upload ảnh đại diện
+    uploadInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          avatarImg.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  </script>
+
 </body>
 </html>

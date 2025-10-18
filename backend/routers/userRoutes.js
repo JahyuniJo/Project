@@ -53,12 +53,29 @@ router.post('/login', async (req, res) => {
     }
 
      req.session.userId = user.id; //Lưu session
-
-    res.json({ message: 'Đăng nhập thành công!' });
+     req.session.role = user.role; // Lưu role
+    res.json({ 
+      message: 'Đăng nhập thành công!',
+      role: user.role,
+      id: user.id,
+     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Lỗi server!' });
   }
+});
+
+// Đăng xuất
+router.get('/logout', (req, res) => {
+  // Xóa session
+  req.session.destroy(err => {
+    if (err) {
+      console.log(err);
+      return res.status(500).send('Lỗi khi đăng xuất');
+    }
+    // Redirect về trang index
+    res.redirect('/');
+  });
 });
 
 module.exports = router;

@@ -1,3 +1,4 @@
 pass
 dieu3005: 002016
 dieucute3005: 123456
+admin: 000000

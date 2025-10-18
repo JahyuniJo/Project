@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thông tin cá nhân</title>
+  <link rel="icon" type="image/png" href="/Logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Header giống index2.html -->
+  <header class="bg-white shadow-md">
+    <div class="container mx-auto flex items-center justify-between py-4 px-6">
+      <a href="index.html" class="flex items-center gap-2">
+        <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+        <span class="text-2xl font-bold text-indigo-600">DH.story</span>
+      </a>
+      <h1 class="text-lg font-semibold text-gray-700">Thông tin cá nhân</h1>
+      <div></div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="flex-grow container mx-auto py-10 px-6">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+      <div class="flex flex-col items-center gap-4">
+        <!-- Avatar -->
+        <img id="avatar" src="/components/default-avt.jpg" alt="Avatar"
+             class="w-28 h-28 rounded-full border-2 border-indigo-500 object-cover">
+
+        <!-- Tên người dùng -->
+        <h2 id="username" class="text-2xl font-bold text-indigo-600">Tên người dùng</h2>
+
+        <!-- Email -->
+        <p id="email" class="text-gray-700 text-sm">Email người dùng</p>
+
+        <!-- Optional: nút quay lại -->
+        <a href="index.html" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+          Quay lại
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer giống index2.html -->
+  <footer class="bg-white mt-10 shadow-inner">
+    <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center gap-2 mb-4 md:mb-0">
+        <img src="/components/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
+        <span class="font-bold text-indigo-600 text-lg">DH.story</span>
+      </div>
+      <div class="text-center md:text-right text-gray-600 text-sm">
+        <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
+        <a href="https://github.com/JahyuniJo" target="_blank" class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+          <span>Github</span>
+          <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
+        </a>
+        <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
+        <p class="mt-2 text-xs text-gray-400">Copyright © 2025 DieuHoang</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script load thông tin người dùng từ backend -->
+  <script>
+    async function loadUserInfo() {
+      try {
+        const res = await fetch('/api/users/me');
+        if (!res.ok) throw new Error('Chưa đăng nhập hoặc lỗi server');
+        const data = await res.json();
+
+        document.getElementById('username').textContent = data.username;
+        document.getElementById('email').textContent = data.email;
+        if (data.avatar_url) {
+          document.getElementById('avatar').src = data.avatar_url;
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Bạn cần đăng nhập để xem thông tin cá nhân.');
+        window.location.href = '/index.html';
+      }
+    }
+
+    loadUserInfo();
+  </script>
+
+</body>
+</html>
