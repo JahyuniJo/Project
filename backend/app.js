@@ -12,7 +12,11 @@ app.use(
     secret: 'secret-key',
     resave: false,
     saveUninitialized: false,
-    ookie: { secure: false } // Phải có nếu chưa dùng giao thức https
+    cookie: { 
+      secure: false, // Phải có nếu chưa dùng giao thức https
+      maxAge: 1000*60*60*24,
+
+     } 
   })
 );
 
@@ -33,16 +37,22 @@ app.get('/admin.html', (req,res) =>{
   }
   res.sendFile(path.join(__dirname, '../frontend/private/admin.html'));
 });
-app.use(express.static(path.join(__dirname, '../frontend/public')));
-app.use('/components', express.static(path.join(__dirname, '../frontend/src/components')));
+app.get('/info.html', (req,res) =>{
+  if(!req.session.userId){
+    return res.status(403).send('Bạn không có quyền truy cập trang này');
+  }
+  res.sendFile(path.join(__dirname, '../frontend/private/info.html'));
+});
 
 // 🟢 Route chính: hiển thị index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
 });
 
-
 // Routes
 app.use('/api/users', userRoutes);
+app.use(express.static(path.join(__dirname, '../frontend/public')));
+app.use('/components', express.static(path.join(__dirname, '../frontend/src/components')));
+app.use('/uploads', express.static(path.join(__dirname, '../backend/uploads')));
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));

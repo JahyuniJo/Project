@@ -4,6 +4,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const multer = require('multer');
+
 
 // Đăng ký người dùng mới
 router.post('/register', async (req, res) => {
@@ -76,6 +79,56 @@ router.get('/logout', (req, res) => {
     // Redirect về trang index
     res.redirect('/');
   });
+});
+
+// Lấy thông tin người dùng
+router.get('/info', async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: 'Chưa đăng nhập' });
+
+    const user = await pool.query('SELECT username, email, avatar_url FROM users WHERE id = $1', [userId]);
+    if (user.rows.length === 0) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+
+    //const favorites = await db.query('SELECT title, author, image FROM favorites WHERE user_id = $1', [userId]);
+
+    res.json({
+      username: user.rows[0].username,
+      email: user.rows[0].email,
+      avatar_url: user.rows[0].avatar_url,
+      //favorites: favorites.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Lỗi server' });
+  }
+});
+
+// Nơi lưu ảnh
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
+ // Tải avt
+router.post('/upload-avatar', upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.session.userId) {
+      return res.status(403).json({ message: 'Bạn cần đăng nhập để tải ảnh đại diện' });
+    }
+
+    const filePath = `/uploads/${req.file.filename}`;
+    await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [filePath, req.session.userId]);
+
+    res.json({ message: 'Cập nhật ảnh đại diện thành công', avatar_url: filePath });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi tải ảnh đại diện' });
+  }
 });
 
 module.exports = router;

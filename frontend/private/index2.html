@@ -17,10 +17,10 @@
       
       <!-- Logo -->
       <div class="flex items-center gap-3">
-        <a href="index.html" class="flex items-center gap-2">
+        <div class="flex items-center gap-2">
           <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
           <span class="text-2xl font-bold text-indigo-600">DH.story</span>
-        </a>
+        </div>
       </div>
 
       <!-- Slogan -->
@@ -61,12 +61,8 @@
           <!-- Dropdown Menu -->
           <div id="dropdownMenu" 
                class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
-            <label class="flex flex-col items-center cursor-pointer px-4 py-2 hover:bg-indigo-50">
-              <input type="file" accept="image/*" id="uploadAvatar" class="hidden">
-              <span class="text-sm text-indigo-600 font-medium"><i class="fa-solid fa-upload mr-2"></i>Tải ảnh đại diện</span>
-            </label>
             <hr class="my-1">
-            <a href="/frontend/private/info.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+            <a href="/info.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
               <i class="fa-solid fa-user mr-2 text-indigo-500"></i>Thông tin cá nhân
             </a>
             <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
@@ -130,18 +126,23 @@
         dropdownMenu.classList.add('hidden');
       }
     });
+    // Reload ảnh
+    async function loadUserAvatar() {
+    try {
+      const res = await fetch('/api/users/info');
+      if (!res.ok) throw new Error('Chưa đăng nhập hoặc lỗi server');
+      const data = await res.json();
 
-    // Xử lý upload ảnh đại diện
-    uploadInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          avatarImg.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
+      // Cập nhật ảnh avatar
+      if (data.avatar_url) {
+        document.getElementById('avatarImage').src = data.avatar_url;
       }
-    });
+    } catch (err) {
+      console.error('Không thể tải avatar:', err);
+    }
+  }
+  // Gọi hàm khi tải trang
+  loadUserAvatar();
   </script>
 
 </body>
