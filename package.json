@@ -3,7 +3,9 @@
     "axios": "^1.12.2",
     "cheerio": "^1.1.2",
     "express-session": "^1.18.2",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "puppeteer": "^24.25.0"
   },
   "name": "project",
   "version": "1.0.0",
