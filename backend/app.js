@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const userRoutes = require('./routers/userRoutes'); // Gửi yêu cầu request API sang file userRoutes.js
+const storyRoutes = require("./routers/storyRoutes.js");
 const session = require('express-session');
 const app = express();
 // Tạo session
@@ -22,7 +23,6 @@ app.use(
 
 app.use(cors());
 app.use(bodyParser.json());
-
 // Bảo vệ index2.html chỉ đăng nhập mới vào được
 app.get('/index2.html', (req, res) => {
   if (!req.session.userId) {
@@ -51,8 +51,9 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/users', userRoutes);
+app.use('/api/stories', storyRoutes)
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 app.use('/components', express.static(path.join(__dirname, '../frontend/src/components')));
 app.use('/uploads', express.static(path.join(__dirname, '../backend/uploads')));
-const PORT = 5000;
+const PORT = 3000;
 app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));

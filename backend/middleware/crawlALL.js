@@ -12,8 +12,7 @@ async function crawlStory(url, client) {
 
     const title =
       $(".profile-manga h3").text().trim() || $("h3.post-title").text().trim() || $("h3").first().text().trim();
-
-    const cover_url = $(".summary_image img").attr("src") || null;
+    const cover_url = $(".summary_image img").attr("data-src") || null;
 
     const genres = $(".genres-content a")
       .map((i, el) => $(el).text().trim())
@@ -46,15 +45,16 @@ async function crawlStory(url, client) {
     }
 
     await client.query(
-      `INSERT INTO stories (title, cover_url, genres, author, description, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      `INSERT INTO stories (title, cover_url, url, genres, author, description, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        ON CONFLICT (title) DO UPDATE
        SET cover_url = EXCLUDED.cover_url,
+           url = EXCLUDED.url,
            genres = EXCLUDED.genres,
            author = EXCLUDED.author,
            description = EXCLUDED.description,
            status = EXCLUDED.status`,
-      [title, cover_url, genres, author, description, status]
+      [title, cover_url, url, genres, author, description, status]
     );
 
     console.log(`✅ Lưu thành công: ${title}`);

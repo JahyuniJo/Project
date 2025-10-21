@@ -3,10 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web của Diệu Hoàng</title>
+  <title>DH.story - Thế giới truyện</title>
   <link rel="icon" type="image/png" href="/Logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .description.collapsed {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
 </head>
 
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
@@ -16,11 +24,9 @@
     <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
       
       <!-- Logo -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2">
-          <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-          <span class="text-2xl font-bold text-indigo-600">DH.story</span>
-        </div>
+      <div class="flex items-center gap-2">
+        <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+        <span class="text-2xl font-bold text-indigo-600">DH.story</span>
       </div>
 
       <!-- Slogan -->
@@ -28,7 +34,7 @@
         Chúc các bạn đọc truyện vui vẻ!
       </p>
 
-      <!-- Thanh công cụ (Search + Menu + Avatar) -->
+      <!-- Thanh công cụ -->
       <div class="flex items-center gap-4 mt-4 md:mt-0 ml-auto">
 
         <!-- Search -->
@@ -50,15 +56,12 @@
           </ul>
         </nav>
 
-        <!-- Avatar dropdown menu (sát phải header) -->
+        <!-- Avatar -->
         <div class="relative">
-          <!-- Avatar Button -->
           <button id="avatarButton" class="focus:outline-none">
             <img id="avatarImage" src="/components/default-avt.jpg" alt="Avatar" 
-                 class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:opacity-90">
+                 class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:scale-110 transition-transform">
           </button>
-
-          <!-- Dropdown Menu -->
           <div id="dropdownMenu" 
                class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
             <hr class="my-1">
@@ -66,7 +69,7 @@
               <i class="fa-solid fa-user mr-2 text-indigo-500"></i>Thông tin cá nhân
             </a>
             <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
-              <i class="fa-solid fa-heart mr-2 text-pink-500"></i>Danh sách yêu thích
+              <i class="fa-solid fa-heart mr-2 text-pink-500"></i>Yêu thích
             </a>
             <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
               <i class="fa-solid fa-triangle-exclamation mr-2 text-yellow-500"></i>Báo lỗi
@@ -82,19 +85,22 @@
   </header>
 
   <!-- Nội dung chính -->
-  <main class="flex-grow"></main>
+  <main class="flex-grow container mx-auto px-6 py-8">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Danh sách truyện</h2>
+    <div id="story-list" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
+
+    <!-- Thanh phân trang -->
+    <div id="pagination" class="flex justify-center items-center mt-8 gap-2"></div>
+  </main>
 
   <!-- Footer -->
   <footer class="bg-white mt-10 shadow-inner">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
-      
-      <!-- Logo -->
       <div class="flex items-center gap-2 mb-4 md:mb-0">
         <img src="/components/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
         <span class="font-bold text-indigo-600 text-lg">DH.story</span>
       </div>
 
-      <!-- Contact -->
       <div class="text-center md:text-right text-gray-600 text-sm">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
         <a href="https://github.com/JahyuniJo" target="_blank" 
@@ -103,47 +109,116 @@
           <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
         <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
-        <p class="mt-2 text-xs text-gray-400">Copyright © 2025 DieuHoang</p>
+        <p class="mt-2 text-xs text-gray-400">© 2025 DieuHoang</p>
       </div>
     </div>
   </footer>
 
-  <!-- Script điều khiển menu -->
+  <!-- Script -->
   <script>
     const avatarBtn = document.getElementById('avatarButton');
     const dropdownMenu = document.getElementById('dropdownMenu');
-    const uploadInput = document.getElementById('uploadAvatar');
-    const avatarImg = document.getElementById('avatarImage');
-
-    // Ẩn/hiện menu khi click vào avatar
-    avatarBtn.addEventListener('click', () => {
-      dropdownMenu.classList.toggle('hidden');
-    });
-
-    // Ẩn menu khi click ra ngoài
+    avatarBtn.addEventListener('click', () => dropdownMenu.classList.toggle('hidden'));
     window.addEventListener('click', (e) => {
       if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
         dropdownMenu.classList.add('hidden');
       }
     });
-    // Reload ảnh
+
     async function loadUserAvatar() {
-    try {
-      const res = await fetch('/api/users/info');
-      if (!res.ok) throw new Error('Chưa đăng nhập hoặc lỗi server');
-      const data = await res.json();
-
-      // Cập nhật ảnh avatar
-      if (data.avatar_url) {
-        document.getElementById('avatarImage').src = data.avatar_url;
+      try {
+        const res = await fetch('/api/users/info');
+        const data = await res.json();
+        if (data.avatar_url) document.getElementById('avatarImage').src = data.avatar_url;
+      } catch (err) {
+        console.error('Không thể tải avatar:', err);
       }
-    } catch (err) {
-      console.error('Không thể tải avatar:', err);
     }
-  }
-  // Gọi hàm khi tải trang
-  loadUserAvatar();
-  </script>
+    loadUserAvatar();
 
+    
+    // Phân trang + tải truyện
+    let currentPage = 1;
+    const limit = 12;
+
+    async function loadStories(page = 1) {
+      try {
+        const res = await fetch(`/api/stories?page=${page}&limit=${limit}`);
+        const data = await res.json();
+        const container = document.getElementById("story-list");
+        container.innerHTML = data.stories.map(story => `
+          <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <a href="${story.url}" target="_blank" rel="noopener noreferrer">
+              <img src="${story.cover_url || '/default-cover.jpg'}" alt="${story.title}" 
+                   class="w-full h-56 object-cover hover:scale-105 transition-transform duration-500">
+            </a>
+            <div class="p-4">
+              <a href="${story.url}" target="_blank" rel="noopener noreferrer">
+                <h3 class="text-lg font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
+              </a>
+              <p class="text-sm text-gray-600 mb-2">Tác giả: ${story.author || "Không rõ"}</p>
+              <p class="text-xs text-gray-500 mb-2">Thể loại: ${story.genres || "Chưa rõ"}</p>
+              <p class="description collapsed text-sm text-gray-700 mb-2">${story.description || ""}</p>
+              <button class="text-indigo-600 text-sm hover:underline" onclick="toggleDescription(this)">Xem thêm</button>
+              <span class="inline-block mt-3 px-3 py-1 text-xs rounded-full bg-indigo-100 text-indigo-700">${story.status || "unknown"}</span>
+            </div>
+          </div>
+        `).join("");
+        renderPagination(data.page, data.totalPages);
+      } catch (err) {
+        console.error("Lỗi tải truyện:", err);
+      }
+    }
+
+    function toggleDescription(button) {
+      const desc = button.previousElementSibling;
+      if (desc.classList.contains('collapsed')) {
+        desc.classList.remove('collapsed');
+        button.textContent = "Thu gọn";
+      } else {
+        desc.classList.add('collapsed');
+        button.textContent = "Xem thêm";
+      }
+    }
+
+    function renderPagination(current, total) {
+      const pagination = document.getElementById("pagination");
+      let html = "";
+
+      html += `<button ${current === 1 ? "disabled" : `onclick="loadStories(${current - 1})"`}
+        class="px-3 py-1 text-sm rounded-lg ${current === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">« Trước</button>`;
+
+      const maxButtons = 5;
+      const half = Math.floor(maxButtons / 2);
+      let start = Math.max(1, current - half);
+      let end = Math.min(total, current + half);
+      if (end - start < maxButtons - 1) {
+        if (start === 1) end = Math.min(total, start + maxButtons - 1);
+        else if (end === total) start = Math.max(1, total - maxButtons + 1);
+      }
+
+      if (start > 1) {
+        html += `<button onclick="loadStories(1)" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">1</button>`;
+        if (start > 2) html += `<span class="px-2 text-gray-500">…</span>`;
+      }
+
+      for (let i = start; i <= end; i++) {
+        html += `<button onclick="loadStories(${i})"
+          class="px-3 py-1 text-sm rounded-lg ${i === current ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">${i}</button>`;
+      }
+
+      if (end < total) {
+        if (end < total - 1) html += `<span class="px-2 text-gray-500">…</span>`;
+        html += `<button onclick="loadStories(${total})" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">${total}</button>`;
+      }
+
+      html += `<button ${current === total ? "disabled" : `onclick="loadStories(${current + 1})"`}
+        class="px-3 py-1 text-sm rounded-lg ${current === total ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">Sau »</button>`;
+
+      pagination.innerHTML = `<div class="flex flex-wrap justify-center items-center gap-1 sm:gap-2">${html}</div>`;
+    }
+
+    loadStories();
+  </script>
 </body>
 </html>
