@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const userRoutes = require('./routers/userRoutes'); // Gửi yêu cầu request API sang file userRoutes.js
-const storyRoutes = require("./routers/storyRoutes.js");
+const storyRoutes = require("./routers/storyRoutes");
 const session = require('express-session');
 const app = express();
 // Tạo session
@@ -43,6 +43,13 @@ app.get('/info.html', (req,res) =>{
   }
   res.sendFile(path.join(__dirname, '../frontend/private/info.html'));
 });
+app.get('/stories.html', (req,res) =>{
+  if(req.session.role !== 'admin'){
+    return res.status(403).send('Bạn không có quyền truy cập trang này');
+  }
+  res.sendFile(path.join(__dirname, '../frontend/private/stories.html'));
+});
+
 
 // 🟢 Route chính: hiển thị index.html
 app.get('/', (req, res) => {
@@ -51,7 +58,7 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/users', userRoutes);
-app.use('/api/stories', storyRoutes)
+app.use('/api/stories', storyRoutes);
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 app.use('/components', express.static(path.join(__dirname, '../frontend/src/components')));
 app.use('/uploads', express.static(path.join(__dirname, '../backend/uploads')));

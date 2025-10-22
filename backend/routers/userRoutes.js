@@ -7,7 +7,6 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const multer = require('multer');
 
-
 // Đăng ký người dùng mới
 router.post('/register', async (req, res) => {
   try {
