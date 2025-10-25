@@ -16,7 +16,6 @@ app.use(
     cookie: { 
       secure: false, // Phải có nếu chưa dùng giao thức https
       maxAge: 1000*60*60*24,
-
      } 
   })
 );

@@ -138,22 +138,19 @@
 
   <!-- Script -->
   <script>
-    // State
-    let currentPage = 1;
-    let totalPages = 1;
-    let totalItems = 0;
+    // Gọi api
     let limit = parseInt(document.getElementById('limitSelect').value, 10);
     const API = '/api/stories';
-
-    // Helpers
+    const currentPage = 1;
+    // Tối giản lệnh doucument.getElementById
     function qs(id) { return document.getElementById(id); }
 
-    // Load stories with pagination and optional search
+    // Tải dữ liệu và xử lý API
     async function loadStories(page = 1) {
-  const search = qs('searchInput').value.trim();
+  const search = qs('searchInput').value.trim(); // Lấy giá trị từ ô tìm kiếm và xóa khoảng trắng thừa
   const limit = parseInt(qs('limitSelect').value, 10) || 12;
-  const url = `${API}?page=${page}&limit=${limit}` + (search ? `&search=${encodeURIComponent(search)}` : '');
-
+  const url = `${API}?page=${page}&limit=${limit}` + (search ? `&search=${encodeURIComponent(search)}` : ''); // Url API hoàn chỉnh
+      // Thực hiện xử lý luồng khi call API
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error('Lỗi khi gọi API');
@@ -178,7 +175,7 @@
   }
 }
 
-    // Render card grid
+    // Hiển thị danh sách truyện
     function renderCards(stories) {
       const container = qs('story-container');
       container.innerHTML = '';
@@ -211,7 +208,7 @@
       });
     }
 
-    // Quick list (right column)
+    // Vẽ 1 danh sách nhanh 
     function renderQuickList(stories) {
       const wrap = qs('quickList');
       wrap.innerHTML = '';
@@ -236,7 +233,7 @@
       });
     }
 
-    // Pagination rendering with window and prev/next
+    // Tạo các nút điều hướng và phân trang
     function renderPagination(total, current) {
       const nav = qs('pagination');
       nav.innerHTML = '';
@@ -291,7 +288,7 @@
       return btn;
     }
 
-    // Edit modal logic
+    // Chỉnh sửa truyện
     function openEdit(id) {
       // Fetch single story if needed, for simplicity try to find on current page
       fetch(`${API}/${id}`)
@@ -318,7 +315,7 @@
       qs('editForm').reset();
     }
 
-    // Submit edit
+    // Xử lí sự kiện ấn nút submit và hiển thị toast nếu thành công
     qs('editForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const id = qs('editId').value;
@@ -345,7 +342,7 @@
       }
     });
 
-    // Delete with confirm
+    // Xóa truyện
     function confirmDelete(id, title) {
       if (!confirm(`Xác nhận xóa truyện: "${title}" ?`)) return;
       deleteStory(id);
@@ -362,13 +359,13 @@
       }
     }
 
-    // Open source link
+    // Mở link nguồn
     function openSource(url) {
       if (!url) return alert('Không có link nguồn');
       window.open(url, '_blank');
     }
 
-    // Sync button (optional; backend must have /sync/comi)
+    // Hàm đồng bộ dữ liệu từ trang crawl
     qs('syncBtn').addEventListener('click', async () => {
       if (!confirm('Đồng bộ từ comi sẽ thêm các truyện mới vào DB. Tiếp tục?')) return;
       qs('syncBtn').disabled = true;
@@ -387,32 +384,7 @@
       }
     });
 
-    // Search / controls
-    let searchTimeout;
-    qs('searchInput').addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => loadStories(1), 400); // đợi 400ms sau khi ngừng gõ
-    });
-
-    qs('searchBtn').addEventListener('click', () => loadStories(1));
-    qs('refreshBtn').addEventListener('click', () => {
-    qs('searchInput').value = '';
-    loadStories(1);
-    });
-    qs('limitSelect').addEventListener('change', () => loadStories(1));
-
-    // Utilities to avoid XSS in injected HTML
-    function escapeHtml(s) {
-      if (!s) return '';
-      return String(s).replace(/[&<>"']/g, function (m) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-      });
-    }
-    function escapeJs(s) {
-      if (!s) return '';
-      return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
-    }
-
+    
     // Fetch single story route must exist in backend, otherwise fallback
     // If not present, we can query list and find it.
     // Try to provide a safe fallback:
@@ -488,8 +460,259 @@
   }, 1000);
 }
 
-  </script>
-  <!-- Toast thông báo trung tâm -->
+
+
+// Hàm tìm kiếm
+    let searchTimeout;
+    qs('searchInput').addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => loadStories(1), 400); // đợi 400ms sau khi ngừng gõ
+    });
+
+    qs('searchBtn').addEventListener('click', () => loadStories(1));
+    qs('refreshBtn').addEventListener('click', () => {
+    qs('searchInput').value = '';
+    loadStories(1);
+    });
+    qs('limitSelect').addEventListener('change', () => loadStories(1));
+
+    // Utilities to avoid XSS in injected HTML
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, function (m) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+      });
+    }
+    function escapeJs(s) {
+      if (!s) return '';
+      return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+
+
+// Logic thanh tìm kiếm
+(function () {
+  const input = document.getElementById('searchInput'); // Khởi tạo input là văn bản nhập vào thanh tìm kiếm
+
+  
+  let pop = document.createElement('div'); // Tạo 1 popover (div) trong bộ nhớ để chưa danh sách trả về
+  pop.className = 'hidden suggest-pop absolute bg-white border rounded-lg shadow-lg w-full z-50'; // Set Tailwind Css
+  pop.setAttribute('role', 'listbox'); // Set giá trị
+  pop.id = 'suggestPopover'; // Set id
+  document.body.appendChild(pop); // Đưa phần tử popover vừa tạo vào cuối thẻ <body> của tài liệu
+  
+    // Hàm cấu tạo hiển thị popover ngay dưới thanh tìm kiếm (Responsive)
+  function positionPopover() {
+    const rect = input.getBoundingClientRect();
+    pop.style.width = Math.max(rect.width, 300) + 'px';
+    pop.style.left = rect.left + window.scrollX + 'px';
+    pop.style.top = rect.bottom + window.scrollY + 'px';
+  }
+
+  // Hẹn giờ và delay call API tránh quá tải server
+  let timer = null; 
+  const DEBOUNCE = 300;
+
+  // Lưu trữ danh sách kết quả gợi ý từ API
+  let items = [];
+  // theo dõi mục gợi ý đang được chọn bằng bàn phím (UX)
+  let activeIndex = -1;
+
+  // Hàm hiển thị suggest, nhận 1 list
+  function render(list) {
+    items = list || [];
+    activeIndex = -1;
+  // Nếu danh sách rỗng thì ẩn popover
+    if (!items || items.length === 0) {
+      pop.classList.add('hidden');
+      pop.innerHTML = '';
+      return;
+    }
+
+    // Tạo HTML chi tiết cho mỗi truyện
+    pop.innerHTML = items.map((s, idx) => `
+      <div
+        class="cursor-pointer p-2 flex gap-3 items-center hover:bg-gray-100"
+        role="option"
+        data-idx="${idx}"
+        data-id="${s.id}"
+        data-title="${escapeHtml(s.title)}" 
+      >
+        <img src="${s.cover_url || '/components/Logo.png'}"
+             onerror="this.src='/components/Logo.png'"
+             class="w-12 h-14 object-cover rounded-sm flex-shrink-0">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-gray-800 truncate">${highlight(s.title, input.value)}</div>
+          <div class="text-xs text-gray-500 truncate">${escapeHtml(s.author || '')} ${s.status ? ' · ' + escapeHtml(s.status) : ''}</div>
+        </div>
+      </div>
+    `).join('');
+
+    positionPopover();
+    pop.classList.remove('hidden');
+  }
+
+  // Làm nổi bật chữ tìm kiếm
+  function highlight(text, q) {
+    if (!q) return escapeHtml(text);
+    const re = new RegExp(escapeRegExp(q), 'ig');
+    return escapeHtml(text).replace(re, m => `<mark class="bg-yellow-200 text-yellow-900 px-0">${m}</mark>`);
+  }
+
+  // Biến các ký tự đặc biệt thành các thực thể HTML tương đương tránh tấn công XSS
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, function (m) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+    });
+  }
+  // Đảm bảo chuỗi nhập của người dùng là văn bản
+  function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // Gọi API đến /api/stories/search để lấy dữ liệu với từ khóa đã mã hóa encodeURIComponent, trả về dữ liệu JSON và render ra màn hình
+  async function fetchSuggest(q) {
+    if (!q || q.trim() === '') {
+      render([]);
+      return;
+    }
+    try {
+      const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error('network');
+      const data = await res.json();
+      // expect array of {id,title,cover,author,status}
+      render(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Suggest error', err);
+      render([]);
+    }
+  }
+
+  // Lắng nghe dữ liệu nhập vào, xóa bộ hẹn giờ cũ và active Debounce
+  input.addEventListener('input', (e) => {
+    clearTimeout(timer);
+    const q = e.target.value;
+    timer = setTimeout(() => fetchSuggest(q), DEBOUNCE);
+  });
+
+ 
+  // Khi người dùng nhấn vào 1 mục trong popover nó sẽ lấy data-id và data-title để gọi hàm selectAndNavigate
+  pop.addEventListener('click', (ev) => {
+    const item = ev.target.closest('[data-id]');
+    if (!item) return;
+    const id = item.getAttribute('data-id');
+    const title = item.getAttribute('data-title');
+    selectAndNavigate(id, title);
+  });
+
+ 
+  // Cập nhật thanh tìm kiếm bằng mục đã được chọn và gọi lại loadStories để hiển thị truyện với mục ở thanh tìm kiếm
+  function selectAndNavigate(id, title) {
+  input.value = title || input.value;
+  pop.classList.add('hidden');
+
+  // Gọi loadStories để lọc theo tiêu đề (search input đang có)
+  currentPage = 1; // về trang đầu
+  loadStories(currentPage);
+}
+
+
+
+
+
+
+
+
+ // Khi người dùng nhập ra khỏi thanh tìm kiếm thì ẩn popover
+  document.addEventListener('click', (ev) => {
+    if (ev.target === input || pop.contains(ev.target)) return;
+    pop.classList.add('hidden');
+  });
+
+ // Người dùng nhấp vào thanh tìm kiếm nếu vẫn có dl thì sẽ hiển thị lại popover (UX)
+  input.addEventListener('focus', () => {
+    if (pop.innerHTML.trim()) {
+      positionPopover();
+      pop.classList.remove('hidden');
+    }
+  });
+
+
+
+ // Xử lí người dùng xử dụng các nút lên xuống chọn dữ liệu và enter để xác nhận (UX)
+  input.addEventListener('keydown', (ev) => {
+    if (pop.classList.contains('hidden')) return;
+
+    const count = items.length;
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      activeIndex = Math.min(count - 1, activeIndex + 1);
+      setActive(activeIndex);
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      activeIndex = Math.max(0, activeIndex - 1);
+      setActive(activeIndex);
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      if (activeIndex >= 0 && items[activeIndex]) {
+        const it = items[activeIndex];
+        selectAndNavigate(it.id, it.title);
+      } else {
+        currentPage = 1; 
+        loadStories(currentPage);
+        pop.classList.add('hidden');
+      }
+    } else if (ev.key === 'Escape') {
+      pop.classList.add('hidden');
+    }
+  });
+
+
+
+
+
+ // Thêm lớp CSS vào mục đang được chọn bằng bàn phím trong popover
+  function setActive(idx) {
+    Array.from(pop.children).forEach((c, i) => {
+      c.classList.toggle('suggest-item-active', i === idx);
+      if (i === idx) {
+        // ensure visible
+        const cRect = c.getBoundingClientRect();
+        const pRect = pop.getBoundingClientRect();
+        if (cRect.top < pRect.top) c.scrollIntoView({ block: 'nearest' });
+        else if (cRect.bottom > pRect.bottom) c.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  }
+
+
+  // Xử lí sự kiện người dùng thay đổi kích thước trình duyệt và lăn chuột thì popover vẫn hiển thị dễ nhìn (UI/UX)
+  window.addEventListener('resize', positionPopover);
+  window.addEventListener('scroll', positionPopover, true);
+
+  // initial click outside handler to close (immediately)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') pop.classList.add('hidden');
+  });
+
+  // ensure tab focus goes into items (keyboard accessible)
+  pop.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const el = document.activeElement.closest('[data-id]');
+      if (el) {
+        selectAndNavigate(el.getAttribute('data-id'), el.getAttribute('data-title'));
+        pop.classList.add('hidden');
+      }
+    }
+  });
+
+})();
+</script>
+
+
+   <!-- Toast thông báo trung tâm -->
 <div id="toast"
   class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
          px-6 py-4 rounded-2xl shadow-2xl text-white font-semibold text-lg
@@ -497,5 +720,16 @@
   ✅ Cập nhật thành công!
 </div>
 
+<style>
+  /* Một vài chỉnh thêm cho popover */
+  .suggest-pop {
+    max-height: 360px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .suggest-item-active {
+    background-color: rgba(99,102,241,0.12); /* indigo-300/opacity */
+  }
+</style>
 </body>
 </html>
