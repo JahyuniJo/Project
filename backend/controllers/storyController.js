@@ -26,7 +26,6 @@ const getStories = async (req, res) => {
 
   try {
     const normalizedQ = removeVietnameseTones(q.toLowerCase());
-
     // Truy vấn gợi ý nhanh — chỉ cần top 5-10 kết quả
     const result = await esClient.search({
       index: "stories",

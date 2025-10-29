@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const userRoutes = require('./routers/userRoutes'); // Gửi yêu cầu request API sang file userRoutes.js
 const storyRoutes = require("./routers/storyRoutes");
+const usercontrollRoutes = require('./routers/usercontrollRoutes') // Gửi yêu cầu đến adminRoutes (Quán lý người dùng)
 const session = require('express-session');
 const app = express();
 // Tạo session
@@ -48,6 +49,12 @@ app.get('/stories.html', (req,res) =>{
   }
   res.sendFile(path.join(__dirname, '../frontend/private/stories.html'));
 });
+app.get('/user.html', (req,res) =>{
+  if(req.session.role !== 'admin'){
+    return res.status(403).send('Bạn không có quyền truy cập trang này');
+  }
+  res.sendFile(path.join(__dirname, '../frontend/private/user.html'));
+});
 
 
 // 🟢 Route chính: hiển thị index.html
@@ -61,5 +68,6 @@ app.use('/api/stories', storyRoutes);
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 app.use('/components', express.static(path.join(__dirname, '../frontend/src/components')));
 app.use('/uploads', express.static(path.join(__dirname, '../backend/uploads')));
+app.use('/api/usercontroll', usercontrollRoutes);
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));

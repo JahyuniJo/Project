@@ -4,7 +4,8 @@ const router = express.Router();
 const { syncStories, getStories } = require("../controllers/storyController");
 const client = require("../config/elasticsearch");
 const { removeVietnameseTones } = require('../utils/normalizeText');
-
+router.get("/search", getStories);
+router.post("/sync", syncStories);
 
 // API lấy danh sách truyện có phân trang
 router.get("/", async (req, res) => {
@@ -15,10 +16,6 @@ router.get("/", async (req, res) => {
     const search = req.query.search?.trim();
 
     let total = 0, totalPages = 1, stories = [];
-
-    // ========================
-    // 🔍 Có từ khóa search
-    // ========================
     if (search) {
       const normalizedSearch = removeVietnameseTones(search);
 
@@ -59,9 +56,7 @@ router.get("/", async (req, res) => {
       stories = result.hits.hits.map(hit => hit._source);
 
     } else {
-      // ========================
-      // ⚙️ Không có search → trả từ DB
-      // ========================
+
       const totalRes = await pool.query("SELECT COUNT(*) FROM stories;");
       total = parseInt(totalRes.rows[0].count);
       totalPages = Math.ceil(total / limit);
@@ -88,8 +83,25 @@ router.get("/", async (req, res) => {
 });
 
 
+// Lấy truyện hiển thị 
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query("SELECT * FROM stories WHERE id = $1", [id]);
 
-// ✏️ Sửa thông tin truyện
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy truyện" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Lỗi lấy truyện:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// Sửa thông tin truyện
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -111,6 +123,12 @@ router.put("/:id", async (req, res) => {
       `,
       [title, author, cover_url, status, url, id]
     );
+    await client.index({
+  index: "stories",
+  id: id.toString(),
+  document: { id, title, author, cover_url, status, url }
+});
+await client.indices.refresh({ index: "stories" });
 
     res.json({ message: "Đã cập nhật truyện" });
   } catch (err) {
@@ -119,20 +137,37 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// 🗑️ Xóa truyện
-router.delete('/:id', async (req, res) => {
+
+//  Xóa truyện
+router.delete("/:id", async (req, res) => {
   try {
-    await pool.query('DELETE FROM stories WHERE id=$1', [req.params.id]);
-    res.json({ message: 'Đã xóa truyện' });
+    const { id } = req.params;
+
+    // 🔹 Xóa khỏi PostgreSQL
+    const result = await pool.query("DELETE FROM stories WHERE id = $1 RETURNING *;", [id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Không tìm thấy truyện để xóa" });
+    }
+
+    // 🔹 Xóa khỏi Elasticsearch (nếu có)
+    try {
+      await client.delete({
+        index: "stories",
+        id: id.toString()
+      });
+    } catch (err) {
+      if (err.meta?.statusCode === 404) {
+        console.warn(`⚠️ Truyện ID ${id} không tồn tại trong Elasticsearch`);
+      } else {
+        console.error("❌ Lỗi xóa Elasticsearch:", err);
+      }
+    }
+
+    res.json({ message: "Đã xóa truyện thành công" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ Lỗi xóa truyện:", err);
+    res.status(500).json({ error: "Lỗi server khi xóa truyện" });
   }
 });
-
-// Đồng bộ dữ liệu (chạy crawlALL)
-router.post("/sync", syncStories);
-
-// Tìm kiếm và phân trang
-router.get("/search", getStories);
-
 module.exports = router;
