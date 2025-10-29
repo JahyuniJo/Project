@@ -7,63 +7,75 @@ const userRoutes = require('./routers/userRoutes'); // Gửi yêu cầu request 
 const storyRoutes = require("./routers/storyRoutes");
 const usercontrollRoutes = require('./routers/usercontrollRoutes'); // Gửi yêu cầu đến adminRoutes (Quán lý người dùng)
 const statRoutes = require('./routers/statRoutes');
-const session = require('express-session');
+const jwt = require('jsonwebtoken');
 const app = express();
-// Tạo session
-app.use(
-  session({
-    secret: 'secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-      secure: false, // Phải có nếu chưa dùng giao thức https
-      maxAge: 1000*60*60*24,
-     } 
-  })
-);
+const JWT_SECRET = 'your_super_secret_key';
+const cookieParser = require('cookie-parser');
 
-app.use(cors());
+
+app.use(cors({
+  origin: 'http://localhost:3000', // Đảm bảo domain của client
+    credentials: true
+}));
 app.use(bodyParser.json());
+app.use(cookieParser());
+const authenticateHTML = (allowedRoles = []) => (req, res, next) => {
+    // 1. Lấy token từ HttpOnly Cookie
+    const token = req.cookies.authToken;
+
+    if (!token) {
+        // Nếu không có token, chuyển hướng về trang chủ/đăng nhập
+        return res.redirect('/');
+    }
+
+    // 2. Xác thực token
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            // Token không hợp lệ/hết hạn
+            res.clearCookie('authToken'); // Xóa cookie không hợp lệ
+            return res.redirect('/');
+        }
+
+        // Token hợp lệ, gắn thông tin người dùng vào request
+        req.user = user; // user = { userId: ..., role: ... }
+
+        // 3. Kiểm tra quyền (nếu có allowedRoles)
+        if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+            // Nếu không có quyền, trả về lỗi 403
+            return res.status(403).send('Bạn không có quyền truy cập trang này');
+        }
+
+        next(); // Cho phép truy cập file
+    });
+  }
+
 // Bảo vệ index2.html chỉ đăng nhập mới vào được
-app.get('/index2.html', (req, res) => {
-  if (!req.session.userId) {
-    return res.redirect('/');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/private/index2.html'));
+app.get('/index2.html', authenticateHTML(), (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/private/index2.html'));
 });
 
-app.get('/admin.html', (req,res) =>{
-  if(!req.session.userId || req.session.role !== 'admin'){
-    return res.status(403).send('Bạn không có quyền truy cập trang này');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/private/admin.html'));
+// admin.html (Chỉ dành cho admin)
+app.get('/admin.html', authenticateHTML(['admin']), (req,res) =>{
+    res.sendFile(path.join(__dirname, '../frontend/private/admin.html'));
 });
-app.get('/info.html', (req,res) =>{
-  if(!req.session.userId){
-    return res.status(403).send('Bạn không có quyền truy cập trang này');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/private/info.html'));
+// info.html (Dành cho người dùng đã đăng nhập)
+app.get('/info.html', authenticateHTML(), (req,res) =>{
+    res.sendFile(path.join(__dirname, '../frontend/private/info.html'));
 });
-app.get('/stories.html', (req,res) =>{
-  if(req.session.role !== 'admin'){
-    return res.status(403).send('Bạn không có quyền truy cập trang này');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/private/stories.html'));
-});
-app.get('/user.html', (req,res) =>{
-  if(req.session.role !== 'admin'){
-    return res.status(403).send('Bạn không có quyền truy cập trang này');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/private/user.html'));
-});
-app.get('/stat.html', (req,res) =>{
-  if(req.session.role !== 'admin'){
-    return res.status(403).send('Bạn không có quyền truy cập trang này');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/private/stat.html'));
+// stories.html (Chỉ dành cho admin)
+app.get('/stories.html', authenticateHTML(['admin']), (req,res) =>{
+    res.sendFile(path.join(__dirname, '../frontend/private/stories.html'));
 });
 
+// user.html (Chỉ dành cho admin)
+app.get('/user.html', authenticateHTML(['admin']), (req,res) =>{
+    res.sendFile(path.join(__dirname, '../frontend/private/user.html'));
+});
 
+// stat.html (Chỉ dành cho admin)
+app.get('/stat.html', authenticateHTML(['admin']), (req,res) =>{
+    res.sendFile(path.join(__dirname, '../frontend/private/stat.html'));
+});
 // 🟢 Route chính: hiển thị index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
