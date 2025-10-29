@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thống kê hệ thống</title>
+  <link rel="icon" type="image/png" href="/Logo.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-200 min-h-screen flex flex-col font-sans">
+  <!-- HEADER -->
+  <header class="bg-white shadow-md sticky top-0 z-50">
+    <div class="ml-64">
+      <div class="container mx-auto flex items-center justify-between py-4 px-6">
+        <a class="flex items-center gap-2">
+          <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+          <span class="text-2xl font-bold text-indigo-600">DH.story Admin</span>
+        </a>
+        <div class="flex items-center gap-4">
+          <span class="text-gray-600 font-medium">Xin chào, Diệu Hoàng 👋</span>
+          <button onclick="logout()" class="px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-red-600 font-semibold transition">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 flex flex-col">
+    <div class="h-16 flex items-center justify-center border-b">
+      <span class="font-bold text-indigo-600 text-lg">Bảng điều khiển</span>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-4 text-gray-700 font-medium">
+      <a href="/user.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        <i class="fa-solid fa-users"></i> Quản lý người dùng
+      </a>
+      <a href="/stat.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-semibold">
+        <i class="fa-solid fa-chart-column"></i> Thống kê
+      </a>
+      <a href="/stories.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        <i class="fa-solid fa-book"></i> Quản lý truyện
+      </a>
+      <a href="#"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        <i class="fa-solid fa-robot"></i> Quản lý tác vụ AI
+      </a>
+      <a href="#"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        <i class="fa-solid fa-triangle-exclamation"></i> Quản lý báo lỗi
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 ml-64 px-8 py-8">
+    <h2 class="text-3xl font-bold text-indigo-700 mb-8">📊 Thống kê hệ thống</h2>
+
+    <div id="statsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Thẻ thống kê -->
+    </div>
+  </main>
+
+  <footer class="bg-white mt-auto shadow-inner ml-64">
+    <div class="max-w-7xl mx-auto px-4 py-4 text-sm text-gray-500 text-center">
+      © 2025 DH.story — Admin Panel
+    </div>
+  </footer>
+
+  <script>
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stat');
+        const data = await res.json();
+
+        const container = document.getElementById('statsContainer');
+        container.innerHTML = `
+          <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+            <i class="fa-solid fa-users text-4xl text-indigo-600 mb-3"></i>
+            <h3 class="text-xl font-semibold">Người dùng</h3>
+            <p class="text-3xl font-bold text-indigo-700">${data.totalUsers}</p>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+            <i class="fa-solid fa-book text-4xl text-green-600 mb-3"></i>
+            <h3 class="text-xl font-semibold">Truyện</h3>
+            <p class="text-3xl font-bold text-green-700">${data.totalStories}</p>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+            <i class="fa-solid fa-eye text-4xl text-yellow-500 mb-3"></i>
+            <h3 class="text-xl font-semibold">Tổng lượt đọc</h3>
+            <p class="text-3xl font-bold text-yellow-600">${data.totalViews.toLocaleString()}</p>
+          </div>
+        `;
+      } catch (err) {
+        console.error('❌ Lỗi khi tải thống kê:', err);
+      }
+    }
+
+    loadStats();
+
+    function logout() {
+      fetch('/api/users/logout').then(() => (window.location.href = '/'));
+    }
+  </script>
+</body>
+</html>

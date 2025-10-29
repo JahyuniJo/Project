@@ -87,6 +87,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    await pool.query("UPDATE stories SET view_count = view_count + 1 WHERE id = $1", [id]);
     const result = await pool.query("SELECT * FROM stories WHERE id = $1", [id]);
 
     if (result.rows.length === 0) {

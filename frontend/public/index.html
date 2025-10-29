@@ -111,12 +111,14 @@
         const container = document.getElementById("story-list");
         container.innerHTML = data.stories.map(story => `
           <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <a href="${story.url}" target="_blank" rel="noopener noreferrer">
+            <a href="read.html?id=${story.id}">
+
               <img src="${story.cover_url || '/default-cover.jpg'}" alt="${story.title}" 
                    class="w-full h-56 object-cover hover:scale-105 transition-transform duration-500">
             </a>
             <div class="p-4">
-              <a href="${story.url}" target="_blank" rel="noopener noreferrer">
+              <a href="read.html?id=${story.id}">
+
                 <h3 class="text-lg font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
               </a>
               <p class="text-sm text-gray-600 mb-2">Tác giả: ${story.author || "Không rõ"}</p>
@@ -124,6 +126,7 @@
               <p class="description collapsed text-sm text-gray-700 mb-2">${story.description || ""}</p>
               <button class="text-indigo-600 text-sm hover:underline" onclick="toggleDescription(this)">Xem thêm</button>
               <span class="inline-block mt-3 px-3 py-1 text-xs rounded-full bg-indigo-100 text-indigo-700">${story.status || "unknown"}</span>
+               <p><i class="fa-solid fa-eye text-gray-500"></i> ${story.view_count} lượt đọc</p>
             </div>
           </div>
         `).join("");
