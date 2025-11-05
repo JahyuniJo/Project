@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = 'your_super_secret_key';
+const JWT_SECRET = 'dieu002016';
 
 const authenticateAPI = (req, res, next) => {
     // 1. Lấy token từ HttpOnly Cookie

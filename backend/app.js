@@ -7,9 +7,10 @@ const userRoutes = require('./routers/userRoutes'); // Gửi yêu cầu request 
 const storyRoutes = require("./routers/storyRoutes");
 const usercontrollRoutes = require('./routers/usercontrollRoutes'); // Gửi yêu cầu đến adminRoutes (Quán lý người dùng)
 const statRoutes = require('./routers/statRoutes');
+const favListRouter = require("./routers/interaction");
 const jwt = require('jsonwebtoken');
 const app = express();
-const JWT_SECRET = 'your_super_secret_key';
+const JWT_SECRET = 'dieu002016';
 const cookieParser = require('cookie-parser');
 
 
@@ -71,7 +72,13 @@ app.get('/stories.html', authenticateHTML(['admin']), (req,res) =>{
 app.get('/user.html', authenticateHTML(['admin']), (req,res) =>{
     res.sendFile(path.join(__dirname, '../frontend/private/user.html'));
 });
-
+//
+app.get('/read2.html', authenticateHTML(['user']), (req,res) =>{
+    res.sendFile(path.join(__dirname, '../frontend/private/read2.html'));
+});
+app.get('/fav.html', authenticateHTML(['user']), (req,res) =>{
+    res.sendFile(path.join(__dirname, '../frontend/private/fav.html'));
+});
 // stat.html (Chỉ dành cho admin)
 app.get('/stat.html', authenticateHTML(['admin']), (req,res) =>{
     res.sendFile(path.join(__dirname, '../frontend/private/stat.html'));
@@ -89,5 +96,6 @@ app.use('/components', express.static(path.join(__dirname, '../frontend/src/comp
 app.use('/uploads', express.static(path.join(__dirname, '../backend/uploads')));
 app.use('/api/usercontroll', usercontrollRoutes);
 app.use('/api/stat', statRoutes);
+app.use("/api/favlists", favListRouter);
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));

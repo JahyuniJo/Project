@@ -1,18 +1,31 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DH.story - Thế giới truyện</title>
-  <link rel="icon" type="image/png" href="/Logo.png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đọc truyện | DH.story</title>
+  <link rel="icon" type="image/png" href="/components/Logo.png" />
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    .description.collapsed {
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.8s ease-in forwards; }
+
+    .cover {
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+    .cover:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .title-hover:hover {
+      color: #4f46e5;
+      text-shadow: 0 0 10px rgba(79, 70, 229, 0.2);
     }
   </style>
 </head>
@@ -30,21 +43,10 @@
       </div>
 
       <!-- Slogan -->
-      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0 text-center">
+       <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
         Chúc các bạn đọc truyện vui vẻ!
       </p>
 
-      <!-- Thanh công cụ -->
-      <div class="flex items-center gap-4 mt-4 md:mt-0 ml-auto">
-
-        <!-- Search -->
-        <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
-          <input type="text" placeholder="Tìm kiếm truyện..."
-                 class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
-          <button class="px-3 text-indigo-600 hover:text-indigo-800">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </button>
-        </div>
 
         <!-- Menu -->
         <nav>
@@ -111,22 +113,42 @@
         </div>
     </div>
 </div>
+    
+    <!-- MAIN -->
+      <main class="flex-1 container mx-auto py-10 px-6 fade-in">
+    <div id="story-container" class="bg-white shadow-lg rounded-2xl p-8 flex flex-col md:flex-row gap-8">
 
+      <!-- Ảnh bìa -->
+      <div class="flex-shrink-0 self-center">
+        <img id="story-cover" src="" alt="Bìa truyện" class="w-56 h-80 object-cover rounded-xl cover" />
+      </div>
 
-  <!-- Nội dung chính -->
-  <main class="flex-grow container mx-auto px-6 py-8">
-    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Danh sách truyện</h2>
-    <div id="story-list" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
-
-    <!-- Thanh phân trang -->
-    <div id="pagination" class="flex justify-center items-center mt-8 gap-2"></div>
+      <!-- Nội dung truyện -->
+      <div class="flex-1">
+        <h1 id="story-title" class="text-3xl font-bold text-indigo-700 mb-2 title-hover"></h1>
+        <p id="story-author" class="text-gray-600 mb-4 italic"></p>
+        <p id="story-genres" class="text-sm text-gray-500 mb-6"></p>
+        <a id="story-link" href="#" target="_blank"
+           class="inline-block bg-indigo-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-indigo-700 transition duration-300 mb-6">
+           📖 Đọc truyện gốc
+        </a>
+        <button id="favButton"
+        class="inline-flex items-center gap-2 bg-pink-500 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-pink-600 transition duration-300">
+  <i class="fa-solid fa-heart"></i> Yêu thích
+</button>
+        <div id="story-content" class="leading-relaxed text-gray-800 text-justify whitespace-pre-line"></div>
+      </div>
+    </div>
   </main>
 
-<!-- Modal chọn danh sách yêu thích -->
+  <!--Modal danh sách yêu thích-->
+
   <div id="favModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl p-6 shadow-xl w-96">
-    <h3 class="text-lg font-semibold text-indigo-700 mb-4">Chọn danh sách yêu thích</h3>
-    <div id="favListSelect" class="space-y-2 mb-4"></div>
+  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+    <h2 class="text-lg font-semibold text-indigo-700 mb-4">Thêm truyện vào danh sách yêu thích</h2>
+    <div id="favListContainer" class="space-y-3 mb-4 text-gray-700 text-sm">
+      <p class="text-gray-500 italic">Đang tải danh sách...</p>
+    </div>
     <div class="flex justify-between items-center gap-3">
       <input id="newListName" type="text" placeholder="Tạo danh sách mới..." 
              class="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring focus:ring-indigo-300 outline-none">
@@ -135,8 +157,9 @@
         Tạo
       </button>
     </div>
-    <div class="flex justify-end gap-3">
-      <button onclick="closeFavModal()" class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200">Hủy</button>
+    <div class="flex justify-end mt-4">
+      <button id="closeFavModal" 
+              class="text-gray-600 hover:text-gray-800 font-medium text-sm">Đóng</button>
     </div>
   </div>
 </div>
@@ -162,76 +185,58 @@
     </div>
   </footer>
 
-  <!-- Script -->
   <script>
-    let selectedStoryId = null;
-// Gọi API lấy danh sách yêu thích hiện có
-async function getFavLists() {
-  try {
-    const res = await fetch("/api/favlists", { credentials: "include" });
-    return res.ok ? await res.json() : [];
-  } catch (err) {
-    console.error("Lỗi lấy danh sách yêu thích:", err);
-    return [];
-  }
+    // --- FAVORITE LOGIC ---
+const favBtn = document.getElementById("favButton");
+const favModal = document.getElementById("favModal");
+const favListContainer = document.getElementById("favListContainer");
+const newListInput = document.getElementById("newListName");
+const createListBtn = document.getElementById("createListBtn");
+const closeFavModal = document.getElementById("closeFavModal");
+
+// Lấy ID truyện hiện tại từ URL (?id=)
+function getStoryId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
 }
 
-// Hiển thị modal chọn danh sách
-async function openFavModal(storyId) {
-  selectedStoryId = storyId;
-  const favLists = await getFavLists();
-  const favListContainer = document.getElementById("favListSelect");
-
-  if (!favLists.length) {
-    favListContainer.innerHTML = `<p class="text-gray-500 text-sm">Bạn chưa có danh sách nào. Hãy tạo trong <a href="/fav.html" class="text-indigo-600 hover:underline">Yêu thích</a>.</p>`;
-  } else {
-    favListContainer.innerHTML = favLists.map(
-      (list) => `
-      <button onclick="addStoryToList(${list.id}, '${list.name}')" 
-        class="w-full text-left px-4 py-2 border border-gray-200 rounded hover:bg-indigo-50">
-        <i class="fa-solid fa-list mr-2 text-indigo-500"></i>${list.name}
-      </button>`
-    ).join("");
-  }
-
-  document.getElementById("favModal").classList.remove("hidden");
-}
-
-function closeFavModal() {
-  document.getElementById("favModal").classList.add("hidden");
-  selectedStoryId = null;
-}
-
-
-// Tạo danh sách yêu thích mới
-async function createFavList() {
-  const name = prompt("Nhập tên danh sách mới:");
-  if (!name || !name.trim()) return;
+// Mở modal chọn danh sách yêu thích
+favBtn.addEventListener("click", async () => {
+  favModal.classList.remove("hidden");
+  favListContainer.innerHTML = `<p class="text-gray-500 italic">Đang tải danh sách...</p>`;
 
   try {
+
     const res = await fetch("/api/favlists", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", },
       credentials: "include",
-      body: JSON.stringify({ name: name.trim() }),
     });
+    if (!res.ok) throw new Error("Không thể tải danh sách");
 
-    const data = await res.json();
-    if (res.ok) {
-      alert(`✅ Đã tạo danh sách "${name}"`);
-      // Sau khi tạo xong, load lại danh sách trong modal
-      openFavModal(selectedStoryId);
+    const lists = await res.json();
+
+    if (lists.length === 0) {
+      favListContainer.innerHTML = `<p class="text-gray-500 text-sm italic">Bạn chưa có danh sách nào. Hãy tạo mới ở dưới!</p>`;
     } else {
-      alert(`❌ ${data.message || "Lỗi khi tạo danh sách"}`);
+      favListContainer.innerHTML = lists.map(
+        list => `
+          <button onclick="addStoryToList(${list.id}, '${list.name.replace(/'/g, "\\'")}')"
+
+                  class="block w-full text-left border border-gray-200 rounded-lg px-3 py-2 hover:bg-indigo-50 transition">
+            <i class="fa-solid fa-heart text-pink-500 mr-2"></i>${list.name}
+          </button>`
+      ).join("");
     }
   } catch (err) {
-    console.error("Lỗi khi tạo danh sách:", err);
-    alert("Lỗi kết nối server!");
+    console.error(err);
+    favListContainer.innerHTML = `<p class="text-red-500 text-sm">Lỗi tải danh sách!</p>`;
   }
-}
-const createListBtn = document.getElementById("createListBtn");
-const newListInput = document.getElementById("newListName");
-// Thêm truyện vào danh sách yêu thích
+});
+
+// Đóng modal
+closeFavModal.addEventListener("click", () => favModal.classList.add("hidden"));
+
+// Tạo danh sách mới
 createListBtn.addEventListener("click", async () => {
   const name = newListInput.value.trim();
   if (!name) return alert("Nhập tên danh sách!");
@@ -251,14 +256,40 @@ createListBtn.addEventListener("click", async () => {
 
     newListInput.value = "";
     alert("✅ Đã tạo danh sách mới!");
-    openFavModal(selectedStoryId);
+    favBtn.click(); // reload lại modal
   } catch (err) {
     alert("❌ " + err.message);
   }
 });
 
+// Thêm truyện vào danh sách
+async function addStoryToList(listId, listName) {
+  const storyId = getStoryId();
+  if (!storyId) return alert("Không tìm thấy ID truyện!");
 
-// Avatar dropdown menu
+  try {
+    const res = await fetch(`/api/favlists/${listId}/stories`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      credentials: "include",
+      body: JSON.stringify({ storyId }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert(`✅ Đã thêm truyện vào danh sách "${listName}"`);
+      favModal.classList.add("hidden");
+    } else {
+      alert(`❌ ${data.message || "Lỗi khi thêm truyện"}`);
+    }
+  } catch (err) {
+    console.error("❌ Lỗi thêm truyện:", err);
+    alert("Lỗi kết nối server!");
+  }
+}
+
+
+    // --- Avatar dropdown menu ---
     const avatarBtn = document.getElementById('avatarButton');
     const dropdownMenu = document.getElementById('dropdownMenu');
     avatarBtn.addEventListener('click', () => dropdownMenu.classList.toggle('hidden'));
@@ -280,105 +311,45 @@ createListBtn.addEventListener("click", async () => {
     loadUserAvatar();
 
 
-    // Phân trang + tải truyện
-    let currentPage = 1;
-    const limit = 12;
 
-    async function loadStories(page = 1) {
+
+    // Hàm lấy ID truyện từ URL (?id=)
+    function getStoryId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    // Gọi API lấy chi tiết truyện
+    async function loadStory() {
+      const id = getStoryId();
+      if (!id) return;
+
       try {
-        const res = await fetch(`/api/stories?page=${page}&limit=${limit}`);
-        const data = await res.json();
-        const container = document.getElementById("story-list");
-        container.innerHTML = data.stories.map(story => `
-  <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-    <a href="read2.html?id=${story.id}">
-      <img src="${story.cover_url || '/default-cover.jpg'}" alt="${story.title}" 
-           class="w-full h-56 object-cover hover:scale-105 transition-transform duration-500">
-    </a>
-    <div class="p-4">
-      <a href="read2.html?id=${story.id}">
-        <h3 class="text-lg font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
-      </a>
-      <p class="text-sm text-gray-600 mb-2">Tác giả: ${story.author || "Không rõ"}</p>
-      <p class="text-xs text-gray-500 mb-2">Thể loại: ${story.genres || "Chưa rõ"}</p>
-      <p class="description collapsed text-sm text-gray-700 mb-2">${story.description || ""}</p>
-      <button class="text-indigo-600 text-sm hover:underline" onclick="toggleDescription(this)">Xem thêm</button>
+        const res = await fetch(`/api/stories/${id}`);
+        const story = await res.json();
 
-      <!-- 🩷 Nút yêu thích -->
-      <button onclick="openFavModal(${story.id})" 
-              class="mt-3 px-3 py-1 text-sm bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200">
-        <i class="fa-solid fa-heart mr-1"></i>Yêu thích
-      </button>
-
-      <div class="mt-2 text-xs text-gray-500">
-        <i class="fa-solid fa-eye"></i> ${story.view_count} lượt đọc
-      </div>
-    </div>
-  </div>
-`).join("");
-        renderPagination(data.page, data.totalPages);
+        document.getElementById("story-cover").src = story.cover_url;
+        document.getElementById("story-title").textContent = story.title;
+        document.getElementById("story-author").textContent = "Tác giả: " + story.author;
+        document.getElementById("story-genres").textContent = "Thể loại: " + story.genres;
+        document.getElementById("story-content").textContent = story.description;
+        const link = document.getElementById("story-link");
+        link.href = story.url;
+        if (!story.url) link.classList.add("hidden");
       } catch (err) {
         console.error("Lỗi tải truyện:", err);
       }
     }
 
-    function toggleDescription(button) {
-      const desc = button.previousElementSibling;
-      if (desc.classList.contains('collapsed')) {
-        desc.classList.remove('collapsed');
-        button.textContent = "Thu gọn";
-      } else {
-        desc.classList.add('collapsed');
-        button.textContent = "Xem thêm";
-      }
-    }
-
-    function renderPagination(current, total) {
-      const pagination = document.getElementById("pagination");
-      let html = "";
-
-      html += `<button ${current === 1 ? "disabled" : `onclick="loadStories(${current - 1})"`}
-        class="px-3 py-1 text-sm rounded-lg ${current === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">« Trước</button>`;
-
-      const maxButtons = 5;
-      const half = Math.floor(maxButtons / 2);
-      let start = Math.max(1, current - half);
-      let end = Math.min(total, current + half);
-      if (end - start < maxButtons - 1) {
-        if (start === 1) end = Math.min(total, start + maxButtons - 1);
-        else if (end === total) start = Math.max(1, total - maxButtons + 1);
-      }
-
-      if (start > 1) {
-        html += `<button onclick="loadStories(1)" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">1</button>`;
-        if (start > 2) html += `<span class="px-2 text-gray-500">…</span>`;
-      }
-
-      for (let i = start; i <= end; i++) {
-        html += `<button onclick="loadStories(${i})"
-          class="px-3 py-1 text-sm rounded-lg ${i === current ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">${i}</button>`;
-      }
-
-      if (end < total) {
-        if (end < total - 1) html += `<span class="px-2 text-gray-500">…</span>`;
-        html += `<button onclick="loadStories(${total})" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">${total}</button>`;
-      }
-
-      html += `<button ${current === total ? "disabled" : `onclick="loadStories(${current + 1})"`}
-        class="px-3 py-1 text-sm rounded-lg ${current === total ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">Sau »</button>`;
-
-      pagination.innerHTML = `<div class="flex flex-wrap justify-center items-center gap-1 sm:gap-2">${html}</div>`;
-    }
-
-    loadStories();
+    loadStory();
 
 
+
+    // --- Đăng xuất ---
     const logoutModal = document.getElementById('logoutModal');
     const openLogoutModal = document.getElementById('openLogoutModal');
     const cancelLogout = document.getElementById('cancelLogout');
     const confirmLogout = document.getElementById('confirmLogout');
-
-    // Hàm hiển thị modal
     function showModal() {
         logoutModal.classList.remove('hidden');
     }
@@ -397,8 +368,7 @@ createListBtn.addEventListener("click", async () => {
     if (cancelLogout) {
         cancelLogout.addEventListener('click', hideModal);
     }
-
-    // Xử lý sự kiện ĐĂNG XUẤT THỰC SỰ
+    // Đăng xuất
     if (confirmLogout) {
         confirmLogout.addEventListener('click', async () => {
             hideModal(); // Ẩn modal ngay lập tức

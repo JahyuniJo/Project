@@ -3,53 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thông tin cá nhân</title>
+  <title>Thông tin cá nhân | DH.story</title>
   <link rel="icon" type="image/png" href="/Logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
+<body class="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-100 min-h-screen flex flex-col font-sans">
 
-  <!-- Header giống index2.html -->
-  <header class="bg-white shadow-md">
+  <!-- HEADER -->
+  <header class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50">
     <div class="container mx-auto flex items-center justify-between py-4 px-6">
-      <div class="flex items-center gap-2">
-        <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-        <span class="text-2xl font-bold text-indigo-600">DH.story</span>
-     </div>
+      <a href="index2.html" class="flex items-center gap-2 hover:opacity-80 transition">
+        <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full shadow-sm">
+        <span class="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent">
+          DH.story
+        </span>
+      </a>
       <h1 class="text-lg font-semibold text-gray-700">Thông tin cá nhân</h1>
-      <div></div>
+     <a href="index2.html" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+          <i class="fa-solid fa-home mr-1"></i> Trang chủ
+        </a>
     </div>
   </header>
 
-  <!-- Main content -->
+  <!-- MAIN -->
   <main class="flex-grow container mx-auto py-10 px-6">
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
-      <div class="flex flex-col items-center gap-4">
+    <div class="max-w-lg mx-auto bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 relative overflow-hidden">
+      <!-- Hiệu ứng gradient góc -->
+      <div class="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-tr from-indigo-300 to-purple-300 rounded-full opacity-30 blur-3xl"></div>
+
+      <div class="relative flex flex-col items-center gap-4 z-10">
         <!-- Avatar -->
-        <img id="avatar" src="/components/Logo.png" alt="Avatar"
-             class="w-28 h-28 rounded-full border-2 border-indigo-500 object-cover">
+        <div class="relative">
+          <img id="avatar" src="/components/Logo.png" alt="Avatar"
+               class="w-28 h-28 rounded-full border-4 border-indigo-500 object-cover shadow-md transition-transform hover:scale-105 duration-200">
+          <label for="uploadAvatar"
+                 class="absolute bottom-0 right-0 bg-indigo-600 text-white rounded-full p-2 shadow cursor-pointer hover:bg-indigo-700">
+            <i class="fa-solid fa-camera text-sm"></i>
+          </label>
+          <input type="file" id="uploadAvatar" accept="image/*" class="hidden">
+        </div>
 
-        <!-- Tên người dùng -->
-        <h2 id="username" class="text-2xl font-bold text-indigo-600">Tên người dùng</h2>
+        <!-- Info -->
+        <h2 id="username" class="text-2xl font-bold text-indigo-700">Tên người dùng</h2>
+        <p id="email" class="text-gray-600 text-sm">Email người dùng</p>
 
-        <!-- Email -->
-        <p id="email" class="text-gray-700 text-sm">Email người dùng</p>
-        <!--Upload Avarta-->
-        <label class="flex flex-col items-center cursor-pointer px-4 py-2 hover:bg-indigo-50">
-              <input type="file" accept="image/*" id="uploadAvatar" class="hidden">
-              <span class="text-sm text-indigo-600 font-medium"><i class="fa-solid fa-upload mr-2"></i>Tải ảnh đại diện</span>
-            </label>
-        <!-- Optional: nút quay lại -->
-        <a href="/index2.html" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-          Quay lại
-        </a>
+        <!-- Buttons -->
+        <div class="mt-6 flex flex-col sm:flex-row gap-3 w-full justify-center">
+          <a href="/fav.html"
+             class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-200 transition">
+            <i class="fa-solid fa-heart text-indigo-500"></i> 
+            <span>Danh sách yêu thích</span>
+          </a>
+
+          <a href="/index2.html"
+             class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Quay lại</span>
+          </a>
+        </div>
       </div>
     </div>
   </main>
 
-  <!-- Footer giống index2.html -->
-  <footer class="bg-white mt-10 shadow-inner">
+  <!-- FOOTER -->
+  <footer class="bg-white/80 backdrop-blur-md shadow-inner mt-12">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
       <div class="flex items-center gap-2 mb-4 md:mb-0">
         <img src="/components/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
@@ -57,18 +75,20 @@
       </div>
       <div class="text-center md:text-right text-gray-600 text-sm">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
-        <a href="https://github.com/JahyuniJo" target="_blank" class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+        <a href="https://github.com/JahyuniJo" target="_blank" 
+           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
           <span>Github</span>
           <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
         <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
-        <p class="mt-2 text-xs text-gray-400">Copyright © 2025 DieuHoang</p>
+        <p class="mt-2 text-xs text-gray-400">© 2025 DieuHoang. All rights reserved.</p>
       </div>
     </div>
   </footer>
 
-  <!-- Script load thông tin người dùng từ backend -->
+  <!-- SCRIPT -->
   <script>
+    // --- Load thông tin người dùng ---
     async function loadUserInfo() {
       try {
         const res = await fetch('/api/users/info');
@@ -87,35 +107,36 @@
       }
     }
     loadUserInfo();
-// update ảnh đại diện
-const uploadInput = document.getElementById('uploadAvatar');
-const avatarImg = document.getElementById('avatar');
- uploadInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
 
-  const formData = new FormData();
-  formData.append('avatar', file);
+    // --- Upload ảnh đại diện ---
+    const uploadInput = document.getElementById('uploadAvatar');
+    const avatarImg = document.getElementById('avatar');
 
-  try {
-    const response = await fetch('/api/users/upload-avatar', {
-      method: 'POST',
-      body: formData
+    uploadInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      try {
+        const response = await fetch('/api/users/upload-avatar', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          avatarImg.src = data.avatar_url + '?t=' + new Date().getTime(); // tránh cache
+          alert('Ảnh đại diện đã được cập nhật!');
+        } else {
+          alert(data.message || 'Tải ảnh thất bại');
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải ảnh:', err);
+        alert('Lỗi khi tải ảnh lên máy chủ');
+      }
     });
-
-    const data = await response.json();
-    if (response.ok) {
-      // 🟢 Cập nhật ảnh ngay, thêm timestamp để tránh cache
-      avatarImg.src = data.avatar_url + '?t=' + new Date().getTime();
-      alert('Ảnh đại diện đã được cập nhật!');
-    } else {
-      alert(data.message || 'Tải ảnh thất bại');
-    }
-  } catch (err) {
-    console.error('Lỗi khi tải ảnh:', err);
-    alert('Lỗi khi tải ảnh lên máy chủ');
-  }
-});
   </script>
 
 </body>

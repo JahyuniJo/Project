@@ -1,219 +1,186 @@
-// routes/interaction.js
 const express = require('express');
 const router = express.Router();
-const pool = require('..config/db'); // pool = new Pool({...})
+const pool = require('../config/db');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = 'dieu002016';
 
-// --- Middleware gợi ý: lấy userId từ session/JWT ---
-// Mình giả sử req.user?.id tồn tại khi user đã login.
-// Nếu bạn chưa có auth, frontend có thể gửi user_id trong body (không an toàn).
-function getUserId(req) {
-  // try: req.user.id (passport/session) or req.auth?.id
-  if (req.user && req.user.id) return req.user.id;
-  if (req.body && req.body.user_id) return req.body.user_id; // fallback (not recommended)
-  return null;
+// --- Middleware xác thực JWT ---
+function authenticateToken(req, res, next) {
+  const token = req.cookies.authToken;
+  if (!token) return res.status(401).json({ message: "Thiếu token đăng nhập" });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: "Token không hợp lệ" });
+    req.user = user;
+    next();
+  });
 }
 
-/* -----------------------
-   FAVORITES
-   POST /api/favorite        -> thêm vào yêu thích
-   DELETE /api/favorite     -> xóa khỏi yêu thích (gửi body {story_id})
-   GET /api/favorite/:userId -> lấy favorites của user
-   GET /api/favorite/story/:storyId -> kiểm tra có bao nhiêu người thích (tùy chọn)
-   ----------------------- */
-
-// Thêm favorite
-router.post('/favorite', async (req, res) => {
+// --- Lấy tất cả danh sách yêu thích ---
+router.get("/", authenticateToken, async (req, res) => {
   try {
-    const userId = getUserId(req);
-    const { story_id } = req.body;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    if (!story_id) return res.status(400).json({ error: 'story_id required' });
-
-    await pool.query(
-      `INSERT INTO favorites (user_id, story_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
-      [userId, story_id]
-    );
-    res.json({ ok: true, message: 'Added to favorites' });
-  } catch (err) {
-    console.error('fav add error', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Xóa favorite
-router.delete('/favorite', async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    const { story_id } = req.body;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    if (!story_id) return res.status(400).json({ error: 'story_id required' });
-
-    await pool.query(
-      `DELETE FROM favorites WHERE user_id=$1 AND story_id=$2`,
-      [userId, story_id]
-    );
-    res.json({ ok: true, message: 'Removed from favorites' });
-  } catch (err) {
-    console.error('fav delete error', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Lấy favorites của user
-router.get('/favorite/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
+    const  userId  = req.user.userId;
     const result = await pool.query(
-      `SELECT f.story_id, s.title, s.cover_url, s.author
-       FROM favorites f
-       JOIN stories s ON s.id = f.story_id
-       WHERE f.user_id = $1
-       ORDER BY f.created_at DESC`,
+      "SELECT id, name FROM favorite_lists WHERE iduser = $1 ORDER BY id DESC",
       [userId]
     );
-    res.json(result.rows);
+    return res.json(result.rows);
   } catch (err) {
-    console.error('fav list error', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("❌ Lỗi GET /favlists:", err);
+    return res.status(500).json({ message: "Lỗi server khi tải danh sách" });
   }
 });
 
-// Số người thích 1 truyện (tùy chọn)
-router.get('/favorite/story/:storyId', async (req, res) => {
+// --- Tạo danh sách mới ---
+router.post("/", authenticateToken, async (req, res) => {
   try {
-    const { storyId } = req.params;
-    const r = await pool.query(`SELECT COUNT(*) AS cnt FROM favorites WHERE story_id=$1`, [storyId]);
-    res.json({ count: parseInt(r.rows[0].cnt, 10) });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-/* -----------------------
-   RATINGS
-   POST /api/rate          -> thêm hoặc cập nhật rating (body: story_id, stars)
-   GET  /api/rate/:storyId -> lấy avg rating + count + userRating (nếu user login)
-   ----------------------- */
-
-router.post('/rate', async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    const { story_id, rating, stars } = req.body;
-    // accept either rating or stars key
-    const starsVal = rating || stars;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    if (!story_id || !starsVal) return res.status(400).json({ error: 'story_id and stars required' });
-    const starsInt = parseInt(starsVal, 10);
-    if (isNaN(starsInt) || starsInt < 1 || starsInt > 5) return res.status(400).json({ error: 'stars must be 1-5' });
-
-    // Upsert (insert or update)
-    await pool.query(
-      `INSERT INTO ratings (user_id, story_id, stars)
-       VALUES ($1,$2,$3)
-       ON CONFLICT (user_id, story_id)
-       DO UPDATE SET stars = EXCLUDED.stars, updated_at = NOW()`,
-      [userId, story_id, starsInt]
-    );
-
-    // trả về avg & count
-    const agg = await pool.query(
-      `SELECT AVG(stars)::numeric(10,2) AS avg_rating, COUNT(*) AS cnt FROM ratings WHERE story_id=$1`,
-      [story_id]
-    );
-    res.json({ ok: true, avg: parseFloat(agg.rows[0].avg_rating || 0), count: parseInt(agg.rows[0].cnt, 10) });
-  } catch (err) {
-    console.error('rating error', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.get('/rate/:storyId', async (req, res) => {
-  try {
-    const { storyId } = req.params;
-    const userId = getUserId(req); // optional
-    const agg = await pool.query(
-      `SELECT AVG(stars)::numeric(10,2) AS avg_rating, COUNT(*) AS cnt FROM ratings WHERE story_id=$1`,
-      [storyId]
-    );
-    let userRating = null;
-    if (userId) {
-      const r = await pool.query(`SELECT stars FROM ratings WHERE story_id=$1 AND user_id=$2`, [storyId, userId]);
-      if (r.rows[0]) userRating = r.rows[0].stars;
+    const userId = req.user.userId;
+    let { name } = req.body;
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ message: "Tên danh sách không hợp lệ" });
     }
-    res.json({
-      avg: parseFloat(agg.rows[0].avg_rating || 0),
-      count: parseInt(agg.rows[0].cnt, 10),
-      userRating
+    name = name.trim();
+
+    // Kiểm tra trùng tên (phân biệt không phân biệt hoa/thường)
+    const exists = await pool.query(
+      "SELECT * FROM favorite_lists WHERE iduser = $1 AND LOWER(name) = LOWER($2)",
+      [userId, name]
+    );
+    if (exists.rows.length > 0) {
+      return res.status(400).json({ message: "Tên danh sách đã tồn tại!" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO favorite_lists (iduser, name) VALUES ($1, $2) RETURNING id, name",
+      [userId, name]
+    );
+    return res.status(201).json({
+      message: "Tạo danh sách thành công!",
+      list: result.rows[0],
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("❌ Lỗi POST /favlists:", err);
+    return res.status(500).json({ message: "Lỗi server khi tạo danh sách" });
   }
 });
 
-/* -----------------------
-   COMMENTS
-   POST /api/comments      -> thêm bình luận (body: story_id, content)
-   GET  /api/comments/:storyId -> lấy danh sách bình luận
-   DELETE /api/comments/:id -> xóa bình luận (chỉ owner hoặc admin) - cần auth
-   ----------------------- */
-
-// Tạo bình luận
-router.post('/comments', async (req, res) => {
+// --- Xóa danh sách ---
+router.delete("/:id", authenticateToken, async (req, res) => {
   try {
-    const userId = getUserId(req); // may be null -> anonymous
-    const { story_id, content } = req.body;
-    if (!story_id || !content) return res.status(400).json({ error: 'story_id and content required' });
-
-    const r = await pool.query(
-      `INSERT INTO comments (user_id, story_id, content) VALUES ($1,$2,$3) RETURNING id, user_id, story_id, content, created_at`,
-      [userId, story_id, content]
-    );
-    res.json({ ok: true, comment: r.rows[0] });
-  } catch (err) {
-    console.error('comment create error', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Lấy bình luận của 1 truyện (mới nhất trước hoặc sau tuỳ bạn)
-router.get('/comments/:storyId', async (req, res) => {
-  try {
-    const { storyId } = req.params;
-    const r = await pool.query(
-      `SELECT c.id, c.user_id, u.username, c.content, c.created_at
-       FROM comments c
-       LEFT JOIN users u ON u.id = c.user_id
-       WHERE c.story_id = $1
-       ORDER BY c.created_at DESC
-       LIMIT 200`,
-      [storyId]
-    );
-    res.json(r.rows);
-  } catch (err) {
-    console.error('comment list error', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Xóa bình luận (chỉ owner hoặc admin) - đơn giản: owner only
-router.delete('/comments/:id', async (req, res) => {
-  try {
-    const userId = getUserId(req);
+    const userId = req.user.userId;
     const { id } = req.params;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    // kiểm tra owner
-    const check = await pool.query(`SELECT user_id FROM comments WHERE id=$1`, [id]);
-    if (!check.rows[0]) return res.status(404).json({ error: 'Not found' });
-    if (check.rows[0].user_id !== userId) return res.status(403).json({ error: 'Forbidden' });
 
-    await pool.query(`DELETE FROM comments WHERE id=$1`, [id]);
-    res.json({ ok: true, message: 'Deleted' });
+    const result = await pool.query(
+      "DELETE FROM favorite_lists WHERE id = $1 AND iduser = $2 RETURNING id",
+      [id, userId]
+    );
+
+    if (result.rowCount === 0)
+      return res.status(404).json({ message: "Không tìm thấy danh sách hoặc bạn không có quyền xóa" });
+
+    return res.json({ message: "Đã xóa danh sách" });
   } catch (err) {
-    console.error('comment delete error', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("❌ Lỗi DELETE /favlists:", err);
+    return res.status(500).json({ message: "Lỗi server khi xóa danh sách" });
   }
 });
 
+
+// Lấy danh sách truyện trong 1 list truyện
+router.get("/:id/stories", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const listId = req.params.id;
+
+    // Kiểm tra quyền sở hữu danh sách
+    const check = await pool.query(
+      "SELECT id FROM favorite_lists WHERE id = $1 AND iduser = $2",
+      [listId, userId]
+    );
+    if (check.rows.length === 0)
+      return res.status(403).json({ message: "Không có quyền truy cập danh sách này" });
+
+    const result = await pool.query(
+      `SELECT s.id, s.title, s.author, s.cover_url, s.genres, s.status
+       FROM favorite_stories fs
+       JOIN stories s ON fs.story_id = s.id
+       WHERE fs.list_id = $1
+       ORDER BY fs.added_at DESC`,
+      [listId]
+    );
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Lỗi GET /favlists/:id/stories:", err);
+    return res.status(500).json({ message: "Lỗi server khi tải danh sách truyện" });
+  }
+});
+
+// thêm 1 truyện vào list
+router.post("/:id/stories", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const listId = req.params.id;
+    const { storyId } = req.body;
+
+    if (!storyId) return res.status(400).json({ message: "Thiếu storyId" });
+
+    // Kiểm tra danh sách có thuộc user không
+    const check = await pool.query(
+      "SELECT id FROM favorite_lists WHERE id = $1 AND iduser = $2",
+      [listId, userId]
+    );
+    if (check.rows.length === 0)
+      return res.status(403).json({ message: "Không có quyền thêm vào danh sách này" });
+
+    // Kiểm tra trùng
+    const exists = await pool.query(
+      "SELECT * FROM favorite_stories WHERE list_id = $1 AND story_id = $2",
+      [listId, storyId]
+    );
+    if (exists.rows.length > 0)
+      return res.status(400).json({ message: "Truyện này đã có trong danh sách!" });
+
+    await pool.query(
+      "INSERT INTO favorite_stories (list_id, story_id) VALUES ($1, $2)",
+      [listId, storyId]
+    );
+
+    return res.status(201).json({ message: "Đã thêm truyện vào danh sách!" });
+  } catch (err) {
+    console.error("❌ Lỗi POST /favlists/:id/stories:", err);
+    return res.status(500).json({ message: "Lỗi server khi thêm truyện" });
+  }
+});
+
+
+
+// xóa 1 truyện khỏi list
+router.delete("/:listId/stories/:storyId", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { listId, storyId } = req.params;
+
+    // Kiểm tra quyền sở hữu
+    const check = await pool.query(
+      "SELECT id FROM favorite_lists WHERE id = $1 AND iduser = $2",
+      [listId, userId]
+    );
+    if (check.rows.length === 0)
+      return res.status(403).json({ message: "Không có quyền sửa danh sách này" });
+
+    const result = await pool.query(
+      "DELETE FROM favorite_stories WHERE list_id = $1 AND story_id = $2",
+      [listId, storyId]
+    );
+
+    if (result.rowCount === 0)
+      return res.status(404).json({ message: "Truyện không tồn tại trong danh sách" });
+
+    return res.json({ message: "Đã xóa truyện khỏi danh sách" });
+  } catch (err) {
+    console.error("❌ Lỗi DELETE /favlists/:listId/stories/:storyId:", err);
+    return res.status(500).json({ message: "Lỗi server khi xóa truyện" });
+  }
+});
 module.exports = router;
