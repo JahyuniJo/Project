@@ -97,5 +97,6 @@ app.use('/uploads', express.static(path.join(__dirname, '../backend/uploads')));
 app.use('/api/usercontroll', usercontrollRoutes);
 app.use('/api/stat', statRoutes);
 app.use("/api/favlists", favListRouter);
+app.use("/api/auth", require("./controllers/authController"));
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));

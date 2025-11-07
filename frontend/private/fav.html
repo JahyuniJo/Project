@@ -194,9 +194,11 @@ async function toggleList(listId) {
         (story) => `
         <div class="flex items-center justify-between bg-white border rounded-lg px-3 py-2 mb-2 shadow-sm hover:shadow transition">
           <div class="flex items-center gap-3">
+            <a href="read2.html?id=${story.id}">
             <img src="${story.cover_url || '/components/default-cover.jpg'}"
                  alt="${story.title}"
                  class="w-12 h-16 object-cover rounded-md border">
+          </a>
             <a href="read2.html?id=${story.id}" 
                class="text-indigo-700 font-medium hover:underline line-clamp-1">${story.title}</a>
           </div>

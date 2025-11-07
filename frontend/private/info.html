@@ -7,10 +7,29 @@
   <link rel="icon" type="image/png" href="/Logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* CSS cho animation trượt vào/ra */
+    .notification-enter {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    .notification-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    }
+    .notification-leave-active {
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+    }
+  </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-100 min-h-screen flex flex-col font-sans">
 
-  <!-- HEADER -->
+  <div id="notification-container" class="fixed top-5 right-5 z-[100] space-y-3 pointer-events-none">
+    </div>
+  
   <header class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50">
     <div class="container mx-auto flex items-center justify-between py-4 px-6">
       <a href="index2.html" class="flex items-center gap-2 hover:opacity-80 transition">
@@ -21,52 +40,73 @@
       </a>
       <h1 class="text-lg font-semibold text-gray-700">Thông tin cá nhân</h1>
      <a href="index2.html" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
-          <i class="fa-solid fa-home mr-1"></i> Trang chủ
-        </a>
+        <i class="fa-solid fa-home mr-1"></i> Trang chủ
+      </a>
     </div>
   </header>
 
-  <!-- MAIN -->
   <main class="flex-grow container mx-auto py-10 px-6">
-    <div class="max-w-lg mx-auto bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 relative overflow-hidden">
-      <!-- Hiệu ứng gradient góc -->
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 relative overflow-hidden">
       <div class="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-tr from-indigo-300 to-purple-300 rounded-full opacity-30 blur-3xl"></div>
 
       <div class="relative flex flex-col items-center gap-4 z-10">
-        <!-- Avatar -->
         <div class="relative">
           <img id="avatar" src="/components/Logo.png" alt="Avatar"
-               class="w-28 h-28 rounded-full border-4 border-indigo-500 object-cover shadow-md transition-transform hover:scale-105 duration-200">
+                class="w-28 h-28 rounded-full border-4 border-indigo-500 object-cover shadow-md transition-transform hover:scale-105 duration-200">
           <label for="uploadAvatar"
-                 class="absolute bottom-0 right-0 bg-indigo-600 text-white rounded-full p-2 shadow cursor-pointer hover:bg-indigo-700">
+                      class="absolute bottom-0 right-0 bg-indigo-600 text-white rounded-full p-2 shadow cursor-pointer hover:bg-indigo-700">
             <i class="fa-solid fa-camera text-sm"></i>
           </label>
           <input type="file" id="uploadAvatar" accept="image/*" class="hidden">
         </div>
 
-        <!-- Info -->
         <h2 id="username" class="text-2xl font-bold text-indigo-700">Tên người dùng</h2>
         <p id="email" class="text-gray-600 text-sm">Email người dùng</p>
 
-        <!-- Buttons -->
-        <div class="mt-6 flex flex-col sm:flex-row gap-3 w-full justify-center">
-          <a href="/fav.html"
-             class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-200 transition">
-            <i class="fa-solid fa-heart text-indigo-500"></i> 
-            <span>Danh sách yêu thích</span>
-          </a>
+        <div class="mt-6 flex flex-col gap-3 w-full justify-center">
 
-          <a href="/index2.html"
-             class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span>Quay lại</span>
-          </a>
-        </div>
+  <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
+    <a href="/fav.html"
+       class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-200 transition">
+      <i class="fa-solid fa-heart text-indigo-500"></i> 
+      <span>Danh sách yêu thích</span>
+    </a>
+
+    <button id="btnChangePassword"
+       class="flex items-center justify-center gap-2 px-5 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
+      <i class="fa-solid fa-key"></i>
+      <span>Đổi mật khẩu</span>
+    </button>
+
+    <a href="/index2.html"
+       class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Quay lại</span>
+    </a>
+  </div>
+
+  <form id="changePasswordForm" class="hidden flex flex-col gap-3 mt-4 p-5 border rounded-xl bg-indigo-50">
+
+    <input type="password" id="currentPassword" placeholder="Mật khẩu hiện tại"
+           class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300">
+
+    <input type="password" id="newPassword" placeholder="Mật khẩu mới"
+           class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300">
+
+    <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu mới"
+           class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300">
+
+    <button type="submit"
+             class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+      Xác nhận đổi mật khẩu
+    </button>
+
+  </form>
+</div>
       </div>
     </div>
   </main>
 
-  <!-- FOOTER -->
   <footer class="bg-white/80 backdrop-blur-md shadow-inner mt-12">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
       <div class="flex items-center gap-2 mb-4 md:mb-0">
@@ -85,9 +125,88 @@
       </div>
     </div>
   </footer>
-
-  <!-- SCRIPT -->
   <script>
+    const notificationContainer = document.getElementById('notification-container');
+    /**
+     * Hiển thị thông báo tùy chỉnh.
+     * @param {string} message - Nội dung thông báo.
+     * @param {'success' | 'error' | 'warning' | 'info'} type - Loại thông báo.
+     * @param {number} [duration=3000] - Thời gian hiển thị (ms), 0 để không tự động đóng.
+     */
+    function showNotification(message, type, duration = 3000) {
+      const notification = document.createElement('div');
+      let bgColor, textColor, icon, iconColor;
+      switch (type) {
+        case 'success':
+          bgColor = 'bg-green-100 border-green-400';
+          textColor = 'text-green-700';
+          icon = 'fa-circle-check';
+          iconColor = 'text-green-500';
+          break;
+        case 'error':
+          bgColor = 'bg-red-100 border-red-400';
+          textColor = 'text-red-700';
+          icon = 'fa-circle-xmark';
+          iconColor = 'text-red-500';
+          break;
+        case 'warning':
+          bgColor = 'bg-yellow-100 border-yellow-400';
+          textColor = 'text-yellow-700';
+          icon = 'fa-triangle-exclamation';
+          iconColor = 'text-yellow-500';
+          break;
+        case 'info':
+        default:
+          bgColor = 'bg-blue-100 border-blue-400';
+          textColor = 'text-blue-700';
+          icon = 'fa-circle-info';
+          iconColor = 'text-blue-500';
+          break;
+      }
+      notification.className = `notification-enter pointer-events-auto max-w-sm w-full border-l-4 p-4 rounded-lg shadow-lg flex items-start gap-3 ${bgColor}`;
+      notification.innerHTML = `
+        <div class="flex-shrink-0 ${iconColor}">
+          <i class="fa-solid ${icon} text-lg"></i>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium ${textColor}">${message}</p>
+        </div>
+        <button class="flex-shrink-0 ml-4 -mr-1 -mt-1 p-1 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-gray-600"
+                onclick="closeNotification(this.parentElement)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+      notificationContainer.appendChild(notification);
+      
+      // Kích hoạt animation trượt vào
+      setTimeout(() => {
+        notification.classList.remove('notification-enter');
+        notification.classList.add('notification-enter-active');
+      }, 10);
+
+      // Tự động đóng nếu duration > 0
+      if (duration > 0) {
+        setTimeout(() => {
+          closeNotification(notification);
+        }, duration);
+      }
+    }
+
+    // Hàm đóng thông báo với animation
+    function closeNotification(notificationElement) {
+      if (!notificationElement) return;
+
+      notificationElement.classList.remove('notification-enter-active');
+      notificationElement.classList.add('notification-leave-active');
+
+      // Chờ animation hoàn tất rồi xóa khỏi DOM
+      setTimeout(() => {
+        if (notificationElement.parentElement) {
+          notificationElement.parentElement.removeChild(notificationElement);
+        }
+      }, 300);
+    }
+
     // --- Load thông tin người dùng ---
     async function loadUserInfo() {
       try {
@@ -102,8 +221,10 @@
         }
       } catch (err) {
         console.error(err);
-        alert('Bạn cần đăng nhập để xem thông tin cá nhân.');
-        window.location.href = '/index.html';
+        showNotification('Bạn cần đăng nhập để xem thông tin cá nhân. Đang chuyển hướng...', 'error', 5000);
+        setTimeout(() => {
+          window.location.href = '/index.html';
+        }, 1500); // Chuyển hướng sau 1.5 giây để người dùng thấy thông báo
       }
     }
     loadUserInfo();
@@ -128,13 +249,60 @@
         const data = await response.json();
         if (response.ok) {
           avatarImg.src = data.avatar_url + '?t=' + new Date().getTime(); // tránh cache
-          alert('Ảnh đại diện đã được cập nhật!');
+          showNotification('Ảnh đại diện đã được cập nhật thành công!', 'success');
         } else {
-          alert(data.message || 'Tải ảnh thất bại');
+          showNotification(data.message || 'Tải ảnh thất bại. Vui lòng thử lại.', 'error', 5000);
         }
       } catch (err) {
         console.error('Lỗi khi tải ảnh:', err);
-        alert('Lỗi khi tải ảnh lên máy chủ');
+        showNotification('Lỗi khi tải ảnh lên máy chủ. Vui lòng kiểm tra kết nối.', 'error', 5000);
+      }
+    });
+
+    // --- Đổi mật khẩu ---
+    const btnChangePassword = document.getElementById("btnChangePassword");
+    const formChangePassword = document.getElementById("changePasswordForm");
+
+    // Ẩn / hiện form
+    btnChangePassword.addEventListener("click", () => {
+      formChangePassword.classList.toggle("hidden");
+    });
+
+    // Gửi yêu cầu đổi mật khẩu
+    formChangePassword.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const currentPassword = document.getElementById("currentPassword").value.trim();
+      const newPassword = document.getElementById("newPassword").value.trim();
+      const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+      if (newPassword !== confirmPassword) {
+        return showNotification("Mật khẩu nhập lại không khớp!", 'warning');
+      }
+      
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return showNotification("Vui lòng điền đầy đủ các trường!", 'warning');
+      }
+      
+      if (newPassword.length < 6) {
+         return showNotification("Mật khẩu mới phải có ít nhất 6 ký tự!", 'warning');
+      }
+
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        showNotification(data.message || 'Đổi mật khẩu thành công!', 'success');
+        formChangePassword.reset();
+        formChangePassword.classList.add("hidden");
+      } else {
+        showNotification(data.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.', 'error', 5000);
       }
     });
   </script>
