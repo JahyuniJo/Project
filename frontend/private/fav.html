@@ -84,7 +84,7 @@
       </div>
     </div>
   </footer>
-
+  <script src="/components/alertModal.js"></script>
   <!-- SCRIPT -->
   <script>
 const favListsEl = document.getElementById("favLists");
@@ -142,7 +142,8 @@ async function loadFavLists() {
 
 // 🩵 XÓA TRUYỆN KHỎI LIST
 async function removeStoryFromList(listId, storyId) {
-  if (!confirm("Xóa truyện này khỏi danh sách?")) return;
+  const ok = await showConfirm("Xóa truyện khỏi danh sách?", "Thông báo");
+  if (!ok) return;
   try {
     const res = await fetch(`/api/favlists/${listId}/stories/${storyId}`, {
       method: "DELETE",
@@ -150,7 +151,7 @@ async function removeStoryFromList(listId, storyId) {
     });
     const data = await res.json();
     if (!res.ok) return alert(data.message || "Không thể xóa truyện");
-    alert("Đã xóa truyện khỏi danh sách!");
+    showAlert("success", "Đã xóa truyện khỏi danh sách!", "Thành công");
     await loadFavLists();
   } catch (err) {
     console.error(err);
@@ -221,7 +222,7 @@ async function toggleList(listId) {
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = input.value.trim();
-  if (!name) return alert("Vui lòng nhập tên danh sách!");
+  if (!name) return showAlert("warning", "Vui lòng nhập tên danh sách!", "Cảnh báo");
 
   const btn = form.querySelector("button");
   btn.disabled = true;
@@ -236,11 +237,11 @@ form.addEventListener("submit", async (e) => {
     const data = await res.json();
 
     if (res.status === 400 && data.message === "Tên danh sách đã tồn tại!") {
-      alert("Tên danh sách này đã tồn tại. Vui lòng chọn tên khác!");
+      showAlert("warning", "Tên danh sách đã tồn tại!", "Cảnh báo");
     } else if (!res.ok) {
-      alert(data.message || "Không thể tạo danh sách!");
+      showAlert("error", data.message || "Không thể tạo danh sách!", "Lỗi");
     } else {
-      alert("Đã tạo danh sách thành công!");
+      ưhowAlert("success", "Đã tạo danh sách yêu thích!", "Thành công");
       input.value = "";
       await loadFavLists();
     }
@@ -254,7 +255,8 @@ form.addEventListener("submit", async (e) => {
 
 // 🔹 Xóa danh sách
 async function deleteList(id) {
-  if (!confirm("Bạn có chắc muốn xóa danh sách này?")) return;
+  const ok = await showConfirm("Bạn có chắc muốn xóa danh sách này?", "Xác nhận");
+  if (!ok) return;
   try {
     const res = await fetch(`/api/favlists/${id}`, {
       method: "DELETE",
@@ -262,14 +264,13 @@ async function deleteList(id) {
     });
     const data = await res.json();
     if (!res.ok) return alert(data.message || "Không thể xóa");
-    alert("Đã xóa danh sách!");
+    showAlert("success", "Đã xóa danh sách!", "Thành công");
     await loadFavLists();
   } catch (err) {
     console.error("❌ Lỗi khi xóa danh sách:", err);
     alert("Lỗi kết nối server!");
   }
 }
-
 loadFavLists();
 </script>
 

@@ -7,6 +7,8 @@
   <link rel="icon" type="image/png" href="/Logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+ 
+
   <style>
     .description.collapsed {
       display: -webkit-box;
@@ -71,7 +73,7 @@
             <a href="/fav.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
               <i class="fa-solid fa-heart mr-2 text-pink-500"></i>Yêu thích
             </a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+            <a href="/error-report.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
               <i class="fa-solid fa-triangle-exclamation mr-2 text-yellow-500"></i>Báo lỗi
             </a>
             <div id="openLogoutModal" 
@@ -122,25 +124,51 @@
     <div id="pagination" class="flex justify-center items-center mt-8 gap-2"></div>
   </main>
 
+
+
 <!-- Modal chọn danh sách yêu thích -->
-  <div id="favModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl p-6 shadow-xl w-96">
-    <h3 class="text-lg font-semibold text-indigo-700 mb-4">Chọn danh sách yêu thích</h3>
-    <div id="favListSelect" class="space-y-2 mb-4"></div>
+<div id="favModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md animate-fade-in">
+    <h2 class="text-lg font-semibold text-indigo-700 mb-4">
+      Thêm truyện vào danh sách yêu thích
+    </h2>
+
+    <!-- Danh sách yêu thích hiện có -->
+    <div id="favListContainer" class="space-y-3 mb-4 text-gray-700 text-sm">
+      <p class="text-gray-500 italic">Đang tải danh sách...</p>
+    </div>
+
+    <!-- Tạo danh sách mới -->
     <div class="flex justify-between items-center gap-3">
-      <input id="newListName" type="text" placeholder="Tạo danh sách mới..." 
-             class="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring focus:ring-indigo-300 outline-none">
+      <input id="newListName" 
+             type="text" 
+             placeholder="Tạo danh sách mới..." 
+             class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring focus:ring-indigo-300 outline-none">
       <button id="createListBtn" 
               class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 text-sm">
         Tạo
       </button>
     </div>
-    <div class="flex justify-end gap-3">
-      <button onclick="closeFavModal()" class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200">Hủy</button>
+
+    <!-- Nút đóng -->
+    <div class="flex justify-end mt-4">
+      <button id="closeFavModal" 
+              class="text-gray-600 hover:text-gray-800 font-medium text-sm">
+        Đóng
+      </button>
     </div>
   </div>
 </div>
 
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+</style>
   <!-- Footer -->
   <footer class="bg-white mt-10 shadow-inner">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
@@ -163,7 +191,12 @@
   </footer>
 
   <!-- Script -->
+  <script src="/components/alertModal.js"></script>
   <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("favButton")?.addEventListener("click", openFavModal);
+      document.getElementById("closeFavModal")?.addEventListener("click", closeFavModal);
+    });
     let selectedStoryId = null;
 // Gọi API lấy danh sách yêu thích hiện có
 async function getFavLists() {
@@ -180,7 +213,7 @@ async function getFavLists() {
 async function openFavModal(storyId) {
   selectedStoryId = storyId;
   const favLists = await getFavLists();
-  const favListContainer = document.getElementById("favListSelect");
+  const favListContainer = document.getElementById("favListContainer");
 
   if (!favLists.length) {
     favListContainer.innerHTML = `<p class="text-gray-500 text-sm">Bạn chưa có danh sách nào. Hãy tạo trong <a href="/fav.html" class="text-indigo-600 hover:underline">Yêu thích</a>.</p>`;
@@ -189,7 +222,7 @@ async function openFavModal(storyId) {
       (list) => `
       <button onclick="addStoryToList(${list.id}, '${list.name}')" 
         class="w-full text-left px-4 py-2 border border-gray-200 rounded hover:bg-indigo-50">
-        <i class="fa-solid fa-list mr-2 text-indigo-500"></i>${list.name}
+        <i class="fa-solid fa-heart mr-2 text-pink-500"></i>${list.name}
       </button>`
     ).join("");
   }
@@ -218,11 +251,11 @@ async function createFavList() {
 
     const data = await res.json();
     if (res.ok) {
-      alert(`✅ Đã tạo danh sách "${name}"`);
+      showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
       // Sau khi tạo xong, load lại danh sách trong modal
       openFavModal(selectedStoryId);
     } else {
-      alert(`❌ ${data.message || "Lỗi khi tạo danh sách"}`);
+      showAlert("error", data.message || "Lỗi khi tạo danh sách!", "Lỗi");
     }
   } catch (err) {
     console.error("Lỗi khi tạo danh sách:", err);
@@ -250,12 +283,42 @@ createListBtn.addEventListener("click", async () => {
     if (!res.ok) throw new Error(data.message || "Không thể tạo danh sách");
 
     newListInput.value = "";
-    alert("✅ Đã tạo danh sách mới!");
+    showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
     openFavModal(selectedStoryId);
   } catch (err) {
     alert("❌ " + err.message);
   }
 });
+
+// 🩷 Hàm thêm truyện vào danh sách yêu thích
+async function addStoryToList(listId, listName) {
+  if (!selectedStoryId) {
+    showAlert("error", "Không có truyện nào được chọn!", "Lỗi");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/favlists/${listId}/stories`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ storyId: selectedStoryId }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      showAlert("success", `Đã thêm truyện vào danh sách "${listName}"!`, "Thành công");
+      closeFavModal();
+    } else {
+      showAlert("info", data.message || "Truyện đã có trong danh sách!", "Thông báo");
+    }
+  } catch (err) {
+    console.error("Lỗi khi thêm truyện:", err);
+    alert("Lỗi kết nối đến server!");
+  }
+}
+
 
 
 // Avatar dropdown menu

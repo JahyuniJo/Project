@@ -184,7 +184,7 @@
       </div>
     </div>
   </footer>
-
+  <script src="/components/alertModal.js"></script>
   <script>
     // --- FAVORITE LOGIC ---
 const favBtn = document.getElementById("favButton");
@@ -239,7 +239,7 @@ closeFavModal.addEventListener("click", () => favModal.classList.add("hidden"));
 // Tạo danh sách mới
 createListBtn.addEventListener("click", async () => {
   const name = newListInput.value.trim();
-  if (!name) return alert("Nhập tên danh sách!");
+  if (!name) return showAlert("warning", "Vui lòng nhập tên danh sách!", "Cảnh báo");
 
   try {
     const res = await fetch("/api/favlists", {
@@ -255,7 +255,7 @@ createListBtn.addEventListener("click", async () => {
     if (!res.ok) throw new Error(data.message || "Không thể tạo danh sách");
 
     newListInput.value = "";
-    alert("✅ Đã tạo danh sách mới!");
+    showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
     favBtn.click(); // reload lại modal
   } catch (err) {
     alert("❌ " + err.message);
@@ -265,7 +265,7 @@ createListBtn.addEventListener("click", async () => {
 // Thêm truyện vào danh sách
 async function addStoryToList(listId, listName) {
   const storyId = getStoryId();
-  if (!storyId) return alert("Không tìm thấy ID truyện!");
+  if (!storyId) return showAlert("error", "ID truyện không hợp lệ!", "Lỗi");
 
   try {
     const res = await fetch(`/api/favlists/${listId}/stories`, {
@@ -277,10 +277,10 @@ async function addStoryToList(listId, listName) {
 
     const data = await res.json();
     if (res.ok) {
-      alert(`✅ Đã thêm truyện vào danh sách "${listName}"`);
+      showAlert("success", `Đã thêm truyện vào danh sách "${listName}"!`, "Thành công");
       favModal.classList.add("hidden");
     } else {
-      alert(`❌ ${data.message || "Lỗi khi thêm truyện"}`);
+      showAlert("info", data.message || "Truyện đã có trong danh sách!", "Thông báo");
     }
   } catch (err) {
     console.error("❌ Lỗi thêm truyện:", err);
@@ -310,14 +310,6 @@ async function addStoryToList(listId, listName) {
     }
     loadUserAvatar();
 
-
-
-
-    // Hàm lấy ID truyện từ URL (?id=)
-    function getStoryId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('id');
-    }
 
     // Gọi API lấy chi tiết truyện
     async function loadStory() {

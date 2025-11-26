@@ -52,7 +52,7 @@
         class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
         <i class="fa-solid fa-robot"></i> Quản lý tác vụ AI
       </a>
-      <a href="#"
+      <a href="/admin-report.html"
         class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
         <i class="fa-solid fa-triangle-exclamation"></i> Quản lý báo lỗi
       </a>
@@ -135,6 +135,7 @@
       © 2025 DH.story — Admin Panel
     </div>
   </footer>
+  <script src="/components/alertModal.js"></script>
   <script>
     const API_URL = '/api/usercontroll';
 
@@ -203,11 +204,12 @@ function openEdit(id, username, email, role) {
 
 // 🗑️ Xóa người dùng
 async function deleteUser(id) {
-  if (!confirm("Bạn có chắc muốn xóa người dùng này?")) return;
+  const ok = await showConfirm("Xác nhận xóa", "Bạn có chắc chắn muốn xóa người dùng này?");
+  if (!ok) return;
   try {
     const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
     if (res.ok) {
-      alert("Đã xóa người dùng!");
+      showAlert("success","Đã xóa người dùng", "Thành công");
       loadUsers();
     }
   } catch (err) {
@@ -236,7 +238,7 @@ userForm.onsubmit = async (e) => {
 
     if (res.ok) {
       userModal.classList.add("hidden");
-      alert(editingId ? "Đã cập nhật người dùng" : "Đã thêm người dùng mới");
+      showAlert("success", editingId ? "Đã cập nhật người dùng" : "Đã thêm người dùng mới");
       loadUsers();
     }
   } catch (err) {

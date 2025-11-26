@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo lỗi | DH.story</title>
+  <link rel="icon" type="image/png" href="/Logo.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-100 min-h-screen flex flex-col font-sans">
+
+<header class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50">
+  <div class="container mx-auto flex items-center justify-between py-4 px-6 relative">
+    <a href="index2.html" class="flex items-center gap-2 hover:opacity-80 transition">
+      <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full shadow-sm">
+      <span class="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent">
+        DH.story
+      </span>
+    </a>
+
+    <h1 class="text-lg font-semibold text-gray-700">Báo lỗi nội dung</h1>
+
+    <div class="flex items-center gap-4">
+      <!-- 🔔 Nút chuông thông báo -->
+      <div id="notifyBell" class="relative cursor-pointer hover:text-indigo-600 transition">
+        <i class="fa-solid fa-bell text-2xl"></i>
+        <span id="notifyCount"
+          class="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+      </div>
+      <a href="index2.html" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+        <i class="fa-solid fa-home mr-1"></i> Trang chủ
+      </a>
+    </div>
+
+    <!-- 🔔 Popup danh sách thông báo -->
+    <div id="notifyBox"
+         class="hidden absolute right-6 top-16 w-80 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 z-50">
+      <div class="px-4 py-2 bg-indigo-600 text-white font-semibold">Thông báo</div>
+      <ul id="notifyList" class="max-h-60 overflow-y-auto divide-y divide-gray-100"></ul>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow container mx-auto py-10 px-6">
+  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 relative overflow-hidden">
+    <div class="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-tr from-indigo-300 to-purple-300 rounded-full opacity-30 blur-3xl"></div>
+    <div class="relative z-10">
+      <h2 class="text-2xl font-bold text-indigo-700 text-center mb-6">Gửi báo lỗi đến hệ thống</h2>
+      <p class="text-gray-600 text-center mb-8">Nếu bạn gặp lỗi như trang bị crash, chapter không đọc được, truyện sai nội dung hoặc lỗi hình ảnh... hãy gửi cho chúng tôi để xử lý nhanh nhất.</p>
+      <form id="reportForm" class="flex flex-col gap-4">
+        <input type="text" id="title" placeholder="Tên truyện" class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300">
+        <input type="email" id="email"  placeholder="Email của bạn (để nhận phản hồi)*" class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300"required>
+        <input type="text" id="story" placeholder="URL truyện (nếu có)" class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300"> 
+        <textarea id="message" rows="5" placeholder="Mô tả chi tiết về lỗi bạn gặp *" class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300"></textarea>
+        <input type="file" id="screenshot" accept="image/*" class="px-4 py-2 border rounded-lg focus:ring focus:ring-indigo-300">
+        <button type="submit" class="px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition">
+          <i class="fa-solid fa-paper-plane mr-1"></i> Gửi báo lỗi
+        </button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-white/80 backdrop-blur-md shadow-inner mt-12">
+  <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
+    <div class="flex items-center gap-2 mb-4 md:mb-0">
+      <img src="/components/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
+      <span class="font-bold text-indigo-600 text-lg">DH.story</span>
+    </div>
+    <div class="text-center md:text-right text-gray-600 text-sm">
+      <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
+      <a href="https://github.com/JahyuniJo" target="_blank" 
+         class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+        <span>Github</span>
+        <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
+      </a>
+      <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
+      <p class="mt-2 text-xs text-gray-400">© 2025 DieuHoang. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="/components/alertModal.js"></script>
+<script>
+const socket = io("http://localhost:3000", { transports: ["websocket", "polling"] });
+
+const emailInput = document.getElementById("email");
+const notifyBell = document.getElementById("notifyBell");
+const notifyBox = document.getElementById("notifyBox");
+const notifyCount = document.getElementById("notifyCount");
+const notifyList = document.getElementById("notifyList");
+
+let unreadCount = 0;
+let userEmail = "";
+
+/* ==============================================================
+   🔥 1️⃣ Đăng ký socket CHUẨN sau khi socket connect
+=============================================================== */
+socket.on("connect", async () => {
+  console.log("Socket connected:", socket.id);
+
+  try {
+    const res = await fetch("/api/import/me", { credentials: "include" });
+    if (!res.ok) return;
+
+    const user = await res.json();
+    userEmail = user.email;
+
+    emailInput.value = userEmail;
+    emailInput.disabled = true;       // Ngăn người dùng thay đổi email
+
+    socket.emit("registerEmail", userEmail);    // đăng ký socket đúng
+    loadNotifications(userEmail);               // tải thông báo
+
+  } catch (err) {
+    console.error("Không thể xác thực token:", err);
+  }
+});
+
+
+/* ==============================================================
+   2️⃣ Tải danh sách thông báo
+=============================================================== */
+async function loadNotifications(email) {
+  try {
+    unreadCount = 0;
+
+    const res = await fetch(`/api/notifications?email=${email}`);
+    const notifications = await res.json();
+
+    notifyList.innerHTML = "";
+
+    notifications.forEach(noti => {
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+      li.innerHTML = `
+        <p class="text-sm text-gray-700">${noti.message}</p>
+        <p class="text-xs text-gray-400 mt-1">${new Date(noti.created_at).toLocaleString()}</p>
+      `;
+
+      notifyList.appendChild(li);
+      if (!noti.is_read) unreadCount++;
+    });
+
+    if (unreadCount > 0) {
+      notifyCount.textContent = unreadCount;
+      notifyCount.classList.remove("hidden");
+    }
+
+  } catch (err) {
+    console.error("Lỗi load thông báo:", err);
+  }
+}
+
+
+/* ==============================================================
+   3️⃣ Nhận thông báo realtime
+=============================================================== */
+socket.on("reportStatusUpdate", data => {
+  addRealtimeNotification(
+    `Báo lỗi #${data.id} đã đổi trạng thái: <b>${data.status}</b>`
+  );
+});
+
+socket.on("reportResponse", data => {
+  addRealtimeNotification(
+    `Admin đã phản hồi báo lỗi #${data.id}: <b>${data.message}</b>`
+  );
+});
+
+function addRealtimeNotification(text) {
+  unreadCount++;
+  notifyCount.textContent = unreadCount;
+  notifyCount.classList.remove("hidden");
+
+  const li = document.createElement("li");
+  li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+  li.innerHTML = `<p class="text-sm text-gray-700">${text}</p>
+                  <p class="text-xs text-gray-400 mt-1">(Realtime)</p>`;
+
+  notifyList.prepend(li);
+
+  showAlert("info", "Bạn có thông báo mới!");
+}
+
+
+/* ==============================================================
+   4️⃣ Mở UI thông báo
+=============================================================== */
+notifyBell.addEventListener("click", async () => {
+  notifyBox.classList.toggle("hidden");
+
+  if (!notifyBox.classList.contains("hidden") && userEmail) {
+    unreadCount = 0;
+    notifyCount.classList.add("hidden");
+
+    const res = await fetch(`/api/notifications?email=${userEmail}`);
+    const notifications = await res.json();
+
+    notifications.forEach(n => {
+      fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
+    });
+  }
+});
+
+
+/* ==============================================================
+   5️⃣ Gửi báo lỗi
+=============================================================== */
+document.getElementById("reportForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+
+  const formData = new FormData();
+  formData.append("title", document.getElementById("title").value);
+  formData.append("story", document.getElementById("story").value);
+  formData.append("message", document.getElementById("message").value);
+  formData.append("email", userEmail);
+
+  const screenshot = document.getElementById("screenshot").files[0];
+  if (screenshot) formData.append("screenshot", screenshot);
+
+  const res = await fetch("/api/report", { method: "POST", body: formData });
+  const data = await res.json();
+
+  showAlert(data.success ? "success" : "error", data.message);
+});
+</script>
+
+</body>
+</html>

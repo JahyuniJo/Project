@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
-
+const bcrypt = require("bcryptjs");
 // 📋 Lấy danh sách người dùng (có phân trang & tìm kiếm)
 router.get("/", async (req, res) => {
   try {
@@ -35,11 +35,16 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
+
+    // Hash mật khẩu
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 = salt rounds
+
     await pool.query(
       `INSERT INTO "users" (username, email, password, role)
        VALUES ($1, $2, $3, $4)`,
-      [username, email, password, role || "user"]
+      [username, email, hashedPassword, role || "user"]
     );
+
     res.json({ message: "Đã thêm người dùng mới" });
   } catch (err) {
     console.error("❌ Lỗi thêm người dùng:", err);

@@ -3,8 +3,8 @@ const router = express.Router();
 const pool = require('../config/db');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const JWT_SECRET = 'dieu002016';
+const authMiddleware = require("../middleware/authMiddleware");
+
 // Tạo transporter Gmail
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -69,17 +69,8 @@ router.post('/reset-password', async (req, res) => {
 
 
 // 4. Đổi mật khẩu khi đã đăng nhập
-function authenticateToken(req, res, next) {
-  const token = req.cookies.authToken;
-  if (!token) return res.status(401).json({ message: "Thiếu token đăng nhập" });
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: "Token không hợp lệ" });
-    req.user = user;
-    next();
-  });
-}
-router.post("/change-password", authenticateToken, async (req, res) => {
+router.post("/change-password", authMiddleware, async (req, res) => {
   const userId = req.user.userId;
   const { currentPassword, newPassword } = req.body;
 

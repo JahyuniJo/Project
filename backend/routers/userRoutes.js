@@ -7,27 +7,9 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = 'dieu002016';
+const JWT_SECRET = process.env.JWT_SECRET;
+const authMiddleware = require("../middleware/authMiddleware");
 
-const authenticateAPI = (req, res, next) => {
-    // 1. Lấy token từ HttpOnly Cookie
-    const token = req.cookies.authToken;
-    if (!token) {
-        // Trả về 401 nếu không có token
-        return res.status(401).json({ error: 'Chưa đăng nhập' });
-    }
-    // 2. Xác thực token
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            // Xóa cookie hết hạn/không hợp lệ và trả về 403
-            res.clearCookie('authToken');
-            return res.status(403).json({ error: 'Token không hợp lệ hoặc đã hết hạn' });
-        }
-        // 3. Gắn payload user { userId, role } vào request
-        req.user = user; 
-        next();
-    });
-};
 // Đăng ký người dùng mới
 router.post('/register', async (req, res) => {
   try {
@@ -76,7 +58,10 @@ router.post('/login', async (req, res) => {
     }
 
      const token = jwt.sign(
-            { userId: user.id, role: user.role }, // Payload: Thông tin người dùng
+            { userId: user.id, 
+              role: user.role,
+              email: user.email,
+              username: user.username }, // Payload: Thông tin người dùng
             JWT_SECRET, 
             { expiresIn: '24h' } // Hết hạn sau 24 giờ
         );
@@ -121,7 +106,7 @@ router.get('/logout', (req, res) => {
 });
 
 // Lấy thông tin người dùng
-router.get('/info', authenticateAPI, async (req, res) => {
+router.get('/info', authMiddleware, async (req, res) => {
   try {
    const userId = req.user.userId;
     if (!userId) return res.status(401).json({ error: 'Chưa đăng nhập' });
@@ -154,7 +139,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
  // Tải avt
-router.post('/upload-avatar', authenticateAPI, upload.single('avatar'), async (req, res) => {
+router.post('/upload-avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(403).json({ message: 'Bạn cần đăng nhập để tải ảnh đại diện' });

@@ -2,22 +2,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = 'dieu002016';
+const authMiddleware = require("../middleware/authMiddleware");
 
-// --- Middleware xác thực JWT ---
-function authenticateToken(req, res, next) {
-  const token = req.cookies.authToken;
-  if (!token) return res.status(401).json({ message: "Thiếu token đăng nhập" });
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: "Token không hợp lệ" });
-    req.user = user;
-    next();
-  });
-}
 
 // --- Lấy tất cả danh sách yêu thích ---
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const  userId  = req.user.userId;
     const result = await pool.query(
@@ -32,7 +21,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // --- Tạo danh sách mới ---
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
     let { name } = req.body;
@@ -65,7 +54,7 @@ router.post("/", authenticateToken, async (req, res) => {
 });
 
 // --- Xóa danh sách ---
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { id } = req.params;
@@ -87,7 +76,7 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 
 
 // Lấy danh sách truyện trong 1 list truyện
-router.get("/:id/stories", authenticateToken, async (req, res) => {
+router.get("/:id/stories", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
     const listId = req.params.id;
@@ -117,7 +106,7 @@ router.get("/:id/stories", authenticateToken, async (req, res) => {
 });
 
 // thêm 1 truyện vào list
-router.post("/:id/stories", authenticateToken, async (req, res) => {
+router.post("/:id/stories", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
     const listId = req.params.id;
@@ -156,7 +145,7 @@ router.post("/:id/stories", authenticateToken, async (req, res) => {
 
 
 // xóa 1 truyện khỏi list
-router.delete("/:listId/stories/:storyId", authenticateToken, async (req, res) => {
+router.delete("/:listId/stories/:storyId", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { listId, storyId } = req.params;
