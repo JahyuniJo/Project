@@ -1,5 +1,5 @@
 const { exec } = require("child_process");
-const pool = require("../config/db"); // hoặc client PostgreSQL của bạn
+const pool = require("../config/db"); 
 const { Client } = require("@elastic/elasticsearch");
 const esClient = new Client({ node: "http://localhost:9200" });
 const { removeVietnameseTones } = require('../utils/normalizeText');
