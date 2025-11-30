@@ -126,7 +126,8 @@ app.use("/api/favlists", favListRouter);
 app.use("/api/auth", require("./controllers/authController"));
 app.use("/api", reportRoutes);
 app.use("/api/import", authRoutes);
-
+app.use("/api/comments", require("./routers/commentRoutes"));
+app.use("/api/rating", require("./routers/ratingRoutes"));
 
 // Socket.IO kết nối
 io.on("connection", socket => {

@@ -143,6 +143,7 @@
       <!-- Nội dung truyện -->
       <div class="flex-1">
         <h1 id="story-title" class="text-3xl font-bold text-indigo-700 mb-2 title-hover"></h1>
+        <p id="story-rating" class="text-yellow-600 font-semibold mb-4"></p>
         <p id="story-author" class="text-gray-600 mb-4 italic"></p>
         <p id="story-genres" class="text-sm text-gray-500 mb-6"></p>
         <a id="story-link" href="#" target="_blank"
@@ -153,13 +154,42 @@
         class="inline-flex items-center gap-2 bg-pink-500 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-pink-600 transition duration-300">
   <i class="fa-solid fa-heart"></i> Yêu thích
 </button>
+        <button id="rateButton"
+                class="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-yellow-600 transition duration-300">
+          <i class="fa-solid fa-star"></i> Đánh giá
+        </button>
+
         <div id="story-content" class="leading-relaxed text-gray-800 text-justify whitespace-pre-line"></div>
       </div>
     </div>
+
+
+     <!-- COMMENT SECTION -->
+<div class="mt-10 bg-white shadow-lg p-6 rounded-xl">
+
+  <h2 class="text-xl font-bold text-gray-800 mb-4">💬 Bình luận</h2>
+
+  <!-- Form comment -->
+  <textarea id="commentInput" 
+            placeholder="Viết bình luận..." 
+            class="w-full border rounded-lg p-3 focus:ring focus:ring-indigo-300 outline-none"></textarea>
+
+  <button id="sendComment"
+          class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+    Gửi bình luận
+  </button>
+
+  <!-- Comment list -->
+  <div id="commentList" class="mt-6 space-y-4"></div>
+</div>
   </main>
 
-  <!--Modal danh sách yêu thích-->
 
+ 
+
+
+
+  <!--Modal danh sách yêu thích-->
   <div id="favModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
     <h2 class="text-lg font-semibold text-indigo-700 mb-4">Thêm truyện vào danh sách yêu thích</h2>
@@ -180,6 +210,37 @@
     </div>
   </div>
 </div>
+
+<!--Modal đánh giá -->
+<div id="rateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+
+    <h2 class="text-lg font-semibold text-yellow-600 mb-4">Đánh giá truyện</h2>
+
+    <div class="text-center mb-4">
+      <div id="starSelect" class="flex justify-center gap-2 text-3xl text-gray-400 cursor-pointer">
+        <i data-rate="1" class="fa-solid fa-star hover:text-yellow-400"></i>
+        <i data-rate="2" class="fa-solid fa-star hover:text-yellow-400"></i>
+        <i data-rate="3" class="fa-solid fa-star hover:text-yellow-400"></i>
+        <i data-rate="4" class="fa-solid fa-star hover:text-yellow-400"></i>
+        <i data-rate="5" class="fa-solid fa-star hover:text-yellow-400"></i>
+      </div>
+    </div>
+
+    <div class="flex justify-end mt-4">
+      <button id="submitRating"
+              class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+        Gửi đánh giá
+      </button>
+      <button id="closeRateModal"
+              class="ml-3 text-gray-600 hover:text-gray-800">
+        Đóng
+      </button>
+    </div>
+
+  </div>
+</div>
+
 
   <!-- Footer -->
   <footer class="bg-white mt-10 shadow-inner">
@@ -492,6 +553,206 @@ document.addEventListener("click", (e) => {
     suggestionBox.classList.add("hidden");
   }
 });
+
+
+
+/* ==========================
+   ⭐ RATING LOGIC
+========================== */
+
+const rateBtn = document.getElementById("rateButton");
+const rateModal = document.getElementById("rateModal");
+const closeRateModal = document.getElementById("closeRateModal");
+const submitRating = document.getElementById("submitRating");
+const starSelect = document.getElementById("starSelect");
+
+let selectedRating = 0;
+
+// Mở modal
+rateBtn.addEventListener("click", () => {
+  rateModal.classList.remove("hidden");
+});
+
+// Đóng modal
+closeRateModal.addEventListener("click", () => {
+  rateModal.classList.add("hidden");
+});
+
+// Chọn sao
+starSelect.querySelectorAll("i").forEach(star => {
+  star.addEventListener("click", () => {
+    selectedRating = star.dataset.rate;
+
+    // Highlight sao
+    starSelect.querySelectorAll("i").forEach(s => {
+      s.classList.remove("text-yellow-400");
+      if (s.dataset.rate <= selectedRating) s.classList.add("text-yellow-400");
+    });
+  });
+});
+
+// Gửi rating
+submitRating.addEventListener("click", async () => {
+  if (selectedRating === 0)
+    return showAlert("warning", "Vui lòng chọn số sao!", "Chưa chọn sao");
+
+  const storyId = getStoryId();
+
+  const res = await fetch("/api/rating", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ story_id: storyId, rating: selectedRating }),
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    showAlert("success", "Đánh giá thành công!", "Thành công");
+    rateModal.classList.add("hidden");
+    loadRating(); // refresh UI
+  }
+});
+
+async function loadRating() {
+  const id = getStoryId();
+  const res = await fetch(`/api/rating?story_id=${id}`);
+  const data = await res.json();
+
+  document.getElementById("story-rating").innerHTML =
+    `⭐ ${data.avg.toFixed(1)} / 5 (${data.total} đánh giá)`;
+}
+
+loadRating();
+
+
+// COMMENT LOGIC
+
+document.getElementById("sendComment").addEventListener("click", async () => {
+  const content = document.getElementById("commentInput").value;
+  const storyId = new URLSearchParams(location.search).get("id");
+
+  const res = await fetch("/api/comments", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ story_id: storyId, content })
+  });
+
+  if (res.ok) {
+    document.getElementById("commentInput").value = "";
+    loadComments(storyId);
+  }
+});
+
+function renderComment(c, level = 0) {
+  return `
+    <div class="mt-3 ${level > 0 ? "pl-6 border-l" : ""}">
+      <p class="font-semibold text-indigo-600">${c.username}</p>
+      <p class="text-gray-800">${c.content}</p>
+
+      <div class="flex gap-4 text-sm mt-2">
+        <button onclick="likeComment(${c.id})"
+                class="text-yellow-600 hover:underline">
+          👍 Thích (${c.likes})
+        </button>
+
+        <button onclick="toggleReplyBox(${c.id}, '${c.username}')"
+        class="text-blue-600 hover:underline">
+          💬 Trả lời
+      </button>
+
+      </div>
+
+      <!-- Reply box -->
+      <div id="replyBox-${c.id}" class="mt-2 hidden">
+        <textarea id="replyInput-${c.id}"
+                  class="w-full border rounded-lg p-2 text-sm"
+                  placeholder="Viết phản hồi..."></textarea>
+
+        <button onclick="sendReply(${c.id})"
+                class="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
+          Gửi phản hồi
+        </button>
+      </div>
+
+      ${c.replies.map(r => renderComment(r, level + 1)).join("")}
+    </div>
+  `;
+}
+
+async function loadComments() {
+  const id = getStoryId();
+  const res = await fetch(`/api/comments?story_id=${id}`);
+  const data = await res.json();
+
+  document.getElementById("commentList").innerHTML =
+    data.map(c => renderComment(c)).join("");
+}
+loadComments();
+
+
+// ======================= LIKE COMMENT =============================
+async function likeComment(commentId) {
+  try {
+    const res = await fetch("/api/comments/like", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",   // BẮT BUỘC: gửi cookie authToken
+      body: JSON.stringify({ comment_id: commentId })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      loadComments();           // Reload comment sau khi like thành công
+    } else {
+      alert(data.message);      // Hiển thị lỗi từ backend
+    }
+  } catch (err) {
+    console.error("Lỗi kết nối:", err);
+    alert("Không thể kết nối server.");
+  }
+}
+
+
+
+// ======================= SHOW / HIDE REPLY BOX ====================
+function toggleReplyBox(commentId, parentUsername = "") {
+  const box = document.getElementById(`replyBox-${commentId}`);
+  box.classList.toggle("hidden");
+
+  const textarea = document.getElementById(`replyInput-${commentId}`);
+  if (!textarea.value && parentUsername) {
+    textarea.value = `@${parentUsername} `; // Hiển thị sẵn tên người comment cha
+  }
+}
+
+
+
+// ======================= SEND REPLY ===============================
+async function sendReply(commentId) {
+  const input = document.getElementById(`replyInput-${commentId}`);
+  const content = input.value.trim();
+
+  if (!content) return alert("Vui lòng nhập nội dung!");
+
+  const res = await fetch("/api/comments/reply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      parent_id: commentId,
+      content
+    })
+  });
+
+  if (res.ok) {
+    input.value = "";
+    loadComments();
+  }
+}
+
   </script>
 </body>
 </html>
