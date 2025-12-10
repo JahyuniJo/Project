@@ -18,19 +18,13 @@ const authRoutes = require("./routers/auth");
 // Tạo server HTTP và tích hợp Socket.io
 const http = require("http");
 const { Server } = require("socket.io");
-const server = http.createServer(app);
-const io = new Server(server);
-const userSockets = {};
-const reportRoutes = require("./routers/report")(io, userSockets);
 
 app.use(cors({
   origin: 'http://localhost:3000', // Đảm bảo domain của client
-    credentials: true
+  credentials: true
 }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-
-
 
 //Middleware để gắn io và userSockets vào request
 app.use((req, res, next) => {
@@ -39,7 +33,36 @@ app.use((req, res, next) => {
   next();
 });
 
+// Tạo server HTTP và tích hợp Socket.io
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
+// Lưu socket theo email
+const userSockets = {};
+// Socket.IO kết nối
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
 
+  // User đăng ký email để join room riêng
+  socket.on("registerEmail", (email) => {
+    if (!email) return;
+
+    socket.join(email);
+    userSockets[email] = socket.id;
+
+    console.log(`User ${email} joined room: ${email}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Socket disconnected:", socket.id);
+  });
+});
+
+// Middleware bảo vệ HTML (chỉ cho phép truy cập nếu đã đăng nhập)
 const authenticateHTML = (allowedRoles = []) => (req, res, next) => {
     // 1. Lấy token từ HttpOnly Cookie
     const token = req.cookies.authToken;
@@ -124,26 +147,10 @@ app.use('/api/usercontroll', usercontrollRoutes);
 app.use('/api/stat', statRoutes);
 app.use("/api/favlists", favListRouter);
 app.use("/api/auth", require("./controllers/authController"));
-app.use("/api", reportRoutes);
 app.use("/api/import", authRoutes);
-app.use("/api/comments", require("./routers/commentRoutes"));
 app.use("/api/rating", require("./routers/ratingRoutes"));
 
-// Socket.IO kết nối
-io.on("connection", socket => {
-  console.log("New socket connected:", socket.id);
-
-  socket.on("registerEmail", (email) => {
-    userSockets[email] = socket.id; // Lưu socketId theo email
-    console.log("User registered socket:", email, socket.id);
-  });
-
-  socket.on("disconnect", () => {
-    // Xóa khỏi userSockets nếu cần
-    for (let email in userSockets) {
-      if (userSockets[email] === socket.id) delete userSockets[email];
-    }
-  });
-});
+app.use("/api", require("./routers/report")(io, userSockets));
+app.use("/api/comments", require("./routers/commentRoutes")(io, userSockets));
 const PORT = 3000;
 server.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));

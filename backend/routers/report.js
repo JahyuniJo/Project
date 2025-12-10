@@ -49,55 +49,57 @@ module.exports = (io, userSockets) => {
 
 
   /* ======================================================================
-     3. Admin phản hồi báo lỗi (có gửi notification + realtime)
-  ====================================================================== */
-  router.post("/admin/reports/:id/respond", async (req, res) => {
-    const { response, status } = req.body;
-    const { id } = req.params;
+   3. Admin phản hồi báo lỗi (có gửi notification + realtime)
+====================================================================== */
+router.post("/admin/reports/:id/respond", async (req, res) => {
+  const { response, status } = req.body;
+  const { id } = req.params;
 
-    try {
-      // Cập nhật báo lỗi
-      const reportRes = await pool.query(
-        `UPDATE reports 
-         SET response=$1, status=$2, updated_at=NOW()
-         WHERE id=$3
-         RETURNING *`,
-        [response, status, id]
-      );
+  try {
+    // Cập nhật báo lỗi
+    const reportRes = await pool.query(
+      `UPDATE reports 
+       SET response=$1, status=$2, updated_at=NOW()
+       WHERE id=$3
+       RETURNING *`,
+      [response, status, id]
+    );
 
-      if (reportRes.rows.length === 0) {
-        return res.status(404).json({ message: "Report không tồn tại" });
-      }
-
-      const report = reportRes.rows[0];
-      const email = report.user_email;
-
-      /* ➤ Tạo thông báo để user đọc sau */
-      await pool.query(
-        `INSERT INTO notifications (user_email, message)
-         VALUES ($1, $2)`,
-        [
-          email,
-          `Admin đã phản hồi báo lỗi của bạn: "${response}". Trạng thái: ${status}`
-        ]
-      );
-
-      /* ➤ Gửi realtime nếu user đang online */
-      if (email && userSockets[email]) {
-        io.to(userSockets[email]).emit("reportResponse", {
-          id,
-          status,
-          response,
-          message: "Admin đã phản hồi báo lỗi của bạn!"
-        });
-      }
-
-      res.json({ success: true, message: "Đã phản hồi thành công!" });
-    } catch (err) {
-      console.error("Lỗi phản hồi báo lỗi:", err);
-      res.status(500).json({ success: false, message: "Có lỗi xảy ra!" });
+    if (reportRes.rows.length === 0) {
+      return res.status(404).json({ message: "Report không tồn tại" });
     }
-  });
+
+    const report = reportRes.rows[0];
+    const email = report.user_email;
+
+    /* ➤ Tạo thông báo để user đọc sau */
+    await pool.query(
+      `INSERT INTO notifications (user_email, message)
+       VALUES ($1, $2)`,
+      [
+        email,
+        `Admin đã phản hồi báo lỗi của bạn: "${response}". Trạng thái: ${status}`
+      ]
+    );
+
+    /* ******************************************************************
+       GỬI REALTIME ĐÚNG CHUẨN — MỖI USER 1 ROOM: io.to(email)
+    ******************************************************************* */
+    io.to(email).emit("newNotification", {
+      type: "report_response",
+      reportId: id,
+      status,
+      response,
+      message: `Admin đã phản hồi báo lỗi của bạn: "${response}".`
+    });
+
+    res.json({ success: true, message: "Đã phản hồi thành công!" });
+  } catch (err) {
+    console.error("Lỗi phản hồi báo lỗi:", err);
+    res.status(500).json({ success: false, message: "Có lỗi xảy ra!" });
+  }
+});
+
 
 
   /* ======================================================================

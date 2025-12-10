@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,22 +8,86 @@
   <link rel="icon" type="image/png" href="/Logo.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes ring {
+      0% {
+        transform: rotate(0);
+      }
+
+      20% {
+        transform: rotate(-15deg);
+      }
+
+      40% {
+        transform: rotate(15deg);
+      }
+
+      60% {
+        transform: rotate(-10deg);
+      }
+
+      80% {
+        transform: rotate(10deg);
+      }
+
+      100% {
+        transform: rotate(0);
+      }
+    }
+  </style>
 </head>
 
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
   <!-- HEADER -->
   <header class="bg-white shadow-md sticky top-0 z-50">
     <div class="container mx-auto flex items-center justify-between py-4 px-6">
+
+      <!-- Logo -->
       <a href="index2.html" class="flex items-center gap-2 hover:opacity-80 transition">
         <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full" />
         <span class="text-2xl font-bold text-indigo-600">DH.story</span>
       </a>
+
+      <!-- Tiêu đề -->
       <h1 class="text-lg font-semibold text-gray-700">Danh sách yêu thích</h1>
-      <a href="index2.html" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
-        <i class="fa-solid fa-home mr-1"></i> Trang chủ
-      </a>
+
+      <!-- Nhóm: Chuông + Nút trang chủ -->
+      <div class="flex items-center gap-6">
+
+        <!-- 🔔 Chuông thông báo -->
+        <div id="notifyBell" class="relative cursor-pointer hover:text-indigo-600 transition">
+          <i class="fa-solid fa-bell text-2xl"></i>
+
+          <!-- Badge -->
+          <span id="notifyCount"
+            class="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">
+            0
+          </span>
+        </div>
+
+        <!-- Nút Trang chủ -->
+        <a href="index2.html" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+          <i class="fa-solid fa-home mr-1"></i> Trang chủ
+        </a>
+
+      </div>
+
+      <!-- Toast Notification -->
+      <div id="notifyToast"
+        class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500 opacity-0 z-50">
+      </div>
+
+    </div>
+
+    <!-- 🔔 Popup danh sách thông báo -->
+    <div id="notifyBox"
+      class="hidden absolute right-6 top-16 w-80 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 z-50">
+      <div class="px-4 py-2 bg-indigo-600 text-white font-semibold">Thông báo</div>
+      <ul id="notifyList" class="max-h-60 overflow-y-auto divide-y divide-gray-100"></ul>
+    </div>
     </div>
   </header>
+
 
   <!-- MAIN -->
   <main class="flex-grow container mx-auto py-10 px-6">
@@ -31,16 +96,10 @@
 
       <!-- FORM TẠO DANH SÁCH -->
       <form id="createListForm" class="flex flex-col sm:flex-row gap-3 mb-8">
-        <input
-          type="text"
-          id="listName"
-          placeholder="Nhập tên danh sách (VD: Truyện ngôn tình)"
-          class="flex-grow border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        />
-        <button
-          type="submit"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 active:scale-95 transition"
-        >
+        <input type="text" id="listName" placeholder="Nhập tên danh sách (VD: Truyện ngôn tình)"
+          class="flex-grow border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        <button type="submit"
+          class="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 active:scale-95 transition">
           <i class="fa-solid fa-plus mr-1"></i> Tạo
         </button>
       </form>
@@ -52,10 +111,7 @@
 
       <!-- NÚT QUAY LẠI -->
       <div class="mt-8 flex justify-center gap-3">
-        <a
-          href="info.html"
-          class="px-4 py-2 bg-gray-200 text-indigo-700 rounded-xl hover:bg-gray-300 transition"
-        >
+        <a href="info.html" class="px-4 py-2 bg-gray-200 text-indigo-700 rounded-xl hover:bg-gray-300 transition">
           <i class="fa-solid fa-user mr-1"></i> Cá nhân
         </a>
       </div>
@@ -71,11 +127,8 @@
       </div>
       <div class="text-center md:text-right text-gray-600 text-sm">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
-        <a
-          href="https://github.com/JahyuniJo"
-          target="_blank"
-          class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600"
-        >
+        <a href="https://github.com/JahyuniJo" target="_blank"
+          class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
           <span>Github</span>
           <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full" />
         </a>
@@ -85,33 +138,210 @@
     </div>
   </footer>
   <script src="/components/alertModal.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <!-- SCRIPT -->
   <script>
-const favListsEl = document.getElementById("favLists");
-const form = document.getElementById("createListForm");
-const input = document.getElementById("listName");
+    const notifyBell = document.getElementById("notifyBell");
+    const notifyBox = document.getElementById("notifyBox");
+    const notifyCount = document.getElementById("notifyCount");
+    const notifyList = document.getElementById("notifyList");
+    // Kết nối Socket.IO// =============================
+    // SOCKET.IO CLIENT
+    // =============================
+    const socket = io("http://localhost:3000", {
+      transports: ["websocket", "polling"]
+    });
 
-// 🔹 Tải danh sách yêu thích
-// --- Tải danh sách yêu thích ---
-async function loadFavLists() {
-  favListsEl.innerHTML = `<p class="text-gray-500 text-center">Đang tải...</p>`;
-  try {
-    const res = await fetch("/api/favlists", { credentials: "include" });
-    if (!res.ok) throw new Error("Không thể tải danh sách");
-    const lists = await res.json();
+    let userEmail = null;
 
-    favListsEl.innerHTML = "";
-    if (!lists.length) {
-      favListsEl.innerHTML = `<p class="text-gray-500 text-center">Chưa có danh sách nào. Hãy tạo mới!</p>`;
-      return;
+    // Khi socket kết nối thành công
+    socket.on("connect", async () => {
+      console.log("Connected to Socket Server:", socket.id);
+
+      try {
+        // Lấy thông tin user từ backend (JWT/Cookie)
+        const res = await fetch("/api/import/me", {
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          console.warn("Không xác thực được user, không join socket.");
+          return;
+        }
+
+        const user = await res.json();
+        userEmail = user.email;
+
+        // Đăng ký socket với email thật từ backend
+        socket.emit("registerEmail", userEmail);
+
+        // Tải thông báo ban đầu
+        loadNotifications(userEmail);
+
+      } catch (err) {
+        console.error("Lỗi khi xác thực user:", err);
+      }
+    });
+
+    // Nhận thông báo realtime
+    socket.on("newNotification", (data) => {
+      console.log("Realtime Notification:", data);
+
+      // Tăng badge
+      unreadCount++;
+      notifyCount.textContent = unreadCount;
+      notifyCount.classList.remove("hidden");
+
+      // Thêm thông báo vào UI ngay lập tức
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+      li.innerHTML = `
+    <p class="text-sm text-gray-700">${data.message}</p>
+    <p class="text-xs text-gray-400 mt-1">${new Date(data.time).toLocaleString()}</p>
+  `;
+      // Hiệu ứng rung chuông
+      ringBell();
+      // Hiển thị toast
+      showToast(data.message);
+      notifyList.prepend(li);
+    });
+    // Mở UI thông báo , đánh dấu đã đọc
+    notifyBell.addEventListener("click", async () => {
+      notifyBox.classList.toggle("hidden");
+
+      // Nếu mở hộp thông báo → reset badge + mark as read
+      if (!notifyBox.classList.contains("hidden") && userEmail) {
+
+        unreadCount = 0;
+        notifyCount.classList.add("hidden");
+
+        try {
+          const res = await fetch(`/api/notifications?email=${userEmail}`);
+          const notifications = await res.json();
+
+          // Đánh dấu đã đọc
+          for (const n of notifications) {
+            if (!n.is_read) {
+              await fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
+            }
+          }
+
+          // Reload UI
+          renderNotificationList(notifications);
+
+        } catch (err) {
+          console.error("Không thể mark-read:", err);
+        }
+      }
+    });
+
+    // load danh sách thông báo
+    async function loadNotifications(email) {
+      try {
+        const res = await fetch(`/api/notifications?email=${email}`);
+        const notifications = await res.json();
+
+        renderNotificationList(notifications);
+
+      } catch (err) {
+        console.error("Lỗi load thông báo:", err);
+      }
     }
 
-    lists.forEach((list) => {
-      const div = document.createElement("div");
-      div.className =
-        "bg-indigo-50 border border-indigo-100 rounded-xl px-5 py-4 shadow-sm transition";
 
-      div.innerHTML = `
+    // Render danh sách thông báo
+    function renderNotificationList(notifications) {
+      notifyList.innerHTML = "";
+      unreadCount = 0;
+
+      notifications.forEach(noti => {
+        const li = document.createElement("li");
+        li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+        li.innerHTML = `
+      <p class="text-sm text-gray-700">${noti.message}</p>
+      <p class="text-xs text-gray-400 mt-1">${new Date(noti.created_at).toLocaleString()}</p>
+    `;
+
+        notifyList.appendChild(li);
+
+        if (!noti.is_read) unreadCount++;
+      });
+
+      if (unreadCount > 0) {
+        notifyCount.textContent = unreadCount;
+        notifyCount.classList.remove("hidden");
+      } else {
+        notifyCount.classList.add("hidden");
+      }
+    }
+
+
+    // Thêm notify realtime vào đầu danh sách
+    function addRealtimeNotification(message) {
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+      li.innerHTML = `
+    <p class="text-sm text-gray-700">${message}</p>
+    <p class="text-xs text-gray-400 mt-1">(Realtime) ${new Date().toLocaleString()}</p>
+  `;
+
+      notifyList.prepend(li);
+    }
+
+    // Hiệu ứng rung chuông
+    function ringBell() {
+      const icon = notifyBell.querySelector("i");
+      if (!icon) return;
+
+      icon.classList.add("animate-[ring_0.5s_ease]");
+      setTimeout(() => icon.classList.remove("animate-[ring_0.5s_ease]"), 600);
+    }
+
+    // Hiển thị toast thông báo
+    function showToast(text) {
+      const toast = document.getElementById("notifyToast");
+      if (!toast) return;
+
+      toast.innerHTML = text;
+      toast.classList.remove("opacity-0");
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0");
+      }, 3000);
+    }
+
+
+
+    // =============================
+    // QUẢN LÝ THÔNG BÁO
+    const favListsEl = document.getElementById("favLists");
+    const form = document.getElementById("createListForm");
+    const input = document.getElementById("listName");
+
+    // 🔹 Tải danh sách yêu thích
+    // --- Tải danh sách yêu thích ---
+    async function loadFavLists() {
+      favListsEl.innerHTML = `<p class="text-gray-500 text-center">Đang tải...</p>`;
+      try {
+        const res = await fetch("/api/favlists", { credentials: "include" });
+        if (!res.ok) throw new Error("Không thể tải danh sách");
+        const lists = await res.json();
+
+        favListsEl.innerHTML = "";
+        if (!lists.length) {
+          favListsEl.innerHTML = `<p class="text-gray-500 text-center">Chưa có danh sách nào. Hãy tạo mới!</p>`;
+          return;
+        }
+
+        lists.forEach((list) => {
+          const div = document.createElement("div");
+          div.className =
+            "bg-indigo-50 border border-indigo-100 rounded-xl px-5 py-4 shadow-sm transition";
+
+          div.innerHTML = `
         <div class="flex justify-between items-center cursor-pointer select-none"
              onclick="toggleList(${list.id})">
           <span class="font-semibold text-indigo-700 text-lg flex items-center gap-2">
@@ -129,70 +359,70 @@ async function loadFavLists() {
         <div id="stories-${list.id}" class="hidden mt-3 pl-3"></div>
       `;
 
-      favListsEl.appendChild(div);
-    });
-  } catch (err) {
-    console.error(err);
-    favListsEl.innerHTML = `<p class="text-red-500 text-center">Lỗi tải danh sách!</p>`;
-  }
-}
-
-
-// Xóa truyện khỏi list 
-
-// 🩵 XÓA TRUYỆN KHỎI LIST
-async function removeStoryFromList(listId, storyId) {
-  const ok = await showConfirm("Xóa truyện khỏi danh sách?", "Thông báo");
-  if (!ok) return;
-  try {
-    const res = await fetch(`/api/favlists/${listId}/stories/${storyId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    const data = await res.json();
-    if (!res.ok) return alert(data.message || "Không thể xóa truyện");
-    showAlert("success", "Đã xóa truyện khỏi danh sách!", "Thành công");
-    await loadFavLists();
-  } catch (err) {
-    console.error(err);
-    alert("Lỗi kết nối server!");
-  }
-}
-// 🔹 Bật/tắt hiển thị truyện trong list
-// --- Mở / đóng danh sách truyện ---
-async function toggleList(listId) {
-  const container = document.getElementById(`stories-${listId}`);
-  const arrow = document.getElementById(`arrow-${listId}`);
-
-  // Nếu đang mở thì ẩn đi
-  if (!container.classList.contains("hidden")) {
-    container.classList.add("hidden");
-    arrow.classList.remove("rotate-180");
-    return;
-  }
-
-  // Đóng tất cả list khác (đảm bảo chỉ 1 mở 1 lúc)
-  document.querySelectorAll('[id^="stories-"]').forEach(el => el.classList.add("hidden"));
-  document.querySelectorAll('[id^="arrow-"]').forEach(el => el.classList.remove("rotate-180"));
-
-  // Mở list này
-  container.classList.remove("hidden");
-  arrow.classList.add("rotate-180");
-  container.innerHTML = `<p class="text-gray-500 text-sm text-center">Đang tải truyện...</p>`;
-
-  try {
-    const res = await fetch(`/api/favlists/${listId}/stories`, { credentials: "include" });
-    if (!res.ok) throw new Error("Không thể tải truyện");
-    const stories = await res.json();
-
-    if (stories.length === 0) {
-      container.innerHTML = `<p class="text-gray-400 text-sm text-center">Danh sách này chưa có truyện nào.</p>`;
-      return;
+          favListsEl.appendChild(div);
+        });
+      } catch (err) {
+        console.error(err);
+        favListsEl.innerHTML = `<p class="text-red-500 text-center">Lỗi tải danh sách!</p>`;
+      }
     }
 
-    container.innerHTML = stories
-      .map(
-        (story) => `
+
+    // Xóa truyện khỏi list 
+
+    // 🩵 XÓA TRUYỆN KHỎI LIST
+    async function removeStoryFromList(listId, storyId) {
+      const ok = await showConfirm("Xóa truyện khỏi danh sách?", "Thông báo");
+      if (!ok) return;
+      try {
+        const res = await fetch(`/api/favlists/${listId}/stories/${storyId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok) return alert(data.message || "Không thể xóa truyện");
+        showAlert("success", "Đã xóa truyện khỏi danh sách!", "Thành công");
+        await loadFavLists();
+      } catch (err) {
+        console.error(err);
+        alert("Lỗi kết nối server!");
+      }
+    }
+    // 🔹 Bật/tắt hiển thị truyện trong list
+    // --- Mở / đóng danh sách truyện ---
+    async function toggleList(listId) {
+      const container = document.getElementById(`stories-${listId}`);
+      const arrow = document.getElementById(`arrow-${listId}`);
+
+      // Nếu đang mở thì ẩn đi
+      if (!container.classList.contains("hidden")) {
+        container.classList.add("hidden");
+        arrow.classList.remove("rotate-180");
+        return;
+      }
+
+      // Đóng tất cả list khác (đảm bảo chỉ 1 mở 1 lúc)
+      document.querySelectorAll('[id^="stories-"]').forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll('[id^="arrow-"]').forEach(el => el.classList.remove("rotate-180"));
+
+      // Mở list này
+      container.classList.remove("hidden");
+      arrow.classList.add("rotate-180");
+      container.innerHTML = `<p class="text-gray-500 text-sm text-center">Đang tải truyện...</p>`;
+
+      try {
+        const res = await fetch(`/api/favlists/${listId}/stories`, { credentials: "include" });
+        if (!res.ok) throw new Error("Không thể tải truyện");
+        const stories = await res.json();
+
+        if (stories.length === 0) {
+          container.innerHTML = `<p class="text-gray-400 text-sm text-center">Danh sách này chưa có truyện nào.</p>`;
+          return;
+        }
+
+        container.innerHTML = stories
+          .map(
+            (story) => `
         <div class="flex items-center justify-between bg-white border rounded-lg px-3 py-2 mb-2 shadow-sm hover:shadow transition">
           <div class="flex items-center gap-3">
             <a href="read2.html?id=${story.id}">
@@ -209,70 +439,71 @@ async function toggleList(listId) {
           </button>
         </div>
       `
-      )
-      .join("");
-  } catch (err) {
-    console.error(err);
-    container.innerHTML = `<p class="text-red-500 text-sm text-center">Lỗi tải truyện!</p>`;
-  }
-}
-
-
-// 🔹 Tạo danh sách mới
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = input.value.trim();
-  if (!name) return showAlert("warning", "Vui lòng nhập tên danh sách!", "Cảnh báo");
-
-  const btn = form.querySelector("button");
-  btn.disabled = true;
-
-  try {
-    const res = await fetch("/api/favlists", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ name }),
-    });
-    const data = await res.json();
-
-    if (res.status === 400 && data.message === "Tên danh sách đã tồn tại!") {
-      showAlert("warning", "Tên danh sách đã tồn tại!", "Cảnh báo");
-    } else if (!res.ok) {
-      showAlert("error", data.message || "Không thể tạo danh sách!", "Lỗi");
-    } else {
-      ưhowAlert("success", "Đã tạo danh sách yêu thích!", "Thành công");
-      input.value = "";
-      await loadFavLists();
+          )
+          .join("");
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = `<p class="text-red-500 text-sm text-center">Lỗi tải truyện!</p>`;
+      }
     }
-  } catch (err) {
-    console.error("❌ Lỗi khi tạo danh sách:", err);
-    alert("Lỗi kết nối server!");
-  } finally {
-    btn.disabled = false;
-  }
-});
 
-// 🔹 Xóa danh sách
-async function deleteList(id) {
-  const ok = await showConfirm("Bạn có chắc muốn xóa danh sách này?", "Xác nhận");
-  if (!ok) return;
-  try {
-    const res = await fetch(`/api/favlists/${id}`, {
-      method: "DELETE",
-      credentials: "include",
+
+    // 🔹 Tạo danh sách mới
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = input.value.trim();
+      if (!name) return showAlert("warning", "Vui lòng nhập tên danh sách!", "Cảnh báo");
+
+      const btn = form.querySelector("button");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/favlists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ name }),
+        });
+        const data = await res.json();
+
+        if (res.status === 400 && data.message === "Tên danh sách đã tồn tại!") {
+          showAlert("warning", "Tên danh sách đã tồn tại!", "Cảnh báo");
+        } else if (!res.ok) {
+          showAlert("error", data.message || "Không thể tạo danh sách!", "Lỗi");
+        } else {
+          ưhowAlert("success", "Đã tạo danh sách yêu thích!", "Thành công");
+          input.value = "";
+          await loadFavLists();
+        }
+      } catch (err) {
+        console.error("❌ Lỗi khi tạo danh sách:", err);
+        alert("Lỗi kết nối server!");
+      } finally {
+        btn.disabled = false;
+      }
     });
-    const data = await res.json();
-    if (!res.ok) return alert(data.message || "Không thể xóa");
-    showAlert("success", "Đã xóa danh sách!", "Thành công");
-    await loadFavLists();
-  } catch (err) {
-    console.error("❌ Lỗi khi xóa danh sách:", err);
-    alert("Lỗi kết nối server!");
-  }
-}
-loadFavLists();
-</script>
+
+    // 🔹 Xóa danh sách
+    async function deleteList(id) {
+      const ok = await showConfirm("Bạn có chắc muốn xóa danh sách này?", "Xác nhận");
+      if (!ok) return;
+      try {
+        const res = await fetch(`/api/favlists/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok) return alert(data.message || "Không thể xóa");
+        showAlert("success", "Đã xóa danh sách!", "Thành công");
+        await loadFavLists();
+      } catch (err) {
+        console.error("❌ Lỗi khi xóa danh sách:", err);
+        alert("Lỗi kết nối server!");
+      }
+    }
+    loadFavLists();
+  </script>
 
 </body>
+
 </html>

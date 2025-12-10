@@ -1,23 +1,35 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Đọc truyện | DH.story</title>
   <link rel="icon" type="image/png" href="/components/Logo.png" />
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .fade-in { animation: fadeIn 0.8s ease-in forwards; }
+
+    .fade-in {
+      animation: fadeIn 0.8s ease-in forwards;
+    }
 
     .cover {
       transition: transform 0.4s ease, box-shadow 0.4s ease;
     }
+
     .cover:hover {
       transform: scale(1.03);
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -27,112 +39,157 @@
       color: #4f46e5;
       text-shadow: 0 0 10px rgba(79, 70, 229, 0.2);
     }
+
+    @keyframes ring {
+      0% {
+        transform: rotate(0);
+      }
+
+      20% {
+        transform: rotate(-15deg);
+      }
+
+      40% {
+        transform: rotate(15deg);
+      }
+
+      60% {
+        transform: rotate(-10deg);
+      }
+
+      80% {
+        transform: rotate(10deg);
+      }
+
+      100% {
+        transform: rotate(0);
+      }
+    }
   </style>
 </head>
+
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
   <!-- Header -->
   <header class="bg-white shadow-md">
     <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
-      
+
       <!-- Logo -->
       <div class="flex items-center gap-2">
         <a href="index2.html" class="flex items-center gap-2">
-        <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-        <span class="text-2xl font-bold text-indigo-600">DH.story</span>
+          <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+          <span class="text-2xl font-bold text-indigo-600">DH.story</span>
         </a>
       </div>
 
       <!-- Slogan -->
-       <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
+      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
         Chúc các bạn đọc truyện vui vẻ!
       </p>
       <!-- Search -->
-          <div class="relative">
-          <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
+      <div class="relative">
+        <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
           <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
-                  class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
+            class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
           <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
             <i class="fa-solid fa-magnifying-glass"></i>
           </button>
-          </div>
-
-          <!-- Popover kết quả -->
-          <div id="searchSuggestions" 
-              class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
-          </div>
-          </div>
-
-
-        <!-- Menu -->
-        <nav>
-          <ul class="flex flex-wrap justify-center md:justify-start gap-4 text-sm font-medium text-gray-700">
-            <li><a href="Truyện hài.html" class="hover:text-indigo-600">Truyện hài</a></li>
-            <li><a href="Truyện ngôn tình.html" class="hover:text-indigo-600">Truyện ngôn tình</a></li>
-            <li><a href="Truyện kinh dị.html" class="hover:text-indigo-600">Truyện kinh dị</a></li>
-            <li><a href="Truyện trinh thám.html" class="hover:text-indigo-600">Truyện trinh thám</a></li>
-          </ul>
-        </nav>
-
-        <!-- Avatar -->
-        <div class="relative">
-          <button id="avatarButton" class="focus:outline-none">
-            <img id="avatarImage" src="/components/Logo.png" alt="Avatar" 
-                 class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:scale-110 transition-transform">
-          </button>
-          <div id="dropdownMenu" 
-               class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
-            <hr class="my-1">
-            <a href="/info.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
-              <i class="fa-solid fa-user mr-2 text-indigo-500"></i>Thông tin cá nhân
-            </a>
-            <a href="/fav.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
-              <i class="fa-solid fa-heart mr-2 text-pink-500"></i>Yêu thích
-            </a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
-              <i class="fa-solid fa-triangle-exclamation mr-2 text-yellow-500"></i>Báo lỗi
-            </a>
-            <div id="openLogoutModal" 
-                class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
-                <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
-            </div>
-          </div>
         </div>
 
-      </div> 
+        <!-- Popover kết quả -->
+        <div id="searchSuggestions"
+          class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
+        </div>
+      </div>
+
+
+      <!-- Menu -->
+      <nav>
+        <ul class="flex flex-wrap justify-center md:justify-start gap-4 text-sm font-medium text-gray-700">
+          <li><a href="Truyện hài.html" class="hover:text-indigo-600">Truyện hài</a></li>
+          <li><a href="Truyện ngôn tình.html" class="hover:text-indigo-600">Truyện ngôn tình</a></li>
+          <li><a href="Truyện kinh dị.html" class="hover:text-indigo-600">Truyện kinh dị</a></li>
+          <li><a href="Truyện trinh thám.html" class="hover:text-indigo-600">Truyện trinh thám</a></li>
+        </ul>
+      </nav>
+
+      <!-- 🔔 Nút chuông thông báo -->
+      <div id="notifyBell" class="relative cursor-pointer hover:text-indigo-600 transition">
+        <i class="fa-solid fa-bell text-2xl"></i>
+        <span id="notifyCount"
+          class="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+      </div>
+      <div id="notifyToast"
+        class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500 opacity-0 z-50">
+      </div>
+      <!-- Avatar -->
+      <div class="relative">
+        <button id="avatarButton" class="focus:outline-none">
+          <img id="avatarImage" src="/components/Logo.png" alt="Avatar"
+            class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:scale-110 transition-transform">
+        </button>
+        <div id="dropdownMenu"
+          class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
+          <hr class="my-1">
+          <a href="/info.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+            <i class="fa-solid fa-user mr-2 text-indigo-500"></i>Thông tin cá nhân
+          </a>
+          <a href="/fav.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+            <i class="fa-solid fa-heart mr-2 text-pink-500"></i>Yêu thích
+          </a>
+          <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
+            <i class="fa-solid fa-triangle-exclamation mr-2 text-yellow-500"></i>Báo lỗi
+          </a>
+          <div id="openLogoutModal" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
+            <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+    <!-- 🔔 Popup danh sách thông báo -->
+    <div id="notifyBox"
+      class="hidden absolute right-6 top-16 w-80 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 z-50">
+      <div class="px-4 py-2 bg-indigo-600 text-white font-semibold">Thông báo</div>
+      <ul id="notifyList" class="max-h-60 overflow-y-auto divide-y divide-gray-100"></ul>
+    </div>
     </div>
   </header>
 
 
-  <div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6 transform transition-all sm:my-8 sm:align-middle sm:max-w-lg">
-        <div class="text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <i class="fa-solid fa-right-from-bracket text-red-600 text-xl"></i>
-            </div>
-            <h3 class="mt-4 text-lg leading-6 font-medium text-gray-900">Xác nhận đăng xuất</h3>
-            <div class="mt-2">
-                <p class="text-sm text-gray-500">
-                    Bạn có chắc chắn muốn đăng xuất khỏi tài khoản của mình không?
-                </p>
-            </div>
+  <div id="logoutModal"
+    class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
+    <div
+      class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6 transform transition-all sm:my-8 sm:align-middle sm:max-w-lg">
+      <div class="text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+          <i class="fa-solid fa-right-from-bracket text-red-600 text-xl"></i>
         </div>
-        <div class="mt-5 sm:mt-6 flex justify-end gap-3">
-            <button id="cancelLogout" type="button" 
-                    class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
-                Hủy
-            </button>
-            <button id="confirmLogout" type="button" 
-                    class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
-                Đăng xuất
-            </button>
+        <h3 class="mt-4 text-lg leading-6 font-medium text-gray-900">Xác nhận đăng xuất</h3>
+        <div class="mt-2">
+          <p class="text-sm text-gray-500">
+            Bạn có chắc chắn muốn đăng xuất khỏi tài khoản của mình không?
+          </p>
         </div>
+      </div>
+      <div class="mt-5 sm:mt-6 flex justify-end gap-3">
+        <button id="cancelLogout" type="button"
+          class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
+          Hủy
+        </button>
+        <button id="confirmLogout" type="button"
+          class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
+          Đăng xuất
+        </button>
+      </div>
     </div>
-</div>
+  </div>
 
 
-    
-    <!-- MAIN -->
-      <main class="flex-1 container mx-auto py-10 px-6 fade-in">
+
+  <!-- MAIN -->
+  <main class="flex-1 container mx-auto py-10 px-6 fade-in">
     <div id="story-container" class="bg-white shadow-lg rounded-2xl p-8 flex flex-col md:flex-row gap-8">
 
       <!-- Ảnh bìa -->
@@ -147,15 +204,15 @@
         <p id="story-author" class="text-gray-600 mb-4 italic"></p>
         <p id="story-genres" class="text-sm text-gray-500 mb-6"></p>
         <a id="story-link" href="#" target="_blank"
-           class="inline-block bg-indigo-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-indigo-700 transition duration-300 mb-6">
-           📖 Đọc truyện gốc
+          class="inline-block bg-indigo-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-indigo-700 transition duration-300 mb-6">
+          📖 Đọc truyện gốc
         </a>
         <button id="favButton"
-        class="inline-flex items-center gap-2 bg-pink-500 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-pink-600 transition duration-300">
-  <i class="fa-solid fa-heart"></i> Yêu thích
-</button>
+          class="inline-flex items-center gap-2 bg-pink-500 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-pink-600 transition duration-300">
+          <i class="fa-solid fa-heart"></i> Yêu thích
+        </button>
         <button id="rateButton"
-                class="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-yellow-600 transition duration-300">
+          class="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-yellow-600 transition duration-300">
           <i class="fa-solid fa-star"></i> Đánh giá
         </button>
 
@@ -164,82 +221,72 @@
     </div>
 
 
-     <!-- COMMENT SECTION -->
-<div class="mt-10 bg-white shadow-lg p-6 rounded-xl">
+    <!-- COMMENT SECTION -->
+    <div class="mt-10 bg-white shadow-lg p-6 rounded-xl">
 
-  <h2 class="text-xl font-bold text-gray-800 mb-4">💬 Bình luận</h2>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">💬 Bình luận</h2>
 
-  <!-- Form comment -->
-  <textarea id="commentInput" 
-            placeholder="Viết bình luận..." 
-            class="w-full border rounded-lg p-3 focus:ring focus:ring-indigo-300 outline-none"></textarea>
+      <!-- Form comment -->
+      <textarea id="commentInput" placeholder="Viết bình luận..."
+        class="w-full border rounded-lg p-3 focus:ring focus:ring-indigo-300 outline-none"></textarea>
 
-  <button id="sendComment"
-          class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-    Gửi bình luận
-  </button>
+      <button id="sendComment" class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+        Gửi bình luận
+      </button>
 
-  <!-- Comment list -->
-  <div id="commentList" class="mt-6 space-y-4"></div>
-</div>
+      <!-- Comment list -->
+      <div id="commentList" class="mt-6 space-y-4"></div>
+    </div>
   </main>
-
-
- 
-
 
 
   <!--Modal danh sách yêu thích-->
   <div id="favModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
-    <h2 class="text-lg font-semibold text-indigo-700 mb-4">Thêm truyện vào danh sách yêu thích</h2>
-    <div id="favListContainer" class="space-y-3 mb-4 text-gray-700 text-sm">
-      <p class="text-gray-500 italic">Đang tải danh sách...</p>
-    </div>
-    <div class="flex justify-between items-center gap-3">
-      <input id="newListName" type="text" placeholder="Tạo danh sách mới..." 
-             class="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring focus:ring-indigo-300 outline-none">
-      <button id="createListBtn" 
-              class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 text-sm">
-        Tạo
-      </button>
-    </div>
-    <div class="flex justify-end mt-4">
-      <button id="closeFavModal" 
-              class="text-gray-600 hover:text-gray-800 font-medium text-sm">Đóng</button>
-    </div>
-  </div>
-</div>
-
-<!--Modal đánh giá -->
-<div id="rateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
-
-    <h2 class="text-lg font-semibold text-yellow-600 mb-4">Đánh giá truyện</h2>
-
-    <div class="text-center mb-4">
-      <div id="starSelect" class="flex justify-center gap-2 text-3xl text-gray-400 cursor-pointer">
-        <i data-rate="1" class="fa-solid fa-star hover:text-yellow-400"></i>
-        <i data-rate="2" class="fa-solid fa-star hover:text-yellow-400"></i>
-        <i data-rate="3" class="fa-solid fa-star hover:text-yellow-400"></i>
-        <i data-rate="4" class="fa-solid fa-star hover:text-yellow-400"></i>
-        <i data-rate="5" class="fa-solid fa-star hover:text-yellow-400"></i>
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+      <h2 class="text-lg font-semibold text-indigo-700 mb-4">Thêm truyện vào danh sách yêu thích</h2>
+      <div id="favListContainer" class="space-y-3 mb-4 text-gray-700 text-sm">
+        <p class="text-gray-500 italic">Đang tải danh sách...</p>
+      </div>
+      <div class="flex justify-between items-center gap-3">
+        <input id="newListName" type="text" placeholder="Tạo danh sách mới..."
+          class="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring focus:ring-indigo-300 outline-none">
+        <button id="createListBtn" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 text-sm">
+          Tạo
+        </button>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button id="closeFavModal" class="text-gray-600 hover:text-gray-800 font-medium text-sm">Đóng</button>
       </div>
     </div>
-
-    <div class="flex justify-end mt-4">
-      <button id="submitRating"
-              class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
-        Gửi đánh giá
-      </button>
-      <button id="closeRateModal"
-              class="ml-3 text-gray-600 hover:text-gray-800">
-        Đóng
-      </button>
-    </div>
-
   </div>
-</div>
+
+  <!--Modal đánh giá -->
+  <div id="rateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+
+      <h2 class="text-lg font-semibold text-yellow-600 mb-4">Đánh giá truyện</h2>
+
+      <div class="text-center mb-4">
+        <div id="starSelect" class="flex justify-center gap-2 text-3xl text-gray-400 cursor-pointer">
+          <i data-rate="1" class="fa-solid fa-star hover:text-yellow-400"></i>
+          <i data-rate="2" class="fa-solid fa-star hover:text-yellow-400"></i>
+          <i data-rate="3" class="fa-solid fa-star hover:text-yellow-400"></i>
+          <i data-rate="4" class="fa-solid fa-star hover:text-yellow-400"></i>
+          <i data-rate="5" class="fa-solid fa-star hover:text-yellow-400"></i>
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-4">
+        <button id="submitRating" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+          Gửi đánh giá
+        </button>
+        <button id="closeRateModal" class="ml-3 text-gray-600 hover:text-gray-800">
+          Đóng
+        </button>
+      </div>
+
+    </div>
+  </div>
 
 
   <!-- Footer -->
@@ -252,8 +299,8 @@
 
       <div class="text-center md:text-right text-gray-600 text-sm">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
-        <a href="https://github.com/JahyuniJo" target="_blank" 
-           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+        <a href="https://github.com/JahyuniJo" target="_blank"
+          class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
           <span>Github</span>
           <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
@@ -263,108 +310,282 @@
     </div>
   </footer>
   <script src="/components/alertModal.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
-    // --- FAVORITE LOGIC ---
-const favBtn = document.getElementById("favButton");
-const favModal = document.getElementById("favModal");
-const favListContainer = document.getElementById("favListContainer");
-const newListInput = document.getElementById("newListName");
-const createListBtn = document.getElementById("createListBtn");
-const closeFavModal = document.getElementById("closeFavModal");
-
-// Lấy ID truyện hiện tại từ URL (?id=)
-function getStoryId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("id");
-}
-
-// Mở modal chọn danh sách yêu thích
-favBtn.addEventListener("click", async () => {
-  favModal.classList.remove("hidden");
-  favListContainer.innerHTML = `<p class="text-gray-500 italic">Đang tải danh sách...</p>`;
-
-  try {
-
-    const res = await fetch("/api/favlists", {
-      headers: { "Content-Type": "application/json", },
-      credentials: "include",
+    // =============================
+    // SOCKET.IO CLIENT
+    // =============================
+    const socket = io("http://localhost:3000", {
+      transports: ["websocket", "polling"]
     });
-    if (!res.ok) throw new Error("Không thể tải danh sách");
 
-    const lists = await res.json();
+    let userEmail = null;
 
-    if (lists.length === 0) {
-      favListContainer.innerHTML = `<p class="text-gray-500 text-sm italic">Bạn chưa có danh sách nào. Hãy tạo mới ở dưới!</p>`;
-    } else {
-      favListContainer.innerHTML = lists.map(
-        list => `
+    // Khi socket kết nối thành công
+    socket.on("connect", async () => {
+      console.log("Connected to Socket Server:", socket.id);
+
+      try {
+        // Lấy thông tin user từ backend (JWT/Cookie)
+        const res = await fetch("/api/import/me", {
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          console.warn("Không xác thực được user, không join socket.");
+          return;
+        }
+
+        const user = await res.json();
+        userEmail = user.email;
+
+        // Đăng ký socket với email thật từ backend
+        socket.emit("registerEmail", userEmail);
+
+        // Tải thông báo ban đầu
+        loadNotifications(userEmail);
+
+      } catch (err) {
+        console.error("Lỗi khi xác thực user:", err);
+      }
+    });
+
+    // Nhận thông báo realtime
+    socket.on("newNotification", (data) => {
+      console.log("Realtime Notification:", data);
+
+      // Tăng badge
+      unreadCount++;
+      notifyCount.textContent = unreadCount;
+      notifyCount.classList.remove("hidden");
+
+      // Thêm thông báo vào UI ngay lập tức
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+      li.innerHTML = `
+    <p class="text-sm text-gray-700">${data.message}</p>
+    <p class="text-xs text-gray-400 mt-1">${new Date(data.time).toLocaleString()}</p>
+  `;
+      // Hiệu ứng rung chuông
+      ringBell();
+      // Hiển thị toast
+      showToast(data.message);
+      notifyList.prepend(li);
+    });
+
+
+    const favBtn = document.getElementById("favButton");
+    const favModal = document.getElementById("favModal");
+    const favListContainer = document.getElementById("favListContainer");
+    const newListInput = document.getElementById("newListName");
+    const createListBtn = document.getElementById("createListBtn");
+    const closeFavModal = document.getElementById("closeFavModal");
+    const notifyBell = document.getElementById("notifyBell");
+    const notifyBox = document.getElementById("notifyBox");
+    const notifyCount = document.getElementById("notifyCount");
+    const notifyList = document.getElementById("notifyList");
+    // Mở UI thông báo , đánh dấu đã đọc
+    notifyBell.addEventListener("click", async () => {
+      notifyBox.classList.toggle("hidden");
+
+      // Nếu mở hộp thông báo → reset badge + mark as read
+      if (!notifyBox.classList.contains("hidden") && userEmail) {
+
+        unreadCount = 0;
+        notifyCount.classList.add("hidden");
+
+        try {
+          const res = await fetch(`/api/notifications?email=${userEmail}`);
+          const notifications = await res.json();
+
+          // Đánh dấu đã đọc
+          for (const n of notifications) {
+            if (!n.is_read) {
+              await fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
+            }
+          }
+
+          // Reload UI
+          renderNotificationList(notifications);
+
+        } catch (err) {
+          console.error("Không thể mark-read:", err);
+        }
+      }
+    });
+
+    // load danh sách thông báo
+    async function loadNotifications(email) {
+      try {
+        const res = await fetch(`/api/notifications?email=${email}`);
+        const notifications = await res.json();
+
+        renderNotificationList(notifications);
+
+      } catch (err) {
+        console.error("Lỗi load thông báo:", err);
+      }
+    }
+
+
+    // Render danh sách thông báo
+    function renderNotificationList(notifications) {
+      notifyList.innerHTML = "";
+      unreadCount = 0;
+
+      notifications.forEach(noti => {
+        const li = document.createElement("li");
+        li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+        li.innerHTML = `
+      <p class="text-sm text-gray-700">${noti.message}</p>
+      <p class="text-xs text-gray-400 mt-1">${new Date(noti.created_at).toLocaleString()}</p>
+    `;
+
+        notifyList.appendChild(li);
+
+        if (!noti.is_read) unreadCount++;
+      });
+
+      if (unreadCount > 0) {
+        notifyCount.textContent = unreadCount;
+        notifyCount.classList.remove("hidden");
+      } else {
+        notifyCount.classList.add("hidden");
+      }
+    }
+
+
+    // Thêm notify realtime vào đầu danh sách
+    function addRealtimeNotification(message) {
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+      li.innerHTML = `
+    <p class="text-sm text-gray-700">${message}</p>
+    <p class="text-xs text-gray-400 mt-1">(Realtime) ${new Date().toLocaleString()}</p>
+  `;
+
+      notifyList.prepend(li);
+    }
+
+    // Hiệu ứng rung chuông
+    function ringBell() {
+      const icon = notifyBell.querySelector("i");
+      if (!icon) return;
+
+      icon.classList.add("animate-[ring_0.5s_ease]");
+      setTimeout(() => icon.classList.remove("animate-[ring_0.5s_ease]"), 600);
+    }
+
+    // Hiển thị toast thông báo
+    function showToast(text) {
+      const toast = document.getElementById("notifyToast");
+      if (!toast) return;
+
+      toast.innerHTML = text;
+      toast.classList.remove("opacity-0");
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0");
+      }, 3000);
+    }
+
+
+    // Lấy ID truyện hiện tại từ URL (?id=)
+    function getStoryId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id");
+    }
+
+    // Mở modal chọn danh sách yêu thích
+    favBtn.addEventListener("click", async () => {
+      favModal.classList.remove("hidden");
+      favListContainer.innerHTML = `<p class="text-gray-500 italic">Đang tải danh sách...</p>`;
+
+      try {
+
+        const res = await fetch("/api/favlists", {
+          headers: { "Content-Type": "application/json", },
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Không thể tải danh sách");
+
+        const lists = await res.json();
+
+        if (lists.length === 0) {
+          favListContainer.innerHTML = `<p class="text-gray-500 text-sm italic">Bạn chưa có danh sách nào. Hãy tạo mới ở dưới!</p>`;
+        } else {
+          favListContainer.innerHTML = lists.map(
+            list => `
           <button onclick="addStoryToList(${list.id}, '${list.name.replace(/'/g, "\\'")}')"
 
                   class="block w-full text-left border border-gray-200 rounded-lg px-3 py-2 hover:bg-indigo-50 transition">
             <i class="fa-solid fa-heart text-pink-500 mr-2"></i>${list.name}
           </button>`
-      ).join("");
-    }
-  } catch (err) {
-    console.error(err);
-    favListContainer.innerHTML = `<p class="text-red-500 text-sm">Lỗi tải danh sách!</p>`;
-  }
-});
-
-// Đóng modal
-closeFavModal.addEventListener("click", () => favModal.classList.add("hidden"));
-
-// Tạo danh sách mới
-createListBtn.addEventListener("click", async () => {
-  const name = newListInput.value.trim();
-  if (!name) return showAlert("warning", "Vui lòng nhập tên danh sách!", "Cảnh báo");
-
-  try {
-    const res = await fetch("/api/favlists", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json", 
-      },
-      credentials: "include",
-      body: JSON.stringify({ name }),
+          ).join("");
+        }
+      } catch (err) {
+        console.error(err);
+        favListContainer.innerHTML = `<p class="text-red-500 text-sm">Lỗi tải danh sách!</p>`;
+      }
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Không thể tạo danh sách");
+    // Đóng modal
+    closeFavModal.addEventListener("click", () => favModal.classList.add("hidden"));
 
-    newListInput.value = "";
-    showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
-    favBtn.click(); // reload lại modal
-  } catch (err) {
-    alert("❌ " + err.message);
-  }
-});
+    // Tạo danh sách mới
+    createListBtn.addEventListener("click", async () => {
+      const name = newListInput.value.trim();
+      if (!name) return showAlert("warning", "Vui lòng nhập tên danh sách!", "Cảnh báo");
 
-// Thêm truyện vào danh sách
-async function addStoryToList(listId, listName) {
-  const storyId = getStoryId();
-  if (!storyId) return showAlert("error", "ID truyện không hợp lệ!", "Lỗi");
+      try {
+        const res = await fetch("/api/favlists", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ name }),
+        });
 
-  try {
-    const res = await fetch(`/api/favlists/${listId}/stories`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      credentials: "include",
-      body: JSON.stringify({ storyId }),
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Không thể tạo danh sách");
+
+        newListInput.value = "";
+        showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
+        favBtn.click(); // reload lại modal
+      } catch (err) {
+        alert("❌ " + err.message);
+      }
     });
 
-    const data = await res.json();
-    if (res.ok) {
-      showAlert("success", `Đã thêm truyện vào danh sách "${listName}"!`, "Thành công");
-      favModal.classList.add("hidden");
-    } else {
-      showAlert("info", data.message || "Truyện đã có trong danh sách!", "Thông báo");
+    // Thêm truyện vào danh sách
+    async function addStoryToList(listId, listName) {
+      const storyId = getStoryId();
+      if (!storyId) return showAlert("error", "ID truyện không hợp lệ!", "Lỗi");
+
+      try {
+        const res = await fetch(`/api/favlists/${listId}/stories`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ storyId }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showAlert("success", `Đã thêm truyện vào danh sách "${listName}"!`, "Thành công");
+          favModal.classList.add("hidden");
+        } else {
+          showAlert("info", data.message || "Truyện đã có trong danh sách!", "Thông báo");
+        }
+      } catch (err) {
+        console.error("❌ Lỗi thêm truyện:", err);
+        alert("Lỗi kết nối server!");
+      }
     }
-  } catch (err) {
-    console.error("❌ Lỗi thêm truyện:", err);
-    alert("Lỗi kết nối server!");
-  }
-}
 
 
     // --- Avatar dropdown menu ---
@@ -421,85 +642,85 @@ async function addStoryToList(listId, listName) {
     const cancelLogout = document.getElementById('cancelLogout');
     const confirmLogout = document.getElementById('confirmLogout');
     function showModal() {
-        logoutModal.classList.remove('hidden');
+      logoutModal.classList.remove('hidden');
     }
 
     // Hàm ẩn modal
     function hideModal() {
-        logoutModal.classList.add('hidden');
+      logoutModal.classList.add('hidden');
     }
 
     // Xử lý sự kiện mở modal
     if (openLogoutModal) {
-        openLogoutModal.addEventListener('click', showModal);
+      openLogoutModal.addEventListener('click', showModal);
     }
 
     // Xử lý sự kiện hủy (đóng modal)
     if (cancelLogout) {
-        cancelLogout.addEventListener('click', hideModal);
+      cancelLogout.addEventListener('click', hideModal);
     }
     // Đăng xuất
     if (confirmLogout) {
-        confirmLogout.addEventListener('click', async () => {
-            hideModal(); // Ẩn modal ngay lập tức
+      confirmLogout.addEventListener('click', async () => {
+        hideModal(); // Ẩn modal ngay lập tức
 
-            try {
-                const response = await fetch('/api/users/logout', {
-                    method: 'GET',
-                    credentials: 'include' // Quan trọng để gửi HttpOnly Cookie
-                });
+        try {
+          const response = await fetch('/api/users/logout', {
+            method: 'GET',
+            credentials: 'include' // Quan trọng để gửi HttpOnly Cookie
+          });
 
-                const data = await response.json();
+          const data = await response.json();
 
-                if (response.ok) {
-                    // Đăng xuất thành công, chuyển hướng
-                    window.location.href = '/'; 
-                } else {
-                    // Lỗi server (ví dụ: token đã hết hạn, server không phản hồi đúng)
-                    alert(data.message || 'Đăng xuất thất bại. Vui lòng thử lại.');
-                }
-            } catch (error) {
-                console.error('Lỗi kết nối khi đăng xuất:', error);
-                alert('Mất kết nối với máy chủ khi đăng xuất.');
-                // Đảm bảo người dùng biết, nhưng không thể làm gì hơn ở client
-            }
-        });
+          if (response.ok) {
+            // Đăng xuất thành công, chuyển hướng
+            window.location.href = '/';
+          } else {
+            // Lỗi server (ví dụ: token đã hết hạn, server không phản hồi đúng)
+            alert(data.message || 'Đăng xuất thất bại. Vui lòng thử lại.');
+          }
+        } catch (error) {
+          console.error('Lỗi kết nối khi đăng xuất:', error);
+          alert('Mất kết nối với máy chủ khi đăng xuất.');
+          // Đảm bảo người dùng biết, nhưng không thể làm gì hơn ở client
+        }
+      });
     }
 
 
-     /* ==========================
-   🔍 SEARCH + POPOVER LOGIC
-   ========================== */
-const searchBox = document.getElementById("searchBox");
-const searchBtn = document.getElementById("searchBtn");
-const suggestionBox = document.getElementById("searchSuggestions");
-let typingTimer;
+    /* ==========================
+  🔍 SEARCH + POPOVER LOGIC
+  ========================== */
+    const searchBox = document.getElementById("searchBox");
+    const searchBtn = document.getElementById("searchBtn");
+    const suggestionBox = document.getElementById("searchSuggestions");
+    let typingTimer;
 
-// 🧠 Hàm debounce tránh spam API
-function debounce(func, delay) {
-  clearTimeout(typingTimer);
-  typingTimer = setTimeout(func, delay);
-}
-
-// 📌 Gọi API gợi ý Elasticsearch
-async function fetchSuggestions(q) {
-  if (!q.trim()) {
-    suggestionBox.classList.add("hidden");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-
-    if (!data.length) {
-      suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
-      suggestionBox.classList.remove("hidden");
-      return;
+    // 🧠 Hàm debounce tránh spam API
+    function debounce(func, delay) {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(func, delay);
     }
 
-    // Tạo danh sách gợi ý
-    suggestionBox.innerHTML = data.map(item => `
+    // 📌 Gọi API gợi ý Elasticsearch
+    async function fetchSuggestions(q) {
+      if (!q.trim()) {
+        suggestionBox.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        if (!data.length) {
+          suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
+          suggestionBox.classList.remove("hidden");
+          return;
+        }
+
+        // Tạo danh sách gợi ý
+        suggestionBox.innerHTML = data.map(item => `
       <div onclick="openStory(${item.id})"
            class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
         <img src="${item.cover_url || '/default-cover.jpg'}" class="w-10 h-14 object-cover rounded mr-3">
@@ -510,249 +731,408 @@ async function fetchSuggestions(q) {
       </div>
     `).join("");
 
-    suggestionBox.classList.remove("hidden");
+        suggestionBox.classList.remove("hidden");
 
-  } catch (err) {
-    console.error("❌ Lỗi fetchSuggest:", err);
-  }
-}
-// 📌 Mở truyện khi chọn gợi ý
-window.openStory = function (id) {
-  window.location.href = `/read2.html?id=${id}`;
-};
+      } catch (err) {
+        console.error("❌ Lỗi fetchSuggest:", err);
+      }
+    }
+    // 📌 Mở truyện khi chọn gợi ý
+    window.openStory = function (id) {
+      window.location.href = `/read2.html?id=${id}`;
+    };
 
-// 📌 Chọn gợi ý → search ngay
-window.selectSuggestion = function (title) {
-  searchBox.value = title;
-  suggestionBox.classList.add("hidden");
-  loadStories(1, title);
-};
+    // 📌 Chọn gợi ý → search ngay
+    window.selectSuggestion = function (title) {
+      searchBox.value = title;
+      suggestionBox.classList.add("hidden");
+      loadStories(1, title);
+    };
 
-// ⌨ Khi người dùng gõ → gọi API gợi ý
-searchBox.addEventListener("input", () => {
-  debounce(() => fetchSuggestions(searchBox.value), 200);
-});
-
-// ⏎ Enter → tìm kiếm
-searchBox.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    suggestionBox.classList.add("hidden");
-    loadStories(1, searchBox.value.trim());
-  }
-});
-
-// 🔍 Click nút tìm kiếm
-searchBtn.addEventListener("click", () => {
-  suggestionBox.classList.add("hidden");
-  loadStories(1, searchBox.value.trim());
-});
-
-// Ẩn popover khi click ra ngoài
-document.addEventListener("click", (e) => {
-  if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
-    suggestionBox.classList.add("hidden");
-  }
-});
-
-
-
-/* ==========================
-   ⭐ RATING LOGIC
-========================== */
-
-const rateBtn = document.getElementById("rateButton");
-const rateModal = document.getElementById("rateModal");
-const closeRateModal = document.getElementById("closeRateModal");
-const submitRating = document.getElementById("submitRating");
-const starSelect = document.getElementById("starSelect");
-
-let selectedRating = 0;
-
-// Mở modal
-rateBtn.addEventListener("click", () => {
-  rateModal.classList.remove("hidden");
-});
-
-// Đóng modal
-closeRateModal.addEventListener("click", () => {
-  rateModal.classList.add("hidden");
-});
-
-// Chọn sao
-starSelect.querySelectorAll("i").forEach(star => {
-  star.addEventListener("click", () => {
-    selectedRating = star.dataset.rate;
-
-    // Highlight sao
-    starSelect.querySelectorAll("i").forEach(s => {
-      s.classList.remove("text-yellow-400");
-      if (s.dataset.rate <= selectedRating) s.classList.add("text-yellow-400");
+    // ⌨ Khi người dùng gõ → gọi API gợi ý
+    searchBox.addEventListener("input", () => {
+      debounce(() => fetchSuggestions(searchBox.value), 200);
     });
-  });
-});
 
-// Gửi rating
-submitRating.addEventListener("click", async () => {
-  if (selectedRating === 0)
-    return showAlert("warning", "Vui lòng chọn số sao!", "Chưa chọn sao");
+    // ⏎ Enter → tìm kiếm
+    searchBox.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        suggestionBox.classList.add("hidden");
+        loadStories(1, searchBox.value.trim());
+      }
+    });
 
-  const storyId = getStoryId();
+    // 🔍 Click nút tìm kiếm
+    searchBtn.addEventListener("click", () => {
+      suggestionBox.classList.add("hidden");
+      loadStories(1, searchBox.value.trim());
+    });
 
-  const res = await fetch("/api/rating", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ story_id: storyId, rating: selectedRating }),
-  });
-
-  const data = await res.json();
-
-  if (res.ok) {
-    showAlert("success", "Đánh giá thành công!", "Thành công");
-    rateModal.classList.add("hidden");
-    loadRating(); // refresh UI
-  }
-});
-
-async function loadRating() {
-  const id = getStoryId();
-  const res = await fetch(`/api/rating?story_id=${id}`);
-  const data = await res.json();
-
-  document.getElementById("story-rating").innerHTML =
-    `⭐ ${data.avg.toFixed(1)} / 5 (${data.total} đánh giá)`;
-}
-
-loadRating();
+    // Ẩn popover khi click ra ngoài
+    document.addEventListener("click", (e) => {
+      if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
+        suggestionBox.classList.add("hidden");
+      }
+    });
 
 
-// COMMENT LOGIC
 
-document.getElementById("sendComment").addEventListener("click", async () => {
-  const content = document.getElementById("commentInput").value;
-  const storyId = new URLSearchParams(location.search).get("id");
+    /* ==========================
+       ⭐ RATING LOGIC
+    ========================== */
 
-  const res = await fetch("/api/comments", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ story_id: storyId, content })
-  });
+    const rateBtn = document.getElementById("rateButton");
+    const rateModal = document.getElementById("rateModal");
+    const closeRateModal = document.getElementById("closeRateModal");
+    const submitRating = document.getElementById("submitRating");
+    const starSelect = document.getElementById("starSelect");
 
-  if (res.ok) {
-    document.getElementById("commentInput").value = "";
-    loadComments(storyId);
-  }
-});
+    let selectedRating = 0;
 
-function renderComment(c, level = 0) {
-  return `
-    <div class="mt-3 ${level > 0 ? "pl-6 border-l" : ""}">
-      <p class="font-semibold text-indigo-600">${c.username}</p>
-      <p class="text-gray-800">${c.content}</p>
+    // Mở modal
+    rateBtn.addEventListener("click", () => {
+      rateModal.classList.remove("hidden");
+    });
 
-      <div class="flex gap-4 text-sm mt-2">
-        <button onclick="likeComment(${c.id})"
-                class="text-yellow-600 hover:underline">
-          👍 Thích (${c.likes})
-        </button>
+    // Đóng modal
+    closeRateModal.addEventListener("click", () => {
+      rateModal.classList.add("hidden");
+    });
 
-        <button onclick="toggleReplyBox(${c.id}, '${c.username}')"
-        class="text-blue-600 hover:underline">
-          💬 Trả lời
+    // Chọn sao
+    starSelect.querySelectorAll("i").forEach(star => {
+      star.addEventListener("click", () => {
+        selectedRating = star.dataset.rate;
+
+        // Highlight sao
+        starSelect.querySelectorAll("i").forEach(s => {
+          s.classList.remove("text-yellow-400");
+          if (s.dataset.rate <= selectedRating) s.classList.add("text-yellow-400");
+        });
+      });
+    });
+
+    // Gửi rating
+    submitRating.addEventListener("click", async () => {
+      if (selectedRating === 0)
+        return showAlert("warning", "Vui lòng chọn số sao!", "Chưa chọn sao");
+
+      const storyId = getStoryId();
+
+      const res = await fetch("/api/rating", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ story_id: storyId, rating: selectedRating }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showAlert("success", "Đánh giá thành công!", "Thành công");
+        rateModal.classList.add("hidden");
+        loadRating(); // refresh UI
+      }
+    });
+
+    async function loadRating() {
+      const id = getStoryId();
+      const res = await fetch(`/api/rating?story_id=${id}`);
+      const data = await res.json();
+
+      document.getElementById("story-rating").innerHTML =
+        `⭐ ${data.avg.toFixed(1)} / 5 (${data.total} đánh giá)`;
+    }
+
+    loadRating();
+
+    let currentUserId = null;
+
+    // COMMENT LOGIC
+
+    document.getElementById("sendComment").addEventListener("click", async () => {
+      const content = document.getElementById("commentInput").value;
+      const storyId = new URLSearchParams(location.search).get("id");
+
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ story_id: storyId, content })
+      });
+
+      if (res.ok) {
+        document.getElementById("commentInput").value = "";
+        loadComments(storyId);
+      }
+    });
+
+    function renderComment(c, level = 0) {
+      return `
+  <div id="comment-${c.id}" class="mt-4 ${level > 0 ? "ml-10 border-l pl-4" : ""} relative">
+
+
+    <div class="flex items-start gap-3">
+
+      <!-- Avatar -->
+      <img src="${c.avatar_url || "/components/Logo.png"}"
+           class="w-10 h-10 rounded-full object-cover">
+
+      <!-- Comment bubble + menu -->
+      <div class="flex items-center gap-2">
+
+        <!-- Bubble -->
+        <div class="bg-gray-100 p-3 rounded-xl w-fit max-w-full relative break-words">
+          <p class="font-semibold text-indigo-700">${c.username}</p>
+          <p class="mt-1 text-gray-900">${c.content}</p>
+          <p class="text-xs text-gray-500 mt-1">${formatTime(c.created_at)}</p>
+
+        </div>
+
+        <!-- Menu 3 chấm nằm ngoài, căn giữa -->
+        ${c.user_id === currentUserId
+          ? `
+    <!-- Menu của chủ comment -->
+    <div class="relative flex items-center">
+      <button onclick="toggleCommentMenu(${c.id})"
+              class="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-200 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+          </svg>
       </button>
 
-      </div>
-
-      <!-- Reply box -->
-      <div id="replyBox-${c.id}" class="mt-2 hidden">
-        <textarea id="replyInput-${c.id}"
-                  class="w-full border rounded-lg p-2 text-sm"
-                  placeholder="Viết phản hồi..."></textarea>
-
-        <button onclick="sendReply(${c.id})"
-                class="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
-          Gửi phản hồi
+      <div id="comment-menu-${c.id}"
+           class="hidden absolute right-0 top-6 w-32 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-[9999]">
+        <button onclick="openeditComment(${c.id}, '${c.content.replace(/'/g, "\\'")}')"
+                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+          Chỉnh sửa
+        </button>
+        <button onclick="deleteComment(${c.id})"
+                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+          Xóa
         </button>
       </div>
-
-      ${c.replies.map(r => renderComment(r, level + 1)).join("")}
     </div>
-  `;
-}
+  `
+          : `
+    <!-- Menu của người khác -->
+    <div class="relative flex items-center">
+      <button onclick="toggleCommentMenu(${c.id})"
+              class="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-200 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+          </svg>
+      </button>
 
-async function loadComments() {
-  const id = getStoryId();
-  const res = await fetch(`/api/comments?story_id=${id}`);
-  const data = await res.json();
+      <div id="comment-menu-${c.id}"
+           class="hidden absolute right-0 top-6 w-32 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-[9999]">
+        <button onclick="hideComment(${c.id})"
+                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+          Ẩn bình luận
+        </button>
+      </div>
+    </div>
+  `
+        }
 
-  document.getElementById("commentList").innerHTML =
-    data.map(c => renderComment(c)).join("");
-}
-loadComments();
 
+      </div>
+    </div>
 
-// ======================= LIKE COMMENT =============================
-async function likeComment(commentId) {
-  try {
-    const res = await fetch("/api/comments/like", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include",   // BẮT BUỘC: gửi cookie authToken
-      body: JSON.stringify({ comment_id: commentId })
-    });
+    <!-- Like + Reply -->
+    <div class="flex gap-4 text-sm mt-1 ml-14">
+      <button onclick="likeComment(${c.id})" class="text-gray-600 hover:text-blue-600">
+        👍 Thích (${c.likes})
+      </button>
+      <button onclick="toggleReplyBox(${c.id}, '${c.username}')"
+              class="text-gray-600 hover:text-blue-600">
+        💬 Trả lời
+      </button>
+    </div>
 
-    const data = await res.json();
+    <!-- Reply box -->
+    <div id="replyBox-${c.id}" class="hidden ml-14 mt-2">
+      <textarea id="replyInput-${c.id}"
+                class="w-full border rounded-lg p-2 text-sm"
+                placeholder="Viết phản hồi..."></textarea>
 
-    if (res.ok) {
-      loadComments();           // Reload comment sau khi like thành công
-    } else {
-      alert(data.message);      // Hiển thị lỗi từ backend
+      <button onclick="sendReply(${c.id})"
+              class="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
+        Gửi
+      </button>
+    </div>
+
+    ${c.replies.map(r => renderComment(r, level + 1)).join("")}
+
+  </div>`;
     }
-  } catch (err) {
-    console.error("Lỗi kết nối:", err);
-    alert("Không thể kết nối server.");
-  }
-}
 
 
+    function toggleCommentMenu(id) {
+      const menu = document.getElementById(`comment-menu-${id}`);
+      menu.classList.toggle("hidden");
+    }
 
-// ======================= SHOW / HIDE REPLY BOX ====================
-function toggleReplyBox(commentId, parentUsername = "") {
-  const box = document.getElementById(`replyBox-${commentId}`);
-  box.classList.toggle("hidden");
+    function hideComment(id) {
+      const el = document.getElementById(`comment-${id}`);
+      if (!el) return;
 
-  const textarea = document.getElementById(`replyInput-${commentId}`);
-  if (!textarea.value && parentUsername) {
-    textarea.value = `@${parentUsername} `; // Hiển thị sẵn tên người comment cha
-  }
-}
+      el.style.transition = "opacity .3s";
+      el.style.opacity = 0;
+
+      setTimeout(() => el.remove(), 300);
+    }
+
+    function formatTime(timeString) {
+      const date = new Date(timeString);
+      return date.toLocaleString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+    }
 
 
+    async function loadComments() {
+      const id = getStoryId();
+      const res = await fetch(`/api/comments?story_id=${id}`);
+      const data = await res.json();
 
-// ======================= SEND REPLY ===============================
-async function sendReply(commentId) {
-  const input = document.getElementById(`replyInput-${commentId}`);
-  const content = input.value.trim();
+      currentUserId = data.currentUserId;
 
-  if (!content) return alert("Vui lòng nhập nội dung!");
-
-  const res = await fetch("/api/comments/reply", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      parent_id: commentId,
-      content
-    })
-  });
-
-  if (res.ok) {
-    input.value = "";
+      document.getElementById("commentList").innerHTML =
+        data.comments.map(c => renderComment(c)).join("");
+    }
     loadComments();
-  }
-}
+
+    // Sửa comments
+    async function updateComment(commentId, newContent) {
+      try {
+        const res = await fetch("/api/comments", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include", // gửi cookie JWT
+          body: JSON.stringify({
+            comment_id: commentId,
+            content: newContent
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.message || "Lỗi cập nhật comment");
+          return;
+        }
+
+        alert("Cập nhật comment thành công!");
+        return true;
+
+      } catch (err) {
+        console.error("FE Update Comment Error:", err);
+        alert("Lỗi kết nối server");
+      }
+    }
+
+    // Xóa comment
+    async function deleteComment(commentId) {
+      if (!confirm("Bạn có chắc muốn xóa comment này?")) return;
+
+      try {
+        const res = await fetch("/api/comments", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            comment_id: commentId
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showAlert("error", data.message || "Lỗi xóa comment", "Lỗi");
+          return;
+        }
+
+        showAlert("success", "Xóa comment thành công!", "Thành công");
+        loadComments();
+        return true;
+
+      } catch (err) {
+        console.error("FE Delete Comment Error:", err);
+        alert("Lỗi kết nối server");
+      }
+    }
+
+    // ======================= LIKE COMMENT =============================
+    async function likeComment(commentId) {
+      try {
+        const res = await fetch("/api/comments/like", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",   // BẮT BUỘC: gửi cookie authToken
+          body: JSON.stringify({ comment_id: commentId })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          loadComments();           // Reload comment sau khi like thành công
+        } else {
+          alert(data.message);      // Hiển thị lỗi từ backend
+        }
+      } catch (err) {
+        console.error("Lỗi kết nối:", err);
+        alert("Không thể kết nối server.");
+      }
+    }
+
+
+
+    // ======================= SHOW / HIDE REPLY BOX ====================
+    function toggleReplyBox(commentId, parentUsername = "") {
+      const box = document.getElementById(`replyBox-${commentId}`);
+      box.classList.toggle("hidden");
+
+      const textarea = document.getElementById(`replyInput-${commentId}`);
+      if (!textarea.value && parentUsername) {
+        textarea.value = `@${parentUsername} `; // Hiển thị sẵn tên người comment cha
+      }
+    }
+
+
+
+    // ======================= SEND REPLY ===============================
+    async function sendReply(commentId) {
+      const input = document.getElementById(`replyInput-${commentId}`);
+      const content = input.value.trim();
+
+      if (!content) return alert("Vui lòng nhập nội dung!");
+
+      const res = await fetch("/api/comments/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parent_id: commentId,
+          content
+        })
+      });
+
+      if (res.ok) {
+        input.value = "";
+        loadComments();
+      }
+    }
 
   </script>
 </body>
+
 </html>

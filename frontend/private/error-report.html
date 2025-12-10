@@ -157,20 +157,40 @@ async function loadNotifications(email) {
 
 
 /* ==============================================================
-   3️⃣ Nhận thông báo realtime
+   3️⃣ Nhận thông báo realtime từ phòng riêng của user
 =============================================================== */
-socket.on("reportStatusUpdate", data => {
-  addRealtimeNotification(
-    `Báo lỗi #${data.id} đã đổi trạng thái: <b>${data.status}</b>`
-  );
+socket.on("newNotification", (data) => {
+  let text = "";
+
+  switch (data.type) {
+
+    case "report_response":
+      text = `
+        Admin đã phản hồi báo lỗi #${data.reportId}: 
+        <b>${data.response}</b> 
+        (Trạng thái: ${data.status})
+      `;
+      break;
+
+    case "report_status":
+      text = `
+        Báo lỗi #${data.reportId} đã được cập nhật trạng thái: 
+        <b>${data.status}</b>
+      `;
+      break;
+
+    default:
+      // fallback trường hợp dùng generic message
+      text = data.message || "Bạn có thông báo mới";
+  }
+
+  addRealtimeNotification(text);
 });
 
-socket.on("reportResponse", data => {
-  addRealtimeNotification(
-    `Admin đã phản hồi báo lỗi #${data.id}: <b>${data.message}</b>`
-  );
-});
 
+/* ==============================================================
+   Hàm thêm thông báo realtime vào UI
+=============================================================== */
 function addRealtimeNotification(text) {
   unreadCount++;
   notifyCount.textContent = unreadCount;
@@ -178,13 +198,16 @@ function addRealtimeNotification(text) {
 
   const li = document.createElement("li");
   li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
-  li.innerHTML = `<p class="text-sm text-gray-700">${text}</p>
-                  <p class="text-xs text-gray-400 mt-1">(Realtime)</p>`;
+  li.innerHTML = `
+      <p class="text-sm text-gray-700">${text}</p>
+      <p class="text-xs text-gray-400 mt-1">(Realtime)</p>
+  `;
 
   notifyList.prepend(li);
 
   showAlert("info", "Bạn có thông báo mới!");
 }
+
 
 
 /* ==============================================================

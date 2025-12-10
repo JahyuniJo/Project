@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,7 @@
   <link rel="icon" type="image/png" href="/Logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
- 
+
 
   <style>
     .description.collapsed {
@@ -16,18 +17,45 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+
+    @keyframes ring {
+      0% {
+        transform: rotate(0);
+      }
+
+      20% {
+        transform: rotate(-15deg);
+      }
+
+      40% {
+        transform: rotate(15deg);
+      }
+
+      60% {
+        transform: rotate(-10deg);
+      }
+
+      80% {
+        transform: rotate(10deg);
+      }
+
+      100% {
+        transform: rotate(0);
+      }
+    }
   </style>
 </head>
+
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
   <!-- Header -->
   <header class="bg-white shadow-md">
     <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
-      
+
       <!-- Logo -->
       <div class="flex items-center gap-3">
         <a href="index2.html" class="flex items-center gap-2">
-        <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-        <span class="text-2xl font-bold text-indigo-600">DH.story</span>
+          <img src="/components/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+          <span class="text-2xl font-bold text-indigo-600">DH.story</span>
         </a>
       </div>
 
@@ -40,20 +68,20 @@
       <div class="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
 
         <!-- Search -->
-          <div class="relative">
+        <div class="relative">
           <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
-          <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
-                  class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
-          <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </button>
+            <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
+              class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
+            <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
           </div>
 
           <!-- Popover kết quả -->
-          <div id="searchSuggestions" 
-              class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
+          <div id="searchSuggestions"
+            class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
           </div>
-          </div>
+        </div>
 
 
         <!-- Menu -->
@@ -65,15 +93,24 @@
             <li><a href="Truyện trinh thám.html" class="hover:text-indigo-600">Truyện trinh thám</a></li>
           </ul>
         </nav>
+        <!-- 🔔 Nút chuông thông báo -->
+        <div id="notifyBell" class="relative cursor-pointer hover:text-indigo-600 transition">
+          <i class="fa-solid fa-bell text-2xl"></i>
+          <span id="notifyCount"
+            class="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+        </div>
+        <div id="notifyToast"
+          class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500 opacity-0 z-50">
+        </div>
 
         <!-- Avatar -->
         <div class="relative">
           <button id="avatarButton" class="focus:outline-none">
-            <img id="avatarImage" src="/components/Logo.png" alt="Avatar" 
-                 class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:scale-110 transition-transform">
+            <img id="avatarImage" src="/components/Logo.png" alt="Avatar"
+              class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:scale-110 transition-transform">
           </button>
-          <div id="dropdownMenu" 
-               class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
+          <div id="dropdownMenu"
+            class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
             <hr class="my-1">
             <a href="/info.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
               <i class="fa-solid fa-user mr-2 text-indigo-500"></i>Thông tin cá nhân
@@ -84,43 +121,51 @@
             <a href="/error-report.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
               <i class="fa-solid fa-triangle-exclamation mr-2 text-yellow-500"></i>Báo lỗi
             </a>
-            <div id="openLogoutModal" 
-                class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
-                <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
+            <div id="openLogoutModal" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
+              <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
             </div>
           </div>
         </div>
 
-      </div> 
+      </div>
+    </div>
+
+    <!-- 🔔 Popup danh sách thông báo -->
+    <div id="notifyBox"
+      class="hidden absolute right-6 top-16 w-80 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 z-50">
+      <div class="px-4 py-2 bg-indigo-600 text-white font-semibold">Thông báo</div>
+      <ul id="notifyList" class="max-h-60 overflow-y-auto divide-y divide-gray-100"></ul>
+    </div>
     </div>
   </header>
 
-
-  <div id="logoutModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6 transform transition-all sm:my-8 sm:align-middle sm:max-w-lg">
-        <div class="text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <i class="fa-solid fa-right-from-bracket text-red-600 text-xl"></i>
-            </div>
-            <h3 class="mt-4 text-lg leading-6 font-medium text-gray-900">Xác nhận đăng xuất</h3>
-            <div class="mt-2">
-                <p class="text-sm text-gray-500">
-                    Bạn có chắc chắn muốn đăng xuất khỏi tài khoản của mình không?
-                </p>
-            </div>
+  <div id="logoutModal"
+    class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
+    <div
+      class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6 transform transition-all sm:my-8 sm:align-middle sm:max-w-lg">
+      <div class="text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+          <i class="fa-solid fa-right-from-bracket text-red-600 text-xl"></i>
         </div>
-        <div class="mt-5 sm:mt-6 flex justify-end gap-3">
-            <button id="cancelLogout" type="button" 
-                    class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
-                Hủy
-            </button>
-            <button id="confirmLogout" type="button" 
-                    class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
-                Đăng xuất
-            </button>
+        <h3 class="mt-4 text-lg leading-6 font-medium text-gray-900">Xác nhận đăng xuất</h3>
+        <div class="mt-2">
+          <p class="text-sm text-gray-500">
+            Bạn có chắc chắn muốn đăng xuất khỏi tài khoản của mình không?
+          </p>
         </div>
+      </div>
+      <div class="mt-5 sm:mt-6 flex justify-end gap-3">
+        <button id="cancelLogout" type="button"
+          class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
+          Hủy
+        </button>
+        <button id="confirmLogout" type="button"
+          class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
+          Đăng xuất
+        </button>
+      </div>
     </div>
-</div>
+  </div>
 
 
   <!-- Nội dung chính -->
@@ -134,49 +179,53 @@
 
 
 
-<!-- Modal chọn danh sách yêu thích -->
-<div id="favModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md animate-fade-in">
-    <h2 class="text-lg font-semibold text-indigo-700 mb-4">
-      Thêm truyện vào danh sách yêu thích
-    </h2>
+  <!-- Modal chọn danh sách yêu thích -->
+  <div id="favModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md animate-fade-in">
+      <h2 class="text-lg font-semibold text-indigo-700 mb-4">
+        Thêm truyện vào danh sách yêu thích
+      </h2>
 
-    <!-- Danh sách yêu thích hiện có -->
-    <div id="favListContainer" class="space-y-3 mb-4 text-gray-700 text-sm">
-      <p class="text-gray-500 italic">Đang tải danh sách...</p>
-    </div>
+      <!-- Danh sách yêu thích hiện có -->
+      <div id="favListContainer" class="space-y-3 mb-4 text-gray-700 text-sm">
+        <p class="text-gray-500 italic">Đang tải danh sách...</p>
+      </div>
 
-    <!-- Tạo danh sách mới -->
-    <div class="flex justify-between items-center gap-3">
-      <input id="newListName" 
-             type="text" 
-             placeholder="Tạo danh sách mới..." 
-             class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring focus:ring-indigo-300 outline-none">
-      <button id="createListBtn" 
-              class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 text-sm">
-        Tạo
-      </button>
-    </div>
+      <!-- Tạo danh sách mới -->
+      <div class="flex justify-between items-center gap-3">
+        <input id="newListName" type="text" placeholder="Tạo danh sách mới..."
+          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring focus:ring-indigo-300 outline-none">
+        <button id="createListBtn" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 text-sm">
+          Tạo
+        </button>
+      </div>
 
-    <!-- Nút đóng -->
-    <div class="flex justify-end mt-4">
-      <button id="closeFavModal" 
-              class="text-gray-600 hover:text-gray-800 font-medium text-sm">
-        Đóng
-      </button>
+      <!-- Nút đóng -->
+      <div class="flex justify-end mt-4">
+        <button id="closeFavModal" class="text-gray-600 hover:text-gray-800 font-medium text-sm">
+          Đóng
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
-<style>
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out;
-}
-</style>
+  <style>
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out;
+    }
+  </style>
   <!-- Footer -->
   <footer class="bg-white mt-10 shadow-inner">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
@@ -187,8 +236,8 @@
 
       <div class="text-center md:text-right text-gray-600 text-sm">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
-        <a href="https://github.com/JahyuniJo" target="_blank" 
-           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+        <a href="https://github.com/JahyuniJo" target="_blank"
+          class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
           <span>Github</span>
           <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
@@ -198,138 +247,313 @@
     </div>
   </footer>
 
+
+
   <!-- Script -->
   <script src="/components/alertModal.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
+    const notifyBell = document.getElementById("notifyBell");
+    const notifyBox = document.getElementById("notifyBox");
+    const notifyCount = document.getElementById("notifyCount");
+    const notifyList = document.getElementById("notifyList");
+    // 🛎️ Thông báo realtime với Socket.IO
+    const socket = io("http://localhost:3000", {
+      transports: ["websocket", "polling"]
+    });
+
+    let userEmail = null;
+
+    // Khi socket kết nối thành công
+    socket.on("connect", async () => {
+      console.log("Connected to Socket Server:", socket.id);
+
+      try {
+        // Lấy thông tin user từ backend (JWT/Cookie)
+        const res = await fetch("/api/import/me", {
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          console.warn("Không xác thực được user, không join socket.");
+          return;
+        }
+
+        const user = await res.json();
+        userEmail = user.email;
+
+        // Đăng ký socket với email thật từ backend
+        socket.emit("registerEmail", userEmail);
+
+        // Tải thông báo ban đầu
+        loadNotifications(userEmail);
+
+      } catch (err) {
+        console.error("Lỗi khi xác thực user:", err);
+      }
+    });
+
+    // Nhận thông báo realtime
+    socket.on("newNotification", (data) => {
+      console.log("Realtime Notification:", data);
+
+      // Tăng badge
+      unreadCount++;
+      notifyCount.textContent = unreadCount;
+      notifyCount.classList.remove("hidden");
+
+      // Thêm thông báo vào UI ngay lập tức
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+      li.innerHTML = `
+    <p class="text-sm text-gray-700">${data.message}</p>
+    <p class="text-xs text-gray-400 mt-1">${new Date(data.time).toLocaleString()}</p>
+  `;
+      // Hiệu ứng rung chuông
+      ringBell();
+      // Hiển thị toast
+      showToast(data.message);
+      notifyList.prepend(li);
+    });
+
+    // Mở UI thông báo , đánh dấu đã đọc
+    notifyBell.addEventListener("click", async () => {
+      notifyBox.classList.toggle("hidden");
+
+      // Nếu mở hộp thông báo → reset badge + mark as read
+      if (!notifyBox.classList.contains("hidden") && userEmail) {
+
+        unreadCount = 0;
+        notifyCount.classList.add("hidden");
+
+        try {
+          const res = await fetch(`/api/notifications?email=${userEmail}`);
+          const notifications = await res.json();
+
+          // Đánh dấu đã đọc
+          for (const n of notifications) {
+            if (!n.is_read) {
+              await fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
+            }
+          }
+
+          // Reload UI
+          renderNotificationList(notifications);
+
+        } catch (err) {
+          console.error("Không thể mark-read:", err);
+        }
+      }
+    });
+
+    // load danh sách thông báo
+    async function loadNotifications(email) {
+      try {
+        const res = await fetch(`/api/notifications?email=${email}`);
+        const notifications = await res.json();
+
+        renderNotificationList(notifications);
+
+      } catch (err) {
+        console.error("Lỗi load thông báo:", err);
+      }
+    }
+
+
+    // Render danh sách thông báo
+    function renderNotificationList(notifications) {
+      notifyList.innerHTML = "";
+      unreadCount = 0;
+
+      notifications.forEach(noti => {
+        const li = document.createElement("li");
+        li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+        li.innerHTML = `
+      <p class="text-sm text-gray-700">${noti.message}</p>
+      <p class="text-xs text-gray-400 mt-1">${new Date(noti.created_at).toLocaleString()}</p>
+    `;
+
+        notifyList.appendChild(li);
+
+        if (!noti.is_read) unreadCount++;
+      });
+
+      if (unreadCount > 0) {
+        notifyCount.textContent = unreadCount;
+        notifyCount.classList.remove("hidden");
+      } else {
+        notifyCount.classList.add("hidden");
+      }
+    }
+
+
+    // Thêm notify realtime vào đầu danh sách
+    function addRealtimeNotification(message) {
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+
+      li.innerHTML = `
+    <p class="text-sm text-gray-700">${message}</p>
+    <p class="text-xs text-gray-400 mt-1">(Realtime) ${new Date().toLocaleString()}</p>
+  `;
+
+      notifyList.prepend(li);
+    }
+
+    // Hiệu ứng rung chuông
+    function ringBell() {
+      const icon = notifyBell.querySelector("i");
+      if (!icon) return;
+
+      icon.classList.add("animate-[ring_0.5s_ease]");
+      setTimeout(() => icon.classList.remove("animate-[ring_0.5s_ease]"), 600);
+    }
+
+    // Hiển thị toast thông báo
+    function showToast(text) {
+      const toast = document.getElementById("notifyToast");
+      if (!toast) return;
+
+      toast.innerHTML = text;
+      toast.classList.remove("opacity-0");
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0");
+      }, 3000);
+    }
+
+    // 🩷 Yêu thích - Thêm truyện vào danh sách yêu thích
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("favButton")?.addEventListener("click", openFavModal);
       document.getElementById("closeFavModal")?.addEventListener("click", closeFavModal);
     });
     let selectedStoryId = null;
-// Gọi API lấy danh sách yêu thích hiện có
-async function getFavLists() {
-  try {
-    const res = await fetch("/api/favlists", { credentials: "include" });
-    return res.ok ? await res.json() : [];
-  } catch (err) {
-    console.error("Lỗi lấy danh sách yêu thích:", err);
-    return [];
-  }
-}
+    // Gọi API lấy danh sách yêu thích hiện có
+    async function getFavLists() {
+      try {
+        const res = await fetch("/api/favlists", { credentials: "include" });
+        return res.ok ? await res.json() : [];
+      } catch (err) {
+        console.error("Lỗi lấy danh sách yêu thích:", err);
+        return [];
+      }
+    }
 
-// Hiển thị modal chọn danh sách
-async function openFavModal(storyId) {
-  selectedStoryId = storyId;
-  const favLists = await getFavLists();
-  const favListContainer = document.getElementById("favListContainer");
+    // Hiển thị modal chọn danh sách
+    async function openFavModal(storyId) {
+      selectedStoryId = storyId;
+      const favLists = await getFavLists();
+      const favListContainer = document.getElementById("favListContainer");
 
-  if (!favLists.length) {
-    favListContainer.innerHTML = `<p class="text-gray-500 text-sm">Bạn chưa có danh sách nào. Hãy tạo trong <a href="/fav.html" class="text-indigo-600 hover:underline">Yêu thích</a>.</p>`;
-  } else {
-    favListContainer.innerHTML = favLists.map(
-      (list) => `
+      if (!favLists.length) {
+        favListContainer.innerHTML = `<p class="text-gray-500 text-sm">Bạn chưa có danh sách nào. Hãy tạo trong <a href="/fav.html" class="text-indigo-600 hover:underline">Yêu thích</a>.</p>`;
+      } else {
+        favListContainer.innerHTML = favLists.map(
+          (list) => `
       <button onclick="addStoryToList(${list.id}, '${list.name}')" 
         class="w-full text-left px-4 py-2 border border-gray-200 rounded hover:bg-indigo-50">
         <i class="fa-solid fa-heart mr-2 text-pink-500"></i>${list.name}
       </button>`
-    ).join("");
-  }
+        ).join("");
+      }
 
-  document.getElementById("favModal").classList.remove("hidden");
-}
-
-function closeFavModal() {
-  document.getElementById("favModal").classList.add("hidden");
-  selectedStoryId = null;
-}
-
-
-// Tạo danh sách yêu thích mới
-async function createFavList() {
-  const name = prompt("Nhập tên danh sách mới:");
-  if (!name || !name.trim()) return;
-
-  try {
-    const res = await fetch("/api/favlists", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ name: name.trim() }),
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
-      // Sau khi tạo xong, load lại danh sách trong modal
-      openFavModal(selectedStoryId);
-    } else {
-      showAlert("error", data.message || "Lỗi khi tạo danh sách!", "Lỗi");
+      document.getElementById("favModal").classList.remove("hidden");
     }
-  } catch (err) {
-    console.error("Lỗi khi tạo danh sách:", err);
-    alert("Lỗi kết nối server!");
-  }
-}
-const createListBtn = document.getElementById("createListBtn");
-const newListInput = document.getElementById("newListName");
-// Thêm truyện vào danh sách yêu thích
-createListBtn.addEventListener("click", async () => {
-  const name = newListInput.value.trim();
-  if (!name) return alert("Nhập tên danh sách!");
 
-  try {
-    const res = await fetch("/api/favlists", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json", 
-      },
-      credentials: "include",
-      body: JSON.stringify({ name }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Không thể tạo danh sách");
-
-    newListInput.value = "";
-    showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
-    openFavModal(selectedStoryId);
-  } catch (err) {
-    alert("❌ " + err.message);
-  }
-});
-
-// 🩷 Hàm thêm truyện vào danh sách yêu thích
-async function addStoryToList(listId, listName) {
-  if (!selectedStoryId) {
-    showAlert("error", "Không có truyện nào được chọn!", "Lỗi");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/favlists/${listId}/stories`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ storyId: selectedStoryId }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      showAlert("success", `Đã thêm truyện vào danh sách "${listName}"!`, "Thành công");
-      closeFavModal();
-    } else {
-      showAlert("info", data.message || "Truyện đã có trong danh sách!", "Thông báo");
+    function closeFavModal() {
+      document.getElementById("favModal").classList.add("hidden");
+      selectedStoryId = null;
     }
-  } catch (err) {
-    console.error("Lỗi khi thêm truyện:", err);
-    alert("Lỗi kết nối đến server!");
-  }
-}
+
+
+    // Tạo danh sách yêu thích mới
+    async function createFavList() {
+      const name = prompt("Nhập tên danh sách mới:");
+      if (!name || !name.trim()) return;
+
+      try {
+        const res = await fetch("/api/favlists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ name: name.trim() }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
+          // Sau khi tạo xong, load lại danh sách trong modal
+          openFavModal(selectedStoryId);
+        } else {
+          showAlert("error", data.message || "Lỗi khi tạo danh sách!", "Lỗi");
+        }
+      } catch (err) {
+        console.error("Lỗi khi tạo danh sách:", err);
+        alert("Lỗi kết nối server!");
+      }
+    }
+    const createListBtn = document.getElementById("createListBtn");
+    const newListInput = document.getElementById("newListName");
+    // Thêm truyện vào danh sách yêu thích
+    createListBtn.addEventListener("click", async () => {
+      const name = newListInput.value.trim();
+      if (!name) return alert("Nhập tên danh sách!");
+
+      try {
+        const res = await fetch("/api/favlists", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ name }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Không thể tạo danh sách");
+
+        newListInput.value = "";
+        showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
+        openFavModal(selectedStoryId);
+      } catch (err) {
+        alert("❌ " + err.message);
+      }
+    });
+
+    // 🩷 Hàm thêm truyện vào danh sách yêu thích
+    async function addStoryToList(listId, listName) {
+      if (!selectedStoryId) {
+        showAlert("error", "Không có truyện nào được chọn!", "Lỗi");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/favlists/${listId}/stories`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ storyId: selectedStoryId }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert("success", `Đã thêm truyện vào danh sách "${listName}"!`, "Thành công");
+          closeFavModal();
+        } else {
+          showAlert("info", data.message || "Truyện đã có trong danh sách!", "Thông báo");
+        }
+      } catch (err) {
+        console.error("Lỗi khi thêm truyện:", err);
+        alert("Lỗi kết nối đến server!");
+      }
+    }
 
 
 
-// Avatar dropdown menu
+    // Avatar dropdown menu
     const avatarBtn = document.getElementById('avatarButton');
     const dropdownMenu = document.getElementById('dropdownMenu');
     avatarBtn.addEventListener('click', () => dropdownMenu.classList.toggle('hidden'));
@@ -361,7 +585,12 @@ async function addStoryToList(listId, listName) {
         const res = await fetch(`/api/stories?page=${page}&limit=${limit}${query}`);
         const data = await res.json();
         const container = document.getElementById("story-list");
-        container.innerHTML = data.stories.map(story => `
+        container.innerHTML = (await Promise.all(
+          data.stories.map(async (story) => {
+            const res = await fetch(`/api/rating?story_id=${story.id}`);
+            const rating = await res.json();
+
+            return `
   <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
     <a href="read2.html?id=${story.id}">
       <img src="${story.cover_url || '/default-cover.jpg'}" alt="${story.title}" 
@@ -381,13 +610,17 @@ async function addStoryToList(listId, listName) {
               class="mt-3 px-3 py-1 text-sm bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200">
         <i class="fa-solid fa-heart mr-1"></i>Yêu thích
       </button>
-
+      <p class="text-yellow-600 font-semibold mb-2">
+            ⭐ ${rating.avg?.toFixed(1) || 0} / 5 (${rating.total || 0} đánh giá)
+          </p>
       <div class="mt-2 text-xs text-gray-500">
         <i class="fa-solid fa-eye"></i> ${story.view_count} lượt đọc
       </div>
     </div>
   </div>
-`).join("");
+`;
+          })
+        )).join("");
         renderPagination(data.page, data.totalPages);
       } catch (err) {
         console.error("Lỗi tải truyện:", err);
@@ -452,86 +685,86 @@ async function addStoryToList(listId, listName) {
 
     // Hàm hiển thị modal
     function showModal() {
-        logoutModal.classList.remove('hidden');
+      logoutModal.classList.remove('hidden');
     }
 
     // Hàm ẩn modal
     function hideModal() {
-        logoutModal.classList.add('hidden');
+      logoutModal.classList.add('hidden');
     }
 
     // Xử lý sự kiện mở modal
     if (openLogoutModal) {
-        openLogoutModal.addEventListener('click', showModal);
+      openLogoutModal.addEventListener('click', showModal);
     }
 
     // Xử lý sự kiện hủy (đóng modal)
     if (cancelLogout) {
-        cancelLogout.addEventListener('click', hideModal);
+      cancelLogout.addEventListener('click', hideModal);
     }
 
     // Xử lý sự kiện ĐĂNG XUẤT THỰC SỰ
     if (confirmLogout) {
-        confirmLogout.addEventListener('click', async () => {
-            hideModal(); // Ẩn modal ngay lập tức
+      confirmLogout.addEventListener('click', async () => {
+        hideModal(); // Ẩn modal ngay lập tức
 
-            try {
-                const response = await fetch('/api/users/logout', {
-                    method: 'GET',
-                    credentials: 'include' // Quan trọng để gửi HttpOnly Cookie
-                });
+        try {
+          const response = await fetch('/api/users/logout', {
+            method: 'GET',
+            credentials: 'include' // Quan trọng để gửi HttpOnly Cookie
+          });
 
-                const data = await response.json();
+          const data = await response.json();
 
-                if (response.ok) {
-                    // Đăng xuất thành công, chuyển hướng
-                    window.location.href = '/'; 
-                } else {
-                    // Lỗi server (ví dụ: token đã hết hạn, server không phản hồi đúng)
-                    alert(data.message || 'Đăng xuất thất bại. Vui lòng thử lại.');
-                }
-            } catch (error) {
-                console.error('Lỗi kết nối khi đăng xuất:', error);
-                alert('Mất kết nối với máy chủ khi đăng xuất.');
-                // Đảm bảo người dùng biết, nhưng không thể làm gì hơn ở client
-            }
-        });
+          if (response.ok) {
+            // Đăng xuất thành công, chuyển hướng
+            window.location.href = '/';
+          } else {
+            // Lỗi server (ví dụ: token đã hết hạn, server không phản hồi đúng)
+            alert(data.message || 'Đăng xuất thất bại. Vui lòng thử lại.');
+          }
+        } catch (error) {
+          console.error('Lỗi kết nối khi đăng xuất:', error);
+          alert('Mất kết nối với máy chủ khi đăng xuất.');
+          // Đảm bảo người dùng biết, nhưng không thể làm gì hơn ở client
+        }
+      });
     }
 
 
     /* ==========================
    🔍 SEARCH + POPOVER LOGIC
    ========================== */
-const searchBox = document.getElementById("searchBox");
-const searchBtn = document.getElementById("searchBtn");
-const suggestionBox = document.getElementById("searchSuggestions");
-let typingTimer;
+    const searchBox = document.getElementById("searchBox");
+    const searchBtn = document.getElementById("searchBtn");
+    const suggestionBox = document.getElementById("searchSuggestions");
+    let typingTimer;
 
-// 🧠 Hàm debounce tránh spam API
-function debounce(func, delay) {
-  clearTimeout(typingTimer);
-  typingTimer = setTimeout(func, delay);
-}
-
-// 📌 Gọi API gợi ý Elasticsearch
-async function fetchSuggestions(q) {
-  if (!q.trim()) {
-    suggestionBox.classList.add("hidden");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-
-    if (!data.length) {
-      suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
-      suggestionBox.classList.remove("hidden");
-      return;
+    // 🧠 Hàm debounce tránh spam API
+    function debounce(func, delay) {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(func, delay);
     }
 
-    // Tạo danh sách gợi ý
-    suggestionBox.innerHTML = data.map(item => `
+    // 📌 Gọi API gợi ý Elasticsearch
+    async function fetchSuggestions(q) {
+      if (!q.trim()) {
+        suggestionBox.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        if (!data.length) {
+          suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
+          suggestionBox.classList.remove("hidden");
+          return;
+        }
+
+        // Tạo danh sách gợi ý
+        suggestionBox.innerHTML = data.map(item => `
       <div onclick="openStory(${item.id})"
            class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
         <img src="${item.cover_url || '/default-cover.jpg'}" class="w-10 h-14 object-cover rounded mr-3">
@@ -542,50 +775,51 @@ async function fetchSuggestions(q) {
       </div>
     `).join("");
 
-    suggestionBox.classList.remove("hidden");
+        suggestionBox.classList.remove("hidden");
 
-  } catch (err) {
-    console.error("❌ Lỗi fetchSuggest:", err);
-  }
-}
-// 📌 Mở truyện khi chọn gợi ý
-window.openStory = function (id) {
-  window.location.href = `/read2.html?id=${id}`;
-};
+      } catch (err) {
+        console.error("❌ Lỗi fetchSuggest:", err);
+      }
+    }
+    // 📌 Mở truyện khi chọn gợi ý
+    window.openStory = function (id) {
+      window.location.href = `/read2.html?id=${id}`;
+    };
 
-// 📌 Chọn gợi ý → search ngay
-window.selectSuggestion = function (title) {
-  searchBox.value = title;
-  suggestionBox.classList.add("hidden");
-  loadStories(1, title);
-};
+    // 📌 Chọn gợi ý → search ngay
+    window.selectSuggestion = function (title) {
+      searchBox.value = title;
+      suggestionBox.classList.add("hidden");
+      loadStories(1, title);
+    };
 
-// ⌨ Khi người dùng gõ → gọi API gợi ý
-searchBox.addEventListener("input", () => {
-  debounce(() => fetchSuggestions(searchBox.value), 200);
-});
+    // ⌨ Khi người dùng gõ → gọi API gợi ý
+    searchBox.addEventListener("input", () => {
+      debounce(() => fetchSuggestions(searchBox.value), 200);
+    });
 
-// ⏎ Enter → tìm kiếm
-searchBox.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    suggestionBox.classList.add("hidden");
-    loadStories(1, searchBox.value.trim());
-  }
-});
+    // ⏎ Enter → tìm kiếm
+    searchBox.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        suggestionBox.classList.add("hidden");
+        loadStories(1, searchBox.value.trim());
+      }
+    });
 
-// 🔍 Click nút tìm kiếm
-searchBtn.addEventListener("click", () => {
-  suggestionBox.classList.add("hidden");
-  loadStories(1, searchBox.value.trim());
-});
+    // 🔍 Click nút tìm kiếm
+    searchBtn.addEventListener("click", () => {
+      suggestionBox.classList.add("hidden");
+      loadStories(1, searchBox.value.trim());
+    });
 
-// Ẩn popover khi click ra ngoài
-document.addEventListener("click", (e) => {
-  if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
-    suggestionBox.classList.add("hidden");
-  }
-});
+    // Ẩn popover khi click ra ngoài
+    document.addEventListener("click", (e) => {
+      if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
+        suggestionBox.classList.add("hidden");
+      }
+    });
 
   </script>
 </body>
+
 </html>

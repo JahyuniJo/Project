@@ -68,7 +68,6 @@ router.post('/login', async (req, res) => {
         res.cookie('authToken', token, {
             httpOnly: true, // Rất quan trọng: Không thể truy cập bằng JavaScript
             secure: false,  // Đặt là true nếu bạn dùng HTTPS
-            maxAge: 1000 * 60 * 60 * 24, // 24 giờ
             sameSite: 'Lax', // Bảo vệ CSRF cơ bản
             path: '/'
         });

@@ -6,6 +6,7 @@
   <title>Thống kê hệ thống</title>
   <link rel="icon" type="image/png" href="/Logo.png">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-200 min-h-screen flex flex-col font-sans">
@@ -60,6 +61,11 @@
     <div id="statsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Thẻ thống kê -->
     </div>
+    <h3 class="text-2xl font-bold text-indigo-700 mt-10 mb-4">📈 Biểu đồ thống kê</h3>
+<div class="bg-white p-6 rounded-xl shadow-md">
+  <canvas id="statsChart" height="120"></canvas>
+</div>
+
   </main>
 
   <footer class="bg-white mt-auto shadow-inner ml-64">
@@ -102,6 +108,84 @@
     function logout() {
       fetch('/api/users/logout').then(() => (window.location.href = '/'));
     }
+
+
+    let statsChart; // để tránh tạo nhiều biểu đồ
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/stat');
+      const data = await res.json();
+
+      // ----------- Thống kê 3 ô card ------------
+      const container = document.getElementById('statsContainer');
+      container.innerHTML = `
+        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+          <i class="fa-solid fa-users text-4xl text-indigo-600 mb-3"></i>
+          <h3 class="text-xl font-semibold">Người dùng</h3>
+          <p class="text-3xl font-bold text-indigo-700">${data.totalUsers}</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+          <i class="fa-solid fa-book text-4xl text-green-600 mb-3"></i>
+          <h3 class="text-xl font-semibold">Truyện</h3>
+          <p class="text-3xl font-bold text-green-700">${data.totalStories}</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+          <i class="fa-solid fa-eye text-4xl text-yellow-500 mb-3"></i>
+          <h3 class="text-xl font-semibold">Tổng lượt đọc</h3>
+          <p class="text-3xl font-bold text-yellow-600">${data.totalViews.toLocaleString()}</p>
+        </div>
+      `;
+
+      // ----------- Vẽ biểu đồ Chart.js ------------
+      const ctx = document.getElementById('statsChart').getContext('2d');
+
+      // Xóa biểu đồ cũ nếu có
+      if (statsChart) statsChart.destroy();
+
+      statsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Người dùng', 'Truyện', 'Lượt đọc'],
+          datasets: [{
+            label: 'Thống kê hệ thống',
+            data: [
+              data.totalUsers,
+              data.totalStories,
+              data.totalViews
+            ],
+            backgroundColor: [
+              'rgba(99, 102, 241, 0.7)',   // Indigo
+              'rgba(34, 197, 94, 0.7)',    // Green
+              'rgba(234, 179, 8, 0.7)'     // Yellow
+            ],
+            borderColor: [
+              'rgba(99, 102, 241, 1)',
+              'rgba(34, 197, 94, 1)',
+              'rgba(234, 179, 8, 1)'
+            ],
+            borderWidth: 2,
+            borderRadius: 8 // bo góc cột biểu đồ
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+
+    } catch (err) {
+      console.error('❌ Lỗi khi tải thống kê:', err);
+    }
+  }
+
+  loadStats();
   </script>
 </body>
 </html>
