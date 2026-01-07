@@ -21,12 +21,12 @@ async function callAI(prompt) {
           {
             role: "system",
             content: `
-Bạn là AI chuyên tóm tắt truyện tiếng Việt cho website đọc truyện.
-Quy tắc:
-- Không tự suy đoán nội dung
-- Không hỏi thêm thông tin
-- Nếu dữ liệu không đủ, trả về: "Không đủ dữ liệu để tóm tắt"
-- Không tiết lộ nội dung quan trọng hoặc kết truyện
+                Bạn là AI chuyên tóm tắt truyện tiếng Việt cho website đọc truyện.
+                  Quy tắc:
+                  - Không tự suy đoán nội dung
+                  - Không hỏi thêm thông tin
+                  - Nếu dữ liệu không đủ, trả về: "Không đủ dữ liệu để tóm tắt"
+                  - Không tiết lộ nội dung quan trọng hoặc kết truyện
 `
           },
           {
