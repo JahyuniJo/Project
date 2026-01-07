@@ -219,6 +219,21 @@
         <div id="story-content" class="leading-relaxed text-gray-800 text-justify whitespace-pre-line"></div>
       </div>
     </div>
+    <!-- AI Summary Section -->
+    <button id="aiSummaryBtn" class="mt-4 px-4 py-2 bg-indigo-500 text-white rounded-lg">
+      🤖 Tóm tắt bằng AI
+    </button>
+
+    <div id="aiSummaryBox" class="hidden mt-3 p-4 bg-indigo-50 rounded-lg text-gray-800">
+    </div>
+
+    <!-- Truyện gợi ý -->
+    <section class="mt-12">
+      <h2 class="text-xl font-bold text-indigo-700 mb-4">
+        📌 Truyện tương tự
+      </h2>
+      <div id="recommend-similar" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </section>
 
 
     <!-- COMMENT SECTION -->
@@ -312,6 +327,25 @@
   <script src="/components/alertModal.js"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
+    // AI summary
+    document.getElementById("aiSummaryBtn").addEventListener("click", async () => {
+      const storyId = getStoryId();
+      const box = document.getElementById("aiSummaryBox");
+
+      box.classList.remove("hidden");
+      box.innerHTML = "⏳ Đang tạo tóm tắt bằng AI...";
+
+      const res = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ story_id: storyId })
+      });
+
+      const data = await res.json();
+      box.innerHTML = data.summary;
+    });
+
     // =============================
     // SOCKET.IO CLIENT
     // =============================

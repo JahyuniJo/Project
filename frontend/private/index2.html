@@ -93,6 +93,7 @@
             <li><a href="Truyện trinh thám.html" class="hover:text-indigo-600">Truyện trinh thám</a></li>
           </ul>
         </nav>
+
         <!-- 🔔 Nút chuông thông báo -->
         <div id="notifyBell" class="relative cursor-pointer hover:text-indigo-600 transition">
           <i class="fa-solid fa-bell text-2xl"></i>
@@ -171,8 +172,26 @@
   <!-- Nội dung chính -->
   <main class="flex-grow container mx-auto px-6 py-8">
     <h2 class="text-2xl font-bold text-indigo-700 mb-6">Danh sách truyện</h2>
-    <div id="story-list" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
 
+
+    <section class="mb-10">
+      <h2 class="text-xl font-bold text-indigo-700 mb-4">
+        ✨ Gợi ý dành riêng cho bạn
+      </h2>
+      <div id="recommend-personal" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-xl font-bold text-red-600 mb-4">
+        🔥 Truyện được đọc nhiều nhất
+      </h2>
+      <div id="recommend-popular" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </section>
+
+
+    
+
+    <div id="story-list" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
     <!-- Thanh phân trang -->
     <div id="pagination" class="flex justify-center items-center mt-8 gap-2"></div>
   </main>
