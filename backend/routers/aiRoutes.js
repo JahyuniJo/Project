@@ -20,7 +20,6 @@ Tác giả: ${story.author}
 
 Nội dung:
 ${story.description}
-
 YÊU CẦU BẮT BUỘC:
 - Viết bằng tiếng Việt
 - Độ dài 3–5 câu
@@ -30,8 +29,6 @@ YÊU CẦU BẮT BUỘC:
 - KHÔNG hỏi ngược lại người dùng
 - Chỉ sử dụng thông tin đã cung cấp
 `;
-  console.log("AI PROMPT:", prompt);
-  console.log("Dữ liệu:", story);
 
   // 4. Gọi AI
   const summary = await callAI(prompt);

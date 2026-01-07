@@ -4,6 +4,7 @@ const router = express.Router();
 const { syncStories, getStories } = require("../controllers/storyController");
 const client = require("../config/elasticsearch");
 const { removeVietnameseTones } = require('../utils/normalizeText');
+const authMiddleware = require("../middleware/authMiddleware");
 router.get("/search", getStories);
 router.post("/sync", syncStories);
 
@@ -171,4 +172,24 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Lỗi server khi xóa truyện" });
   }
 });
+
+// ghi log đọc truyện 
+router.post("/:id/view", authMiddleware, async (req, res) => {
+  const userId = req.user.userId;
+  const storyId = req.params.id;
+
+  await pool.query(
+    "INSERT INTO user_story_views (user_id, story_id) VALUES ($1, $2)",
+    [userId, storyId]
+  );
+
+  await pool.query(
+    "UPDATE stories SET view_count = view_count + 1 WHERE id = $1",
+    [storyId]
+  );
+
+  res.json({ success: true });
+});
+
+
 module.exports = router;

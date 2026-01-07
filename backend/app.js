@@ -291,7 +291,7 @@ app.use("/api/rating", require("./routers/ratingRoutes"));
 app.use("/api", require("./routers/report")(io, userSockets));
 app.use("/api/comments", require("./routers/commentRoutes")(io, userSockets));
 app.use("/api/ai", require("./routers/aiRoutes"));
-
+app.use("/api/recommend", require("./routers/recommendRoutes"));
 // ========== STATIC ==========
 app.use(express.static(path.join(__dirname, "../frontend/public")));
 app.use("/components", express.static(path.join(__dirname, "../frontend/src/components")));

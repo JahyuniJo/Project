@@ -11,5 +11,4 @@ router.get("/me", authMiddleware, (req, res) => {
     name: user.username || null
   });
 });
-
 module.exports = router;
