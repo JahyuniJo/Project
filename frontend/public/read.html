@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,14 +10,25 @@
 
   <style>
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .fade-in { animation: fadeIn 0.8s ease-in forwards; }
+
+    .fade-in {
+      animation: fadeIn 0.8s ease-in forwards;
+    }
 
     .cover {
       transition: transform 0.4s ease, box-shadow 0.4s ease;
     }
+
     .cover:hover {
       transform: scale(1.03);
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -28,12 +40,13 @@
     }
   </style>
 </head>
+
 <body class="bg-gradient-to-br from-indigo-50 to-purple-100 min-h-screen flex flex-col font-sans text-gray-800">
 
   <!-- HEADER -->
-    <header class="bg-white shadow-md">
+  <header class="bg-white shadow-md">
     <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
-      
+
       <!-- Logo -->
       <div class="flex items-center gap-3">
         <a href="index.html" class="flex items-center gap-2">
@@ -50,22 +63,22 @@
       <!-- Search + Menu -->
       <div class="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
         <!-- Search -->
-          <div class="relative">
+        <div class="relative">
           <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
-          <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
-                  class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
-          <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </button>
+            <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
+              class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
+            <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
           </div>
 
           <!-- Popover kết quả -->
-          <div id="searchSuggestions" 
-              class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
+          <div id="searchSuggestions"
+            class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
           </div>
-          </div>
+        </div>
 
-        
+
 
         <!-- Menu -->
         <nav>
@@ -83,7 +96,8 @@
         <a href="login.html" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
           Đăng nhập
         </a>
-        <a href="register.html" class="px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition">
+        <a href="register.html"
+          class="px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition">
           Đăng ký
         </a>
       </div>
@@ -105,34 +119,33 @@
         <p id="story-author" class="text-gray-600 mb-4 italic"></p>
         <p id="story-genres" class="text-sm text-gray-500 mb-6"></p>
         <a id="story-link" href="#" target="_blank"
-           class="inline-block bg-indigo-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-indigo-700 transition duration-300 mb-6">
-           📖 Đọc truyện gốc
+          class="inline-block bg-indigo-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:bg-indigo-700 transition duration-300 mb-6">
+          📖 Đọc truyện gốc
         </a>
         <div id="story-content" class="leading-relaxed text-gray-800 text-justify whitespace-pre-line"></div>
       </div>
     </div>
-     <!-- COMMENT SECTION -->
-<div class="mt-10 bg-white shadow-lg p-6 rounded-xl">
+    <!-- COMMENT SECTION -->
+    <div class="bg-white shadow-lg rounded-xl p-6">
 
-  <h2 class="text-xl font-bold text-gray-800 mb-4">💬 Bình luận</h2>
+      <h2 class="text-xl font-bold mb-4">💬 Bình luận</h2>
 
-  <!-- Form comment -->
-  <textarea id="commentInput" 
-            placeholder="Viết bình luận..." 
-            class="w-full border rounded-lg p-3 focus:ring focus:ring-indigo-300 outline-none mb-6"></textarea>
+      <!-- COMMENT INPUT -->
+      <textarea id="commentInput" class="w-full border rounded-lg p-3 mb-4" placeholder="Viết bình luận..."></textarea>
 
-  <a href="login.html"
-          class=" px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-    Đăng nhập để tham gia bình luận
-</a>
+      <a id="loginHint" href="login.html"
+        class="hidden inline-block mb-4 px-4 py-2 bg-indigo-600 text-white rounded-lg">
+        Đăng nhập để bình luận
+      </a>
 
-  <!-- Comment list -->
-  <div id="commentList" class="mt-6 space-y-4"></div>
-</div>
+      <!-- COMMENT LIST -->
+      <div id="commentList" class="space-y-4"></div>
+
+    </div>
   </main>
 
 
-  
+
 
   <!-- FOOTER -->
   <footer class="bg-white mt-10 shadow-inner">
@@ -144,7 +157,7 @@
       <div class="text-center md:text-right text-gray-600 text-sm">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
         <a href="https://github.com/JahyuniJo" target="_blank"
-           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+          class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
           <span>Github</span>
           <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
@@ -184,39 +197,39 @@
     }
 
     loadStory();
-    
+
 
     // Search logic
-const searchBox = document.getElementById("searchBox");
-const searchBtn = document.getElementById("searchBtn");
-const suggestionBox = document.getElementById("searchSuggestions");
-let typingTimer;
+    const searchBox = document.getElementById("searchBox");
+    const searchBtn = document.getElementById("searchBtn");
+    const suggestionBox = document.getElementById("searchSuggestions");
+    let typingTimer;
 
-//  Hàm debounce tránh spam API
-function debounce(func, delay) {
-  clearTimeout(typingTimer);
-  typingTimer = setTimeout(func, delay);
-}
-
-//  Gọi API gợi ý Elasticsearch
-async function fetchSuggestions(q) {
-  if (!q.trim()) {
-    suggestionBox.classList.add("hidden");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-
-    if (!data.length) {
-      suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
-      suggestionBox.classList.remove("hidden");
-      return;
+    //  Hàm debounce tránh spam API
+    function debounce(func, delay) {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(func, delay);
     }
 
-    // Tạo danh sách gợi ý
-    suggestionBox.innerHTML = data.map(item => `
+    //  Gọi API gợi ý Elasticsearch
+    async function fetchSuggestions(q) {
+      if (!q.trim()) {
+        suggestionBox.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        if (!data.length) {
+          suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
+          suggestionBox.classList.remove("hidden");
+          return;
+        }
+
+        // Tạo danh sách gợi ý
+        suggestionBox.innerHTML = data.map(item => `
       <div onclick="openStory(${item.id})"
            class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
         <img src="${item.cover_url || '/default-cover.jpg'}" class="w-10 h-14 object-cover rounded mr-3">
@@ -227,130 +240,228 @@ async function fetchSuggestions(q) {
       </div>
     `).join("");
 
-    suggestionBox.classList.remove("hidden");
+        suggestionBox.classList.remove("hidden");
 
-  } catch (err) {
-    console.error("❌ Lỗi fetchSuggest:", err);
-  }
-}
-//  Mở truyện khi chọn gợi ý
-window.openStory = function (id) {
-  window.location.href = `/read.html?id=${id}`;
-};
+      } catch (err) {
+        console.error("❌ Lỗi fetchSuggest:", err);
+      }
+    }
+    //  Mở truyện khi chọn gợi ý
+    window.openStory = function (id) {
+      window.location.href = `/read.html?id=${id}`;
+    };
 
-//  Chọn gợi ý → search ngay
-window.selectSuggestion = function (title) {
-  searchBox.value = title;
-  suggestionBox.classList.add("hidden");
-  loadStories(1, title);
-};
+    //  Chọn gợi ý → search ngay
+    window.selectSuggestion = function (title) {
+      searchBox.value = title;
+      suggestionBox.classList.add("hidden");
+      loadStories(1, title);
+    };
 
-// ⌨ Khi người dùng gõ → gọi API gợi ý
-searchBox.addEventListener("input", () => {
-  debounce(() => fetchSuggestions(searchBox.value), 200);
-});
-
-// ⏎ Enter → tìm kiếm
-searchBox.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    suggestionBox.classList.add("hidden");
-    loadStories(1, searchBox.value.trim());
-  }
-});
-
-// 🔍 Click nút tìm kiếm
-searchBtn.addEventListener("click", () => {
-  suggestionBox.classList.add("hidden");
-  loadStories(1, searchBox.value.trim());
-});
-
-// Ẩn popover khi click ra ngoài
-document.addEventListener("click", (e) => {
-  if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
-    suggestionBox.classList.add("hidden");
-  }
-});
-// Render comment HTML
-function getStoryId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("id");
-}
-async function loadComments() {
-  const id = getStoryId();
-  const res = await fetch(`/api/comments?story_id=${id}`);
-  const data = await res.json();
-
-  document.getElementById("commentList").innerHTML =
-    data.map(c => renderComment(c)).join("");
-}
-loadComments();
-function renderComment(c, level = 0) {
-  return `
-    <div class="mt-3 ${level > 0 ? "pl-6 border-l" : ""}">
-      <p class="font-semibold text-indigo-600">${c.username}</p>
-      <p class="text-gray-800">${c.content}</p>
-
-      <div class="flex gap-4 text-sm mt-2">
-        <button onclick="likeComment(${c.id})"
-                class="text-yellow-600 hover:underline">
-          👍 Thích (${c.likes})
-        </button>
-
-      </div>
-
-      <!-- Reply box -->
-      <div id="replyBox-${c.id}" class="mt-2 hidden">
-        <textarea id="replyInput-${c.id}"
-                  class="w-full border rounded-lg p-2 text-sm"
-                  placeholder="Viết phản hồi..."></textarea>
-
-        <button onclick="sendReply(${c.id})"
-                class="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
-          Gửi phản hồi
-        </button>
-      </div>
-
-      ${c.replies.map(r => renderComment(r, level + 1)).join("")}
-    </div>
-  `;
-}
-
-async function likeComment(commentId) {
-  try {
-    const res = await fetch("/api/comments/like", {
-      method: "POST",
-      credentials: "include",   // BẮT BUỘC: gửi cookie authToken
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ comment_id: commentId })
+    // ⌨ Khi người dùng gõ → gọi API gợi ý
+    searchBox.addEventListener("input", () => {
+      debounce(() => fetchSuggestions(searchBox.value), 200);
     });
 
-    const data = await res.json();
+    // ⏎ Enter → tìm kiếm
+    searchBox.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        suggestionBox.classList.add("hidden");
+        loadStories(1, searchBox.value.trim());
+      }
+    });
 
-    if (res.ok) {
-      loadComments();           // Reload comment sau khi like thành công
-    } else {
-      showAlert("warning", data.message || "Bạn cần đăng nhập để thích bình luận!", "Chưa đăng nhập");// Hiển thị lỗi từ backend
+    // 🔍 Click nút tìm kiếm
+    searchBtn.addEventListener("click", () => {
+      suggestionBox.classList.add("hidden");
+      loadStories(1, searchBox.value.trim());
+    });
+
+    // Ẩn popover khi click ra ngoài
+    document.addEventListener("click", (e) => {
+      if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
+        suggestionBox.classList.add("hidden");
+      }
+    });
+    // Render comment HTML
+    let currentUserId = null;
+    /* =================== COMMENTS =================== */
+    async function loadComments() {
+      const id = getStoryId();
+
+      let comments = [];
+      currentUserId = null;
+
+      try {
+        const res = await fetch(`/api/comments?story_id=${id}`, {
+          credentials: "include"
+        });
+
+        let data = null;
+
+        // ✅ 401 hoặc 200 đều cố parse JSON nếu có
+        try {
+          data = await res.json();
+        } catch (_) {
+          data = null;
+        }
+
+        if (data && Array.isArray(data.comments)) {
+          comments = data.comments;
+          currentUserId = data.currentUserId || null;
+        }
+
+      } catch (err) {
+        console.error("Fetch comments error:", err);
+      }
+
+      handleAuthUI();
+
+      const list = document.getElementById("commentList");
+
+      if (!comments.length) {
+        list.innerHTML =
+          `<p class="text-gray-500 italic">Chưa có bình luận nào</p>`;
+        return;
+      }
+
+      list.innerHTML = comments.map(c => renderComment(c)).join("");
     }
-  } catch (err) {
-    console.error("Lỗi kết nối:", err);
-    alert("Không thể kết nối server.");
-  }
-}
 
 
 
-// ======================= SHOW / HIDE REPLY BOX ====================
-function toggleReplyBox(commentId, parentUsername = "") {
-  const box = document.getElementById(`replyBox-${commentId}`);
-  box.classList.toggle("hidden");
 
-  const textarea = document.getElementById(`replyInput-${commentId}`);
-  if (!textarea.value && parentUsername) {
-    textarea.value = `@${parentUsername} `; // Hiển thị sẵn tên người comment cha
-  }
-}
+    function handleAuthUI() {
+      const input = document.getElementById("commentInput");
+      const loginHint = document.getElementById("loginHint");
+
+      if (!currentUserId) {
+        input.classList.add("hidden");
+        loginHint.classList.remove("hidden");
+      } else {
+        input.classList.remove("hidden");
+        loginHint.classList.add("hidden");
+      }
+    }
+
+    function renderComment(c, level = 0) {
+      const hasReplies = c.replies && c.replies.length > 0;
+
+      return `
+  <div class="mt-4 ${level ? "ml-12 border-l pl-4" : ""}">
+
+    <!-- Comment row -->
+    <div class="flex items-start gap-3">
+
+      <!-- Avatar -->
+      <img
+        src="${c.avatar_url || "/components/Logo.png"}"
+        class="w-10 h-10 rounded-full object-cover"
+      >
+
+      <!-- Content -->
+      <div class="flex-1">
+
+        <div class="bg-gray-100 rounded-2xl px-4 py-3 inline-block max-w-full">
+          <p class="font-semibold text-indigo-600 leading-tight">
+            ${c.username}
+          </p>
+          <p class="text-gray-900 mt-1 break-words">
+            ${c.content}
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 text-sm text-gray-600 mt-1 ml-2">
+          ${currentUserId
+          ? `
+                <button onclick="likeComment(${c.id})"
+                  class="hover:text-yellow-600 transition">
+                  👍 Thích (${c.likes})
+                </button>
+
+                <button onclick="toggleReplyBox(${c.id}, '${c.username}')"
+                  class="hover:text-indigo-600 transition">
+                  💬 Trả lời
+                </button>
+              `
+          : `<span class="italic text-gray-400">Đăng nhập để tương tác</span>`
+        }
+
+          ${hasReplies
+          ? `
+                <button
+                  onclick="toggleReplies(${c.id})"
+                  class="hover:text-indigo-600 transition font-medium">
+                   Xem (${c.replies.length}) phản hồi
+                </button>
+              `
+          : ""
+        }
+        </div>
+
+        <!-- Replies -->
+        ${hasReplies
+          ? `
+              <div
+                id="replies-${c.id}"
+                class="mt-3 hidden">
+                ${c.replies.map(r => renderComment(r, level + 1)).join("")}
+              </div>
+            `
+          : ""
+        }
+
+      </div>
+    </div>
+  </div>
+  `;
+    }
+
+
+    async function likeComment(commentId) {
+      try {
+        const res = await fetch("/api/comments/like", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ comment_id: commentId })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          loadComments();
+        } else {
+          showAlert("warning", data.message || "Bạn cần đăng nhập", "Thông báo");
+        }
+      } catch (err) {
+        showAlert("error", "Lỗi kết nối server", "Lỗi");
+      }
+    }
+    loadStory();
+    loadComments();
+
+
+    // ======================= SHOW / HIDE REPLY BOX ====================
+    function toggleReplyBox(commentId, parentUsername = "") {
+      const box = document.getElementById(`replyBox-${commentId}`);
+      box.classList.toggle("hidden");
+
+      const textarea = document.getElementById(`replyInput-${commentId}`);
+      if (!textarea.value && parentUsername) {
+        textarea.value = `@${parentUsername} `; // Hiển thị sẵn tên người comment cha
+      }
+    }
+
+    function toggleReplies(commentId) {
+      const el = document.getElementById(`replies-${commentId}`);
+      if (!el) return;
+
+      el.classList.toggle("hidden");
+    }
+
   </script>
 </body>
+
 </html>

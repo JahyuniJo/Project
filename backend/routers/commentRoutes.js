@@ -1,6 +1,7 @@
 const express = require("express");
 const pool = require("../config/db");
 const auth = require("../middleware/authMiddleware");
+const authoptional = require("../middleware/optionalAuth");
 async function sendNotification(io, targetEmail, message) {
     // Lưu DB
     await pool.query(
@@ -23,7 +24,7 @@ module.exports = function (io, userSockets) {
     // ================================
     // GET COMMENTS
     // ================================
-    router.get("/", auth, async (req, res) => {
+    router.get("/", authoptional, async (req, res) => {
         const { story_id } = req.query;
 
         if (!story_id) return res.status(400).json({ message: "Thiếu story_id" });
@@ -41,7 +42,14 @@ module.exports = function (io, userSockets) {
 
             const map = {};
             rows.forEach(c => {
-                map[c.id] = { ...c, replies: [] };
+                map[c.id] = {
+                    ...c,
+                    replies: [],
+                    canEdit: req.user?.userId === c.user_id,
+                    canDelete: req.user?.userId === c.user_id,
+                    canHide: !!req.user && req.user.userId !== c.user_id
+                };
+
             });
 
             const tree = [];

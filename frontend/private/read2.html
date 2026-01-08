@@ -957,103 +957,116 @@
     });
 
     function renderComment(c, level = 0) {
+      const hasReplies = Array.isArray(c.replies) && c.replies.length > 0;
+
       return `
-  <div id="comment-${c.id}" class="mt-4 ${level > 0 ? "ml-10 border-l pl-4" : ""} relative">
+  <div id="comment-${c.id}" class="mt-4 ${level ? "ml-10 border-l pl-4" : ""}">
 
+  <!-- Nội dung comment -->
+  <div class="flex items-start gap-3">
+    <img src="${c.avatar_url || "/components/Logo.png"}"
+         class="w-10 h-10 rounded-full object-cover">
+    <div class="flex items-start gap-2">
+    <div class="bg-gray-100 p-3 rounded-xl max-w-full">
+      <p class="font-semibold text-indigo-700">${c.username}</p>
+      <p class="mt-1 text-gray-900">${c.content}</p>
+      <p class="text-xs text-gray-500 mt-1">${formatTime(c.created_at)}</p>
+    </div>
+  </div>
 
-    <div class="flex items-start gap-3">
-
-      <!-- Avatar -->
-      <img src="${c.avatar_url || "/components/Logo.png"}"
-           class="w-10 h-10 rounded-full object-cover">
-
-      <!-- Comment bubble + menu -->
-      <div class="flex items-center gap-2">
-
-        <!-- Bubble -->
-        <div class="bg-gray-100 p-3 rounded-xl w-fit max-w-full relative break-words">
-          <p class="font-semibold text-indigo-700">${c.username}</p>
-          <p class="mt-1 text-gray-900">${c.content}</p>
-          <p class="text-xs text-gray-500 mt-1">${formatTime(c.created_at)}</p>
-
-        </div>
-
-        <!-- Menu 3 chấm nằm ngoài, căn giữa -->
-        ${c.user_id === currentUserId
-          ? `
-    <!-- Menu của chủ comment -->
-    <div class="relative flex items-center">
-      <button onclick="toggleCommentMenu(${c.id})"
-              class="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-200 transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-          </svg>
-      </button>
-
-      <div id="comment-menu-${c.id}"
-           class="hidden absolute right-0 top-6 w-32 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-[9999]">
-        <button onclick="openeditComment(${c.id}, '${c.content.replace(/'/g, "\\'")}')"
-                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
-          Chỉnh sửa
-        </button>
-        <button onclick="deleteComment(${c.id})"
-                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
-          Xóa
-        </button>
+        ${renderCommentMenu(c)}
       </div>
     </div>
-  `
-          : `
-    <!-- Menu của người khác -->
-    <div class="relative flex items-center">
+  <!-- Action buttons -->
+    <div class="flex gap-4 text-sm mt-1 ml-14">
+    <button onclick="likeComment(${c.id})"
+      class="text-gray-600 hover:text-blue-600">
+      👍 Thích (${c.likes})
+    </button>
+
+    <button onclick="toggleReplyBox(${c.id}, '${c.username}')"
+      class="text-gray-600 hover:text-blue-600">
+      💬 Trả lời
+    </button>
+   
+    ${hasReplies ? `
+      <button onclick="toggleReplies(${c.id})"
+        class="text-gray-600 hover:text-indigo-600">
+         Xem ${c.replies.length} phản hồi
+      </button>
+    ` : ""}
+  </div>
+
+   <!-- Reply input -->
+  <div id="replyBox-${c.id}" class="hidden ml-14 mt-2">
+    <textarea id="replyInput-${c.id}"
+      class="w-full border rounded-lg p-2 text-sm"
+      placeholder="Viết phản hồi..."></textarea>
+    <button onclick="sendReply(${c.id})"
+      class="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm">
+      Gửi
+    </button>
+  </div>
+
+  <!-- Replies (ẨN MẶC ĐỊNH) -->
+  ${hasReplies ? `
+    <div id="replies-${c.id}" class="hidden ml-14 mt-3 space-y-3">
+      ${c.replies.map(r => renderComment(r, level + 1)).join("")}
+    </div>
+  ` : ""}
+
+</div>`;
+    }
+
+    function renderCommentMenu(c) {
+      // Guest → không có menu
+      if (!currentUserId) return "";
+
+      // Chủ comment
+      if (c.user_id === currentUserId) {
+        return `
+      <div class="relative">
+        <button onclick="toggleCommentMenu(${c.id})"
+          class="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-200">
+          <i class="fa-solid fa-ellipsis"></i>
+        </button>
+
+        <div id="comment-menu-${c.id}"
+          class="hidden absolute right-0 top-6 w-32 bg-white rounded-lg shadow-lg z-50">
+          <button
+            data-comment-id="${c.id}"
+            data-comment-content="${encodeURIComponent(c.content)}"
+            onclick="openeditComment(this)"
+            class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+            Chỉnh sửa
+          </button>
+
+          <button onclick="deleteComment(${c.id})"
+            class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-600">
+            Xóa
+          </button>
+        </div>
+      </div>
+    `;
+      }
+
+      // Comment của người khác
+      return `
+    <div class="relative">
       <button onclick="toggleCommentMenu(${c.id})"
-              class="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-200 transition">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-          </svg>
+        class="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-200">
+        <i class="fa-solid fa-ellipsis"></i>
       </button>
 
       <div id="comment-menu-${c.id}"
-           class="hidden absolute right-0 top-6 w-32 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-[9999]">
+        class="hidden absolute right-0 top-6 w-32 bg-white rounded-lg shadow-lg z-50">
         <button onclick="hideComment(${c.id})"
-                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+          class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
           Ẩn bình luận
         </button>
       </div>
     </div>
-  `
-        }
-
-
-      </div>
-    </div>
-
-    <!-- Like + Reply -->
-    <div class="flex gap-4 text-sm mt-1 ml-14">
-      <button onclick="likeComment(${c.id})" class="text-gray-600 hover:text-blue-600">
-        👍 Thích (${c.likes})
-      </button>
-      <button onclick="toggleReplyBox(${c.id}, '${c.username}')"
-              class="text-gray-600 hover:text-blue-600">
-        💬 Trả lời
-      </button>
-    </div>
-
-    <!-- Reply box -->
-    <div id="replyBox-${c.id}" class="hidden ml-14 mt-2">
-      <textarea id="replyInput-${c.id}"
-                class="w-full border rounded-lg p-2 text-sm"
-                placeholder="Viết phản hồi..."></textarea>
-
-      <button onclick="sendReply(${c.id})"
-              class="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
-        Gửi
-      </button>
-    </div>
-
-    ${c.replies.map(r => renderComment(r, level + 1)).join("")}
-
-  </div>`;
+  `;
     }
 
 
@@ -1072,6 +1085,15 @@
       setTimeout(() => el.remove(), 300);
     }
 
+
+    function toggleReplies(commentId) {
+      const el = document.getElementById(`replies-${commentId}`);
+      if (!el) return;
+
+      el.classList.toggle("hidden");
+    }
+
+
     function formatTime(timeString) {
       const date = new Date(timeString);
       return date.toLocaleString("vi-VN", {
@@ -1084,6 +1106,7 @@
     }
 
 
+    // Lấy danh sách comments từ API và render
     async function loadComments() {
       const id = getStoryId();
       const res = await fetch(`/api/comments?story_id=${id}`);
@@ -1093,10 +1116,75 @@
 
       document.getElementById("commentList").innerHTML =
         data.comments.map(c => renderComment(c)).join("");
+
+      document.querySelectorAll("[id^='replies-']").forEach(el => {
+        el.classList.add("hidden");
+      });
     }
     loadComments();
 
     // Sửa comments
+
+    function openeditComment(btn) {
+      const commentId = btn.dataset.commentId;
+      const oldContent = decodeURIComponent(btn.dataset.commentContent);
+
+      const menu = document.getElementById(`comment-menu-${commentId}`);
+      if (menu) menu.classList.add("hidden");
+
+      const commentEl = document.getElementById(`comment-${commentId}`);
+      if (!commentEl) return;
+
+      const bubble = commentEl.querySelector(".bg-gray-100");
+      if (!bubble || bubble.querySelector("textarea")) return;
+
+      const originalHTML = bubble.innerHTML;
+
+      bubble.innerHTML = `
+    <textarea id="editInput-${commentId}"
+      class="w-full border rounded-lg p-2 text-sm"
+      rows="3">${oldContent}</textarea>
+
+    <div class="flex gap-2 mt-2 justify-end">
+      <button onclick="cancelEditComment(${commentId})"
+        class="px-3 py-1 bg-gray-300 rounded">Hủy</button>
+
+      <button onclick="submitEditComment(${commentId})"
+        class="px-3 py-1 bg-indigo-600 text-white rounded">Lưu</button>
+    </div>
+  `;
+
+      bubble.dataset.original = originalHTML;
+    }
+
+
+    function cancelEditComment(commentId) {
+      const commentEl = document.getElementById(`comment-${commentId}`);
+      if (!commentEl) return;
+
+      const bubble = commentEl.querySelector(".bg-gray-100");
+      if (!bubble) return;
+
+      bubble.innerHTML = bubble.dataset.original;
+    }
+
+    async function submitEditComment(commentId) {
+      const input = document.getElementById(`editInput-${commentId}`);
+      if (!input) return;
+
+      const newContent = input.value.trim();
+      if (!newContent) {
+        showAlert("warning", "Nội dung không được để trống", "Cảnh báo");
+        return;
+      }
+
+      const success = await updateComment(commentId, newContent);
+      if (success) {
+        loadComments(); // reload lại toàn bộ comment tree
+      }
+    }
+
+
     async function updateComment(commentId, newContent) {
       try {
         const res = await fetch("/api/comments", {
@@ -1118,7 +1206,7 @@
           return;
         }
 
-        alert("Cập nhật comment thành công!");
+        showAlert("success", "Cập nhật comment thành công!");
         return true;
 
       } catch (err) {
@@ -1129,7 +1217,8 @@
 
     // Xóa comment
     async function deleteComment(commentId) {
-      if (!confirm("Bạn có chắc muốn xóa comment này?")) return;
+      const confirmed = await showConfirm("Bạn có chắc muốn xóa comment này?", "Xác nhận");
+      if (!confirmed) return;
 
       try {
         const res = await fetch("/api/comments", {
