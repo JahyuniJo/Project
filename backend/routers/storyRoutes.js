@@ -7,6 +7,31 @@ const { removeVietnameseTones } = require('../utils/normalizeText');
 const authMiddleware = require("../middleware/authMiddleware");
 router.get("/search", getStories);
 router.post("/sync", syncStories);
+// GET /api/stories/by-genre?genre=Truyện%20hài
+router.get("/by-genre", async (req, res) => {
+  try {
+    const { genre } = req.query;
+
+    if (!genre) {
+      return res.status(400).json({ message: "Thiếu genre" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM stories
+      WHERE $1 = ANY(genres)
+      ORDER BY created_at DESC
+      `,
+      [genre]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ by-genre error:", err);
+    res.status(500).json({ message: "Lỗi lọc thể loại" });
+  }
+});
 
 // API lấy danh sách truyện có phân trang
 router.get("/", async (req, res) => {
@@ -190,6 +215,7 @@ router.post("/:id/view", authMiddleware, async (req, res) => {
 
   res.json({ success: true });
 });
+
 
 
 module.exports = router;

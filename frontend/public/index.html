@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,12 +17,13 @@
     }
   </style>
 </head>
+
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
 
   <!-- 🔹 Header -->
   <header class="bg-white shadow-md">
     <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
-      
+
       <!-- Logo -->
       <div class="flex items-center gap-3">
         <a href="index.html" class="flex items-center gap-2">
@@ -38,29 +40,50 @@
       <!-- Search + Menu -->
       <div class="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
 
-       <!-- Search -->
-          <div class="relative">
+        <!-- Search -->
+        <div class="relative">
           <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
-          <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
-                  class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
-          <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </button>
+            <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
+              class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
+            <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
           </div>
 
           <!-- Popover kết quả -->
-          <div id="searchSuggestions" 
-              class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
+          <div id="searchSuggestions"
+            class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
           </div>
-          </div>
+        </div>
 
         <!-- Menu -->
         <nav>
-          <ul class="flex flex-wrap justify-center md:justify-start gap-4 text-sm font-medium text-gray-700">
-            <li><a href="Truyện hài.html" class="hover:text-indigo-600">Truyện hài</a></li>
-            <li><a href="Truyện ngôn tình.html" class="hover:text-indigo-600">Truyện ngôn tình</a></li>
-            <li><a href="Truyện kinh dị.html" class="hover:text-indigo-600">Truyện kinh dị</a></li>
-            <li><a href="Truyện trinh thám.html" class="hover:text-indigo-600">Truyện trinh thám</a></li>
+          <ul class="flex flex-wrap gap-3 text-sm font-medium text-gray-700">
+            <li>
+              <a href="?genre=Giả%20Tưởng" class="hover:text-indigo-600">
+                Truyện giả tưởng
+              </a>
+            </li>
+            <li>
+              <a href="?genre=Hành%20Động" class="hover:text-indigo-600">
+                Truyện hành động
+              </a>
+            </li>
+            <li>
+              <a href="?genre=Kinh%20Dị" class="hover:text-indigo-600">
+                Truyện kinh dị
+              </a>
+            </li>
+            <li>
+              <a href="?genre=Hài%20Hước" class="hover:text-indigo-600">
+                Truyện hài hước
+              </a>
+            </li>
+            <li>
+              <a href="?genre=Truyện%20Việt%20Nam" class="hover:text-indigo-600">
+                Truyện Việt Nam
+              </a>
+            </li>
           </ul>
         </nav>
       </div>
@@ -70,7 +93,8 @@
         <a href="login.html" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
           Đăng nhập
         </a>
-        <a href="register.html" class="px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition">
+        <a href="register.html"
+          class="px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition">
           Đăng ký
         </a>
       </div>
@@ -78,8 +102,21 @@
   </header>
 
   <!-- 🔹 Nội dung chính -->
- <main class="flex-grow container mx-auto px-6 py-8">
-    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Danh sách truyện</h2>
+  <main class="flex-grow container mx-auto px-6 py-8">
+    <!-- Header danh sách / thể loại -->
+    <div id="listHeader" class="flex items-center justify-between mb-6">
+      <h2 id="listTitle" class="text-2xl font-bold text-indigo-700">
+        Danh sách truyện
+      </h2>
+
+      <!-- Nút reset (ẩn mặc định) -->
+      <button id="resetGenreBtn" onclick="resetGenre()" class="hidden text-sm px-4 py-2 rounded-lg
+                 border border-indigo-600 text-indigo-600
+                 hover:bg-indigo-50 transition">
+        ← Xem tất cả truyện
+      </button>
+    </div>
+
     <div id="story-list" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
 
     <!-- Thanh phân trang -->
@@ -96,7 +133,7 @@
       <div class="text-center md:text-right text-gray-600 text-sm">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
         <a href="https://github.com/JahyuniJo" target="_blank"
-           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+          class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
           <span>Github</span>
           <img src="/components/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
@@ -108,52 +145,94 @@
 
   <!-- 🔹 Script chính -->
   <script>
-   let currentPage = 1;
+    let currentPage = 1;
     const limit = 12;
+    const params = new URLSearchParams(window.location.search);
+    const currentGenre = params.get("genre");
 
-    async function loadStories(page = 1) {
+    async function loadStories(page = 1, search = "") {
       try {
-        const res = await fetch(`/api/stories?page=${page}&limit=${limit}`);
-        const data = await res.json();
+        currentPage = page;
+
+        let url = `/api/stories?page=${page}&limit=${limit}`;
+
+        if (search) {
+          url += `&q=${encodeURIComponent(search)}`;
+        }
+
+        if (currentGenre) {
+          url = `/api/stories/by-genre?genre=${encodeURIComponent(currentGenre)}&page=${page}&limit=${limit}`;
+        }
+
+        const res = await fetch(url);
+        const raw = await res.json();
+
+        const data = Array.isArray(raw)
+          ? { stories: raw, page: 1, totalPages: 1 }
+          : raw;
+
+
         const container = document.getElementById("story-list");
+        const title = document.getElementById("listTitle");
+        const resetBtn = document.getElementById("resetGenreBtn");
+
+        if (currentGenre) {
+          title.textContent = `📚 Thể loại: ${currentGenre}`;
+          resetBtn.classList.remove("hidden");
+        } else {
+          title.textContent = "Danh sách truyện";
+          resetBtn.classList.add("hidden");
+        }
+
         container.innerHTML = (await Promise.all(
-  data.stories.map(async (story) => {
-    const res = await fetch(`/api/rating?story_id=${story.id}`);
-    const rating = await res.json();
+          data.stories.map(async (story) => {
+            const res = await fetch(`/api/rating?story_id=${story.id}`);
+            const rating = await res.json();
 
-    return `
-      <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-        <a href="read.html?id=${story.id}">
-          <img src="${story.cover_url || '/default-cover.jpg'}" class="w-full h-56 object-cover">
-        </a>
+            return `
+<div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+  <a href="read.html?id=${story.id}">
+    <img src="${story.cover_url || '/default-cover.jpg'}" class="w-full h-56 object-cover">
+  </a>
 
-        <div class="p-4">
-          <a href="read.html?id=${story.id}">
-            <h3 class="text-lg font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
-          </a>
+  <div class="p-4">
+    <a href="read.html?id=${story.id}">
+      <h3 class="text-lg font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
+    </a>
 
-          <p class="text-sm text-gray-600">Tác giả: ${story.author || "Không rõ"}</p>
-          <p class="text-xs text-gray-500 mb-2">Thể loại: ${story.genres || "Chưa rõ"}</p> <p class="description collapsed text-sm text-gray-700 mb-2">${story.description || ""}</p>
-          <button class="text-indigo-600 text-sm hover:underline" onclick="toggleDescription(this)">Xem thêm</button> <span class="inline-block mt-3 px-3 py-1 text-xs rounded-full bg-indigo-100 text-indigo-700">${story.status || "unknown"}</span>
-          <p class="text-yellow-600 font-semibold mb-2">
-            ⭐ ${rating.avg?.toFixed(1) || 0} / 5 (${rating.total || 0} đánh giá)
-          </p>
+    <p class="text-sm text-gray-600">Tác giả: ${story.author || "Không rõ"}</p>
+    <p class="text-xs text-gray-500 mb-2">
+      Thể loại: ${(story.genres || []).join(", ")}
+    </p>
 
-          <p><i class="fa-solid fa-eye text-gray-500"></i> ${story.view_count} lượt đọc</p>
-        </div>
-      </div>
-    `;
-  })
-)).join("");
+    <p class="description collapsed text-sm text-gray-700 mb-2">${story.description || ""}</p>
+    <button class="text-indigo-600 text-sm hover:underline" onclick="toggleDescription(this)">Xem thêm</button>
+
+    <p class="text-yellow-600 font-semibold mt-2">
+      ⭐ ${rating.avg?.toFixed(1) || 0} / 5 (${rating.total || 0})
+    </p>
+
+    <p class="text-xs text-gray-500 mt-1">
+      <i class="fa-solid fa-eye"></i> ${story.view_count} lượt đọc
+    </p>
+  </div>
+</div>`;
+          })
+        )).join("");
 
         renderPagination(data.page, data.totalPages);
       } catch (err) {
         console.error("Lỗi tải truyện:", err);
       }
     }
-  
 
-  // Hàm thu gọn/mở rộng mô tả
+    function resetGenre() {
+      history.replaceState(null, "", "/index.html");
+      window.location.reload();
+    }
+
+
+    // Hàm thu gọn/mở rộng mô tả
     function toggleDescription(button) {
       const desc = button.previousElementSibling;
       if (desc.classList.contains('collapsed')) {
@@ -202,42 +281,42 @@
       pagination.innerHTML = `<div class="flex flex-wrap justify-center items-center gap-1 sm:gap-2">${html}</div>`;
     }
 
-    loadStories();
+    loadStories(1);
 
 
-       /* ==========================
-   🔍 SEARCH + POPOVER LOGIC
-   ========================== */
-const searchBox = document.getElementById("searchBox");
-const searchBtn = document.getElementById("searchBtn");
-const suggestionBox = document.getElementById("searchSuggestions");
-let typingTimer;
+    /* ==========================
+🔍 SEARCH + POPOVER LOGIC
+========================== */
+    const searchBox = document.getElementById("searchBox");
+    const searchBtn = document.getElementById("searchBtn");
+    const suggestionBox = document.getElementById("searchSuggestions");
+    let typingTimer;
 
-// 🧠 Hàm debounce tránh spam API
-function debounce(func, delay) {
-  clearTimeout(typingTimer);
-  typingTimer = setTimeout(func, delay);
-}
-
-// 📌 Gọi API gợi ý Elasticsearch
-async function fetchSuggestions(q) {
-  if (!q.trim()) {
-    suggestionBox.classList.add("hidden");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-
-    if (!data.length) {
-      suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
-      suggestionBox.classList.remove("hidden");
-      return;
+    // 🧠 Hàm debounce tránh spam API
+    function debounce(func, delay) {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(func, delay);
     }
 
-    // Tạo danh sách gợi ý
-    suggestionBox.innerHTML = data.map(item => `
+    // 📌 Gọi API gợi ý Elasticsearch
+    async function fetchSuggestions(q) {
+      if (!q.trim()) {
+        suggestionBox.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        if (!data.length) {
+          suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
+          suggestionBox.classList.remove("hidden");
+          return;
+        }
+
+        // Tạo danh sách gợi ý
+        suggestionBox.innerHTML = data.map(item => `
       <div onclick="openStory(${item.id})"
            class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
         <img src="${item.cover_url || '/default-cover.jpg'}" class="w-10 h-14 object-cover rounded mr-3">
@@ -248,49 +327,50 @@ async function fetchSuggestions(q) {
       </div>
     `).join("");
 
-    suggestionBox.classList.remove("hidden");
+        suggestionBox.classList.remove("hidden");
 
-  } catch (err) {
-    console.error("❌ Lỗi fetchSuggest:", err);
-  }
-}
-// 📌 Mở truyện khi chọn gợi ý
-window.openStory = function (id) {
-  window.location.href = `/read.html?id=${id}`;
-};
+      } catch (err) {
+        console.error("❌ Lỗi fetchSuggest:", err);
+      }
+    }
+    // 📌 Mở truyện khi chọn gợi ý
+    window.openStory = function (id) {
+      window.location.href = `/read.html?id=${id}`;
+    };
 
-// 📌 Chọn gợi ý → search ngay
-window.selectSuggestion = function (title) {
-  searchBox.value = title;
-  suggestionBox.classList.add("hidden");
-  loadStories(1, title);
-};
+    // 📌 Chọn gợi ý → search ngay
+    window.selectSuggestion = function (title) {
+      searchBox.value = title;
+      suggestionBox.classList.add("hidden");
+      loadStories(1, title);
+    };
 
-// ⌨ Khi người dùng gõ → gọi API gợi ý
-searchBox.addEventListener("input", () => {
-  debounce(() => fetchSuggestions(searchBox.value), 200);
-});
+    // ⌨ Khi người dùng gõ → gọi API gợi ý
+    searchBox.addEventListener("input", () => {
+      debounce(() => fetchSuggestions(searchBox.value), 200);
+    });
 
-// ⏎ Enter → tìm kiếm
-searchBox.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    suggestionBox.classList.add("hidden");
-    loadStories(1, searchBox.value.trim());
-  }
-});
+    // ⏎ Enter → tìm kiếm
+    searchBox.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        suggestionBox.classList.add("hidden");
+        loadStories(1, searchBox.value.trim());
+      }
+    });
 
-// 🔍 Click nút tìm kiếm
-searchBtn.addEventListener("click", () => {
-  suggestionBox.classList.add("hidden");
-  loadStories(1, searchBox.value.trim());
-});
+    // 🔍 Click nút tìm kiếm
+    searchBtn.addEventListener("click", () => {
+      suggestionBox.classList.add("hidden");
+      loadStories(1, searchBox.value.trim());
+    });
 
-// Ẩn popover khi click ra ngoài
-document.addEventListener("click", (e) => {
-  if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
-    suggestionBox.classList.add("hidden");
-  }
-});
-</script>
+    // Ẩn popover khi click ra ngoài
+    document.addEventListener("click", (e) => {
+      if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
+        suggestionBox.classList.add("hidden");
+      }
+    });
+  </script>
 </body>
+
 </html>
