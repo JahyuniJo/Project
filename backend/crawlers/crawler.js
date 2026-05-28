@@ -1,7 +1,6 @@
-import axios from "axios";
-import * as cheerio from "cheerio";
-import pkg from "pg";
-const { Client } = pkg;
+const axios = require("axios");
+const cheerio = require("cheerio");
+const { Client } = require("pg");
 
 const url = "https://comi.mobi/truyen/quan-at-chu-bai/";
 

@@ -1,104 +1,187 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const pool = require('../config/db');
-const nodemailer = require('nodemailer');
-const bcrypt = require('bcryptjs');
+const pool = require("../config/pool");
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
 const authMiddleware = require("../middleware/authMiddleware");
 
-// Tạo transporter Gmail
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const OTP_EXPIRY_MS = 2 * 60 * 1000; // 2 phút
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "dieu300504@gmail.com",
-    pass: "wpnm hepl gixm bgvv" // dùng App Password, không dùng mật khẩu gmail trực tiếp
-  }
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-// 1. Gửi OTP
-router.post('/forgot-password', async (req, res) => {
+// ─────────────────────────────────────────────
+// PIPELINE QUÊN MẬT KHẨU
+// Bước 1 → Bước 2 → Bước 3 (trong một request)
+// ─────────────────────────────────────────────
+
+// Bước 1: Gửi OTP về email
+router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
-  // Tạo mã OTP ngẫu nhiên 6 số
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = new Date(Date.now() + 2 * 60 * 1000); // hết hạn sau 5 phút
-
-  await pool.query(
-    "UPDATE users SET otp = $1, otp_expires = $2 WHERE email = $3",
-    [otp, expires, email]
-  );
-
-  // Gửi email
-  await transporter.sendMail({
-    from: "dieu300504@gmail.com",
-    to: email,
-    subject: "Mã khôi phục mật khẩu",
-    text: `Mã xác nhận của bạn là: ${otp}. Có hiệu lực trong 2 phút.`
-  });
-
-  res.json({ message: "OTP đã được gửi đến email của bạn" });
-});
-
-// 2. Xác nhận OTP
-router.post('/verify-otp', async (req, res) => {
-  const { email, otp } = req.body;
-
-  const result = await pool.query(
-    "SELECT * FROM users WHERE email = $1 AND otp = $2 AND otp_expires > NOW()",
-    [email, otp]
-  );
-
-  if (result.rows.length === 0) {
-    return res.status(400).json({ message: "OTP sai hoặc đã hết hạn" });
-  }
-
-  res.json({ message: "OTP hợp lệ, cho phép đổi mật khẩu" });
-});
-
-// 3. Đổi mật khẩu
-router.post('/reset-password', async (req, res) => {
-  const { email, newPassword } = req.body;
-    const hashed = await bcrypt.hash(newPassword, 10);
-  await pool.query(
-    "UPDATE users SET password = $1, otp = NULL, otp_expires = NULL WHERE email = $2",
-    [hashed, email]
-  );
-
-  res.json({ message: "Đổi mật khẩu thành công" });
-});
-
-
-
-// 4. Đổi mật khẩu khi đã đăng nhập
-
-router.post("/change-password", authMiddleware, async (req, res) => {
-  const userId = req.user.userId;
-  const { currentPassword, newPassword } = req.body;
-
-  if (!userId) return res.status(401).json({ message: "Chưa đăng nhập" });
-
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({ message: "Thiếu thông tin mật khẩu" });
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ message: "Email không hợp lệ" });
   }
 
   try {
-    // Lấy user
-    const result = await pool.query("SELECT password FROM users WHERE id = $1", [userId]);
-    if (result.rows.length === 0) return res.status(404).json({ message: "Không tìm thấy tài khoản" });
+    const userRes = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+    if (userRes.rows.length === 0) {
+      // Trả lời chung để tránh email enumeration
+      return res.json({ message: "Nếu email tồn tại, mã OTP đã được gửi" });
+    }
 
-    const hashedPassword = result.rows[0].password;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    // So sánh mật khẩu hiện tại
-    const match = await bcrypt.compare(currentPassword, hashedPassword);
-    if (!match) return res.status(400).json({ message: "Mật khẩu hiện tại không đúng" });
+    await pool.query(
+      "UPDATE users SET otp = $1, otp_expires = $2 WHERE email = $3",
+      [otp, expires, email]
+    );
 
-    // Hash mật khẩu mới
-    const newHash = await bcrypt.hash(newPassword, 10);
-    await pool.query("UPDATE users SET password = $1 WHERE id = $2", [newHash, userId]);
+    await transporter.sendMail({
+      from: `"DH.story" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Mã khôi phục mật khẩu – DH.story",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto">
+          <h2 style="color:#4f46e5">Khôi phục mật khẩu</h2>
+          <p>Mã xác nhận của bạn là:</p>
+          <div style="font-size:32px;font-weight:bold;letter-spacing:6px;color:#4f46e5;margin:16px 0">
+            ${otp}
+          </div>
+          <p style="color:#6b7280">Mã có hiệu lực trong <strong>2 phút</strong>.</p>
+          <p style="color:#6b7280;font-size:12px">Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
+        </div>
+      `,
+    });
 
-    res.json({ message: "Đổi mật khẩu thành công!" });
+    res.json({ message: "Nếu email tồn tại, mã OTP đã được gửi" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Lỗi server" });
+    console.error("[authController] forgot-password:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  }
+});
+
+// Bước 2: Xác nhận OTP
+// Frontend gọi để check OTP trước khi cho nhập mật khẩu mới
+router.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Vui lòng nhập email và mã OTP" });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT id FROM users WHERE email = $1 AND otp = $2 AND otp_expires > NOW()",
+      [email, otp]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: "Mã OTP không đúng hoặc đã hết hạn" });
+    }
+
+    res.json({ message: "Mã OTP hợp lệ" });
+  } catch (err) {
+    console.error("[authController] verify-otp:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  }
+});
+
+// Bước 3: Đặt lại mật khẩu (phải kèm OTP — verify lần cuối)
+// Frontend gửi email + otp + newPassword trong một request
+router.post("/reset-password", async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: "Mật khẩu phải có ít nhất 6 ký tự" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Verify OTP và lock row để tránh race condition
+    const result = await client.query(
+      `SELECT id FROM users
+       WHERE email = $1 AND otp = $2 AND otp_expires > NOW()
+       FOR UPDATE`,
+      [email, otp]
+    );
+
+    if (result.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "Mã OTP không đúng hoặc đã hết hạn" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Reset mật khẩu và xóa OTP ngay lập tức (dùng 1 lần)
+    await client.query(
+      "UPDATE users SET password = $1, otp = NULL, otp_expires = NULL WHERE email = $2",
+      [hashedPassword, email]
+    );
+
+    await client.query("COMMIT");
+    res.json({ message: "Đặt lại mật khẩu thành công" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[authController] reset-password:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  } finally {
+    client.release();
+  }
+});
+
+// ─────────────────────────────────────────────
+// Đổi mật khẩu khi đã đăng nhập
+// ─────────────────────────────────────────────
+router.post("/change-password", authMiddleware, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: "Vui lòng nhập đầy đủ mật khẩu" });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT password FROM users WHERE id = $1",
+      [req.user.userId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy tài khoản" });
+    }
+
+    const match = await bcrypt.compare(currentPassword, result.rows[0].password);
+    if (!match) {
+      return res.status(400).json({ message: "Mật khẩu hiện tại không đúng" });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      "UPDATE users SET password = $1 WHERE id = $2",
+      [newHash, req.user.userId]
+    );
+
+    res.json({ message: "Đổi mật khẩu thành công" });
+  } catch (err) {
+    console.error("[authController] change-password:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
   }
 });
 

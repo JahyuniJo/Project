@@ -1,18 +1,11 @@
-const pool = require('../config/db');
-const client = require('../config/elasticsearch');
+const { syncStoriesFromSql } = require("../services/searchService");
 
-async function syncStories() {
-  const res = await pool.query('SELECT * FROM stories;');
-  const stories = res.rows;
-
-  const body = stories.flatMap(story => [
-    { index: { _index: 'stories', _id: story.id } },
-    story
-  ]);
-
-  await client.bulk({ refresh: true, body });
-
-  console.log(`✅ Đã sync ${stories.length} truyện lên Elasticsearch`);
-}
-
-syncStories().catch(console.error);
+syncStoriesFromSql()
+  .then(({ indexed, errors }) => {
+    const suffix = errors ? " with bulk errors" : "";
+    console.log(`Synced ${indexed} stories to Elasticsearch${suffix}.`);
+  })
+  .catch((error) => {
+    console.error("Failed to sync stories to Elasticsearch:", error.message);
+    process.exitCode = 1;
+  });
