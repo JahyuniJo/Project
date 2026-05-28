@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thông tin cá nhân | DH.story</title>
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes ring {
+      0%   { transform: rotate(0); }
+      20%  { transform: rotate(-15deg); }
+      40%  { transform: rotate(15deg); }
+      60%  { transform: rotate(-10deg); }
+      80%  { transform: rotate(10deg); }
+      100% { transform: rotate(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .stat-card { animation: fadeUp 0.4s ease forwards; }
+    .stat-card:nth-child(2) { animation-delay: 0.08s; }
+    .stat-card:nth-child(3) { animation-delay: 0.16s; }
+    .notification-enter { opacity: 0; transform: translateY(-20px); }
+    .notification-enter-active {
+      opacity: 1; transform: translateY(0);
+      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    }
+    .notification-leave-active {
+      opacity: 0; transform: translateY(-20px);
+      transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-100 min-h-screen flex flex-col font-sans">
+
+  <div id="notification-container" class="fixed top-5 right-5 z-[100] space-y-3 pointer-events-none"></div>
+
+  <!-- HEADER -->
+  <header class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50">
+    <div class="container mx-auto flex items-center justify-between py-4 px-6">
+      <a href="index2.html" class="flex items-center gap-2 hover:opacity-80 transition">
+        <img src="/assets/images/Logo.png" alt="Logo" class="w-10 h-10 rounded-full shadow-sm">
+        <span class="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent">DH.story</span>
+      </a>
+      <h1 class="text-lg font-semibold text-gray-700">Thông tin cá nhân</h1>
+      <div class="flex items-center gap-6">
+        <div id="notifyBell" class="relative cursor-pointer hover:text-indigo-600 transition">
+          <i class="fa-solid fa-bell text-2xl"></i>
+          <span id="notifyCount"
+            class="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+        </div>
+        <a href="index2.html" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+          <i class="fa-solid fa-home mr-1"></i> Trang chủ
+        </a>
+      </div>
+      <div id="notifyToast"
+        class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500 opacity-0 z-50"></div>
+      <div id="notifyBox"
+        class="hidden absolute right-6 top-16 w-80 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 z-50">
+        <div class="px-4 py-2 bg-indigo-600 text-white font-semibold">Thông báo</div>
+        <ul id="notifyList" class="max-h-60 overflow-y-auto divide-y divide-gray-100"></ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="flex-grow container mx-auto py-10 px-6">
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 relative overflow-hidden">
+      <div class="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-tr from-indigo-300 to-purple-300 rounded-full opacity-30 blur-3xl"></div>
+
+      <div class="relative flex flex-col items-center gap-3 z-10">
+
+        <!-- Avatar -->
+        <div class="relative group">
+          <img id="avatar" src="/assets/images/Logo.png" alt="Avatar"
+               class="w-28 h-28 rounded-full border-4 border-indigo-500 object-cover shadow-md transition-transform hover:scale-105 duration-200">
+          <label for="uploadAvatar"
+                 class="absolute bottom-0 right-0 bg-indigo-600 text-white rounded-full p-2 shadow cursor-pointer hover:bg-indigo-700 transition"
+                 title="Thay ảnh đại diện">
+            <i class="fa-solid fa-camera text-sm"></i>
+          </label>
+          <input type="file" id="uploadAvatar" accept="image/*" class="hidden">
+        </div>
+
+        <h2 id="username" class="text-2xl font-bold text-indigo-700 mt-1">Tên người dùng</h2>
+        <p id="email" class="text-gray-600 text-sm">Email người dùng</p>
+        <p id="joinedDate" class="text-gray-400 text-xs flex items-center gap-1">
+          <i class="fa-regular fa-calendar"></i>
+          <span>Đang tải...</span>
+        </p>
+
+        <!-- Stats cards -->
+        <div class="w-full grid grid-cols-3 gap-3 mt-4">
+          <div class="stat-card bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center">
+            <p id="statStories" class="text-2xl font-bold text-indigo-600">—</p>
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fa-solid fa-book-open text-indigo-400 mr-1"></i>Truyện đã đọc
+            </p>
+          </div>
+          <div class="stat-card bg-pink-50 border border-pink-100 rounded-xl p-4 text-center">
+            <p id="statFavLists" class="text-2xl font-bold text-pink-500">—</p>
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fa-solid fa-heart text-pink-400 mr-1"></i>Danh sách YT
+            </p>
+          </div>
+          <div class="stat-card bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
+            <p id="statReports" class="text-2xl font-bold text-amber-500">—</p>
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fa-solid fa-flag text-amber-400 mr-1"></i>Báo lỗi đã gửi
+            </p>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="mt-4 flex flex-col sm:flex-row gap-3 w-full justify-center">
+          <a href="/fav.html"
+             class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-200 transition">
+            <i class="fa-solid fa-heart text-indigo-500"></i> Danh sách yêu thích
+          </a>
+          <button id="btnChangePassword"
+                  class="flex items-center justify-center gap-2 px-5 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
+            <i class="fa-solid fa-key"></i> Đổi mật khẩu
+          </button>
+          <a href="/index2.html"
+             class="flex items-center justify-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại
+          </a>
+        </div>
+
+        <!-- Change password form -->
+        <form id="changePasswordForm" class="hidden w-full flex flex-col gap-3 mt-4 p-5 border rounded-xl bg-indigo-50">
+          <div class="relative">
+            <input type="password" id="currentPassword" placeholder="Mật khẩu hiện tại"
+                   class="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring focus:ring-indigo-300">
+            <button type="button" tabindex="-1"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onclick="togglePwd('currentPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <div class="relative">
+            <input type="password" id="newPassword" placeholder="Mật khẩu mới"
+                   class="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring focus:ring-indigo-300">
+            <button type="button" tabindex="-1"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onclick="togglePwd('newPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <div class="relative">
+            <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu mới"
+                   class="w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring focus:ring-indigo-300">
+            <button type="button" tabindex="-1"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onclick="togglePwd('confirmPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <button type="submit"
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            Xác nhận đổi mật khẩu
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white/80 backdrop-blur-md shadow-inner mt-12">
+    <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center gap-2 mb-4 md:mb-0">
+        <img src="/assets/images/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
+        <span class="font-bold text-indigo-600 text-lg">DH.story</span>
+      </div>
+      <div class="text-center md:text-right text-gray-600 text-sm">
+        <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
+        <a href="https://github.com/JahyuniJo" target="_blank"
+           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+          <span>Github</span>
+          <img src="/assets/images/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
+        </a>
+        <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
+        <p class="mt-2 text-xs text-gray-400">© 2025 DieuHoang. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    // =============================
+    // NOTIFICATION SYSTEM
+    // =============================
+    const notifyBell  = document.getElementById("notifyBell");
+    const notifyBox   = document.getElementById("notifyBox");
+    const notifyCount = document.getElementById("notifyCount");
+    const notifyList  = document.getElementById("notifyList");
+    let unreadCount = 0;
+
+    const socket = io(window.location.origin, { transports: ["websocket", "polling"] });
+    let userEmail = null;
+
+    socket.on("connect", async () => {
+      try {
+        const res = await fetch("/api/import/me", { credentials: "include" });
+        if (!res.ok) return;
+        const user = await res.json();
+        userEmail = user.email;
+        socket.emit("registerEmail", userEmail);
+        loadNotifications(userEmail);
+      } catch (err) {
+        console.error("[info] socket auth:", err);
+      }
+    });
+
+    socket.on("newNotification", (data) => {
+      unreadCount++;
+      notifyCount.textContent = unreadCount;
+      notifyCount.classList.remove("hidden");
+      const li = document.createElement("li");
+      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+      li.innerHTML = `
+        <p class="text-sm text-gray-700">${data.message}</p>
+        <p class="text-xs text-gray-400 mt-1">${new Date(data.time).toLocaleString()}</p>`;
+      ringBell();
+      showToast(data.message);
+      notifyList.prepend(li);
+    });
+
+    notifyBell.addEventListener("click", async () => {
+      notifyBox.classList.toggle("hidden");
+      if (!notifyBox.classList.contains("hidden") && userEmail) {
+        unreadCount = 0;
+        notifyCount.classList.add("hidden");
+        try {
+          const res = await fetch(`/api/notifications?email=${userEmail}`);
+          const json = await res.json();
+          const notifications = json.data || json;
+          for (const n of notifications) {
+            if (!n.is_read) await fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
+          }
+          renderNotificationList(notifications);
+        } catch (err) {
+          console.error("[info] mark-read:", err);
+        }
+      }
+    });
+
+    async function loadNotifications(email) {
+      try {
+        const res = await fetch(`/api/notifications?email=${email}`);
+        const json = await res.json();
+        renderNotificationList(json.data || json);
+      } catch (err) {
+        console.error("[info] load notifications:", err);
+      }
+    }
+
+    function renderNotificationList(notifications) {
+      notifyList.innerHTML = "";
+      unreadCount = 0;
+      if (!Array.isArray(notifications) || notifications.length === 0) {
+        notifyList.innerHTML = `<li class="px-4 py-6 text-center text-sm text-gray-400">Không có thông báo nào</li>`;
+        return;
+      }
+      notifications.forEach(noti => {
+        const li = document.createElement("li");
+        li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
+        li.innerHTML = `
+          <p class="text-sm text-gray-700">${noti.message}</p>
+          <p class="text-xs text-gray-400 mt-1">${new Date(noti.created_at).toLocaleString()}</p>`;
+        notifyList.appendChild(li);
+        if (!noti.is_read) unreadCount++;
+      });
+      if (unreadCount > 0) {
+        notifyCount.textContent = unreadCount;
+        notifyCount.classList.remove("hidden");
+      } else {
+        notifyCount.classList.add("hidden");
+      }
+    }
+
+    function ringBell() {
+      const icon = notifyBell.querySelector("i");
+      if (!icon) return;
+      icon.style.animation = "ring 0.5s ease";
+      setTimeout(() => { icon.style.animation = ""; }, 600);
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById("notifyToast");
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.remove("opacity-0");
+      setTimeout(() => toast.classList.add("opacity-0"), 3000);
+    }
+
+    // =============================
+    // CUSTOM NOTIFICATION BANNERS
+    // =============================
+    const notificationContainer = document.getElementById("notification-container");
+
+    function showNotification(message, type, duration = 3000) {
+      const colors = {
+        success: { bg: "bg-green-100 border-green-400", text: "text-green-700", icon: "fa-circle-check", ic: "text-green-500" },
+        error:   { bg: "bg-red-100 border-red-400",     text: "text-red-700",   icon: "fa-circle-xmark", ic: "text-red-500" },
+        warning: { bg: "bg-yellow-100 border-yellow-400", text: "text-yellow-700", icon: "fa-triangle-exclamation", ic: "text-yellow-500" },
+        info:    { bg: "bg-blue-100 border-blue-400",   text: "text-blue-700",  icon: "fa-circle-info",  ic: "text-blue-500" },
+      };
+      const c = colors[type] || colors.info;
+      const el = document.createElement("div");
+      el.className = `notification-enter pointer-events-auto max-w-sm w-full border-l-4 p-4 rounded-lg shadow-lg flex items-start gap-3 ${c.bg}`;
+      el.innerHTML = `
+        <div class="flex-shrink-0 ${c.ic}"><i class="fa-solid ${c.icon} text-lg"></i></div>
+        <div class="flex-1"><p class="text-sm font-medium ${c.text}">${message}</p></div>
+        <button class="flex-shrink-0 ml-4 -mr-1 -mt-1 p-1 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-gray-600"
+                onclick="closeNotification(this.parentElement)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>`;
+      notificationContainer.appendChild(el);
+      setTimeout(() => { el.classList.remove("notification-enter"); el.classList.add("notification-enter-active"); }, 10);
+      if (duration > 0) setTimeout(() => closeNotification(el), duration);
+    }
+
+    function closeNotification(el) {
+      if (!el) return;
+      el.classList.remove("notification-enter-active");
+      el.classList.add("notification-leave-active");
+      setTimeout(() => el.parentElement?.removeChild(el), 300);
+    }
+
+    // =============================
+    // LOAD USER INFO + STATS
+    // =============================
+    async function loadUserInfo() {
+      try {
+        const res = await fetch("/api/users/info", { credentials: "include" });
+        if (res.status === 401 || res.status === 403) {
+          showNotification("Bạn cần đăng nhập để xem trang này. Đang chuyển hướng...", "error", 4000);
+          setTimeout(() => { window.location.href = "/index.html"; }, 1500);
+          return;
+        }
+        if (!res.ok) {
+          console.error("[info] loadUserInfo status:", res.status);
+          return;
+        }
+        const data = await res.json();
+
+        document.getElementById("username").textContent = data.username;
+        document.getElementById("email").textContent = data.email;
+        if (data.avatar_url) document.getElementById("avatar").src = data.avatar_url;
+
+        document.getElementById("joinedDate").classList.add("hidden");
+      } catch (err) {
+        console.error("[info] loadUserInfo:", err);
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/users/stats", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        animateCount(document.getElementById("statStories"),   data.stories_read);
+        animateCount(document.getElementById("statFavLists"),  data.fav_lists);
+        animateCount(document.getElementById("statReports"),   data.reports_sent);
+      } catch (err) {
+        console.error("[info] loadStats:", err);
+      }
+    }
+
+    function animateCount(el, target) {
+      if (!el) return;
+      const duration = 600;
+      const steps = 20;
+      const increment = Math.ceil(target / steps);
+      let current = 0;
+      const timer = setInterval(() => {
+        current = Math.min(current + increment, target);
+        el.textContent = current;
+        if (current >= target) clearInterval(timer);
+      }, duration / steps);
+    }
+
+    loadUserInfo();
+    loadStats();
+
+    // =============================
+    // AVATAR UPLOAD WITH PREVIEW
+    // =============================
+    const uploadInput = document.getElementById("uploadAvatar");
+    const avatarImg   = document.getElementById("avatar");
+
+    uploadInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const previewUrl = URL.createObjectURL(file);
+      avatarImg.src = previewUrl;
+
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      try {
+        const response = await fetch("/api/users/upload-avatar", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        const data = await response.json();
+        if (response.ok) {
+          URL.revokeObjectURL(previewUrl);
+          avatarImg.src = data.avatar_url + "?t=" + Date.now();
+          showNotification("Ảnh đại diện đã được cập nhật!", "success");
+        } else {
+          showNotification(data.message || "Tải ảnh thất bại.", "error", 5000);
+          loadUserInfo();
+        }
+      } catch (err) {
+        console.error("[info] upload-avatar:", err);
+        showNotification("Lỗi kết nối server. Vui lòng thử lại.", "error", 5000);
+        loadUserInfo();
+      }
+    });
+
+    // =============================
+    // SHOW / HIDE PASSWORD
+    // =============================
+    function togglePwd(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon  = btn.querySelector("i");
+      if (input.type === "password") {
+        input.type = "text";
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+      } else {
+        input.type = "password";
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+      }
+    }
+
+    // =============================
+    // CHANGE PASSWORD
+    // =============================
+    const btnChangePassword  = document.getElementById("btnChangePassword");
+    const formChangePassword = document.getElementById("changePasswordForm");
+
+    btnChangePassword.addEventListener("click", () => {
+      formChangePassword.classList.toggle("hidden");
+    });
+
+    formChangePassword.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const currentPassword = document.getElementById("currentPassword").value.trim();
+      const newPassword     = document.getElementById("newPassword").value.trim();
+      const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return showNotification("Vui lòng điền đầy đủ các trường!", "warning");
+      }
+      if (newPassword.length < 6) {
+        return showNotification("Mật khẩu mới phải có ít nhất 6 ký tự!", "warning");
+      }
+      if (newPassword !== confirmPassword) {
+        return showNotification("Mật khẩu nhập lại không khớp!", "warning");
+      }
+
+      const res  = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showNotification(data.message || "Đổi mật khẩu thành công!", "success");
+        formChangePassword.reset();
+        formChangePassword.classList.add("hidden");
+        // Reset eye icons
+        formChangePassword.querySelectorAll("input[type=text]").forEach(inp => { inp.type = "password"; });
+        formChangePassword.querySelectorAll("button i.fa-eye-slash").forEach(i => {
+          i.classList.replace("fa-eye-slash", "fa-eye");
+        });
+      } else {
+        showNotification(data.message || "Đổi mật khẩu thất bại. Kiểm tra lại mật khẩu hiện tại.", "error", 5000);
+      }
+    });
+  </script>
+
+</body>
+</html>

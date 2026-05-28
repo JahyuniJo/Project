@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Quản lý Truyện - DH.story</title>
-  <link rel="icon" type="image/png" href="/Logo.png">
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png">
   <!-- Fontawesome (optional) + Tailwind -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -17,7 +17,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <div class="flex items-center gap-4">
-            <img src="/components/Logo.png" alt="logo" class="w-10 h-10 rounded-full">
+            <img src="/assets/images/Logo.png" alt="logo" class="w-10 h-10 rounded-full">
             <div>
               <h1 class="text-lg font-bold text-indigo-600">DH.story Admin</h1>
               <p class="text-xs text-gray-500">Trang admin</p>
@@ -224,7 +224,7 @@
         card.className = 'bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition group';
         card.innerHTML = `
           <div class="w-full h-44 bg-gray-100 overflow-hidden">
-            <img src="${s.cover_url || '/components/Logo.png'}" alt="${escapeHtml(s.title)}" class="w-full h-full object-cover transform group-hover:scale-105 transition">
+            <img src="${s.cover_url || '/assets/images/Logo.png'}" alt="${escapeHtml(s.title)}" class="w-full h-full object-cover transform group-hover:scale-105 transition">
           </div>
           <div class="p-3">
             <h3 class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(s.title)}</h3>
@@ -256,7 +256,7 @@
         el.className = 'flex items-center justify-between gap-2 p-2 border rounded';
         el.innerHTML = `
           <div class="flex items-center gap-2">
-            <img src="${s.cover_url || '/components/Logo.png'}" class="w-10 h-12 object-cover rounded">
+            <img src="${s.cover_url || '/assets/images/Logo.png'}" class="w-10 h-12 object-cover rounded">
             <div class="text-sm">${escapeHtml(s.title)}</div>
           </div>
           <div class="flex items-center gap-2">
@@ -579,8 +579,8 @@
         data-id="${s.id}"
         data-title="${escapeHtml(s.title)}" 
       >
-        <img src="${s.cover_url || '/components/Logo.png'}"
-             onerror="this.src='/components/Logo.png'"
+        <img src="${s.cover_url || '/assets/images/Logo.png'}"
+             onerror="this.src='/assets/images/Logo.png'"
              class="w-12 h-14 object-cover rounded-sm flex-shrink-0">
         <div class="flex-1 min-w-0">
           <div class="text-sm font-medium text-gray-800 truncate">${highlight(s.title, input.value)}</div>
