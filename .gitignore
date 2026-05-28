@@ -1,1 +1,38 @@
+# Môi trường & bí mật
 .env
+.env.*
+!.env.example
+Pass.txt
+
+# Dependencies
+node_modules/
+
+# File upload của người dùng
+backend/uploads/*
+uploads/*
+!backend/uploads/.gitkeep
+!uploads/.gitkeep
+
+# Log
+*.log
+logs/
+npm-debug.log*
+
+# Build output
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+.cache/
+.tmp/
