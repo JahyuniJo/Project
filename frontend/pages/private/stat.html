@@ -19,7 +19,7 @@
           <span class="text-2xl font-bold text-indigo-600">DH.story Admin</span>
         </a>
         <div class="flex items-center gap-4">
-          <span class="text-gray-600 font-medium">Xin chào, Diệu Hoàng 👋</span>
+          <span id="adminGreeting" class="text-gray-600 font-medium">Xin chào...</span>
           <button onclick="logout()" class="px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-red-600 font-semibold transition">
             <i class="fa-solid fa-right-from-bracket mr-1"></i> Đăng xuất
           </button>
@@ -43,12 +43,7 @@
       <a href="/stories.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
         <i class="fa-solid fa-book"></i> Quản lý truyện
       </a>
-      <a href="#"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
-        <i class="fa-solid fa-robot"></i> Quản lý tác vụ AI
-      </a>
-      <a href="/admin-report.html"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+      <a href="/admin-report.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
         <i class="fa-solid fa-triangle-exclamation"></i> Quản lý báo lỗi
       </a>
     </nav>
@@ -56,16 +51,31 @@
 
   <!-- MAIN -->
   <main class="flex-1 ml-64 px-8 py-8">
-    <h2 class="text-3xl font-bold text-indigo-700 mb-8">📊 Thống kê hệ thống</h2>
+    <h2 class="text-3xl font-bold text-indigo-700 mb-8">Thống kê hệ thống</h2>
 
+    <!-- Cards -->
     <div id="statsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Thẻ thống kê -->
+      <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+        <div class="w-8 h-8 rounded-full border-4 border-indigo-300 border-t-indigo-600 animate-spin mb-4"></div>
+        <p class="text-gray-400 text-sm">Đang tải...</p>
+      </div>
     </div>
-    <h3 class="text-2xl font-bold text-indigo-700 mt-10 mb-4">📈 Biểu đồ thống kê</h3>
-<div class="bg-white p-6 rounded-xl shadow-md">
-  <canvas id="statsChart" height="120"></canvas>
-</div>
 
+    <!-- Charts -->
+    <h3 class="text-2xl font-bold text-indigo-700 mt-10 mb-4">Biểu đồ thống kê</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Bar chart: Users & Stories -->
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <h4 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wide">Người dùng &amp; Truyện</h4>
+        <canvas id="usersStoriesChart" height="200"></canvas>
+      </div>
+      <!-- Gauge / Doughnut: Lượt đọc -->
+      <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center">
+        <h4 class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wide w-full">Tổng lượt đọc</h4>
+        <canvas id="viewsChart" height="200"></canvas>
+        <p id="viewsLabel" class="mt-4 text-3xl font-bold text-yellow-600"></p>
+      </div>
+    </div>
   </main>
 
   <footer class="bg-white mt-auto shadow-inner ml-64">
@@ -75,22 +85,36 @@
   </footer>
 
   <script>
+    let usersStoriesChart = null;
+    let viewsChart = null;
+
+    async function loadAdminName() {
+      try {
+        const res = await fetch('/api/import/me');
+        if (!res.ok) return;
+        const data = await res.json();
+        const name = data.username || data.email || 'Admin';
+        document.getElementById('adminGreeting').textContent = `Xin chào, ${name}`;
+      } catch (_) {}
+    }
+
     async function loadStats() {
       try {
         const res = await fetch('/api/stat');
+        if (!res.ok) throw new Error('Lỗi API');
         const data = await res.json();
 
-        const container = document.getElementById('statsContainer');
-        container.innerHTML = `
+        // Render cards
+        document.getElementById('statsContainer').innerHTML = `
           <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
             <i class="fa-solid fa-users text-4xl text-indigo-600 mb-3"></i>
             <h3 class="text-xl font-semibold">Người dùng</h3>
-            <p class="text-3xl font-bold text-indigo-700">${data.totalUsers}</p>
+            <p class="text-3xl font-bold text-indigo-700">${data.totalUsers.toLocaleString()}</p>
           </div>
           <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
             <i class="fa-solid fa-book text-4xl text-green-600 mb-3"></i>
             <h3 class="text-xl font-semibold">Truyện</h3>
-            <p class="text-3xl font-bold text-green-700">${data.totalStories}</p>
+            <p class="text-3xl font-bold text-green-700">${data.totalStories.toLocaleString()}</p>
           </div>
           <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
             <i class="fa-solid fa-eye text-4xl text-yellow-500 mb-3"></i>
@@ -98,94 +122,68 @@
             <p class="text-3xl font-bold text-yellow-600">${data.totalViews.toLocaleString()}</p>
           </div>
         `;
+
+        // Chart 1: Bar — Users & Stories (cùng đơn vị, scale hợp lý)
+        const ctx1 = document.getElementById('usersStoriesChart').getContext('2d');
+        if (usersStoriesChart) usersStoriesChart.destroy();
+        usersStoriesChart = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: ['Người dùng', 'Truyện'],
+            datasets: [{
+              label: 'Số lượng',
+              data: [data.totalUsers, data.totalStories],
+              backgroundColor: ['rgba(99,102,241,0.7)', 'rgba(34,197,94,0.7)'],
+              borderColor: ['rgba(99,102,241,1)', 'rgba(34,197,94,1)'],
+              borderWidth: 2,
+              borderRadius: 8,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+          }
+        });
+
+        // Chart 2: Doughnut — Lượt đọc hiển thị trực quan hơn bar
+        const ctx2 = document.getElementById('viewsChart').getContext('2d');
+        if (viewsChart) viewsChart.destroy();
+        viewsChart = new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: ['Lượt đọc'],
+            datasets: [{
+              data: [data.totalViews, 0],
+              backgroundColor: ['rgba(234,179,8,0.8)', 'rgba(229,231,235,0.3)'],
+              borderWidth: 0,
+            }]
+          },
+          options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false }
+            }
+          }
+        });
+
+        document.getElementById('viewsLabel').textContent = data.totalViews.toLocaleString();
+
       } catch (err) {
-        console.error('❌ Lỗi khi tải thống kê:', err);
+        console.error('[stat.html] loadStats:', err);
+        document.getElementById('statsContainer').innerHTML =
+          '<p class="text-red-500 col-span-3 text-center">Không thể tải thống kê.</p>';
       }
     }
-
-    loadStats();
 
     function logout() {
       fetch('/api/users/logout').then(() => (window.location.href = '/'));
     }
 
-
-    let statsChart; // để tránh tạo nhiều biểu đồ
-
-  async function loadStats() {
-    try {
-      const res = await fetch('/api/stat');
-      const data = await res.json();
-
-      // ----------- Thống kê 3 ô card ------------
-      const container = document.getElementById('statsContainer');
-      container.innerHTML = `
-        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
-          <i class="fa-solid fa-users text-4xl text-indigo-600 mb-3"></i>
-          <h3 class="text-xl font-semibold">Người dùng</h3>
-          <p class="text-3xl font-bold text-indigo-700">${data.totalUsers}</p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
-          <i class="fa-solid fa-book text-4xl text-green-600 mb-3"></i>
-          <h3 class="text-xl font-semibold">Truyện</h3>
-          <p class="text-3xl font-bold text-green-700">${data.totalStories}</p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
-          <i class="fa-solid fa-eye text-4xl text-yellow-500 mb-3"></i>
-          <h3 class="text-xl font-semibold">Tổng lượt đọc</h3>
-          <p class="text-3xl font-bold text-yellow-600">${data.totalViews.toLocaleString()}</p>
-        </div>
-      `;
-
-      // ----------- Vẽ biểu đồ Chart.js ------------
-      const ctx = document.getElementById('statsChart').getContext('2d');
-
-      // Xóa biểu đồ cũ nếu có
-      if (statsChart) statsChart.destroy();
-
-      statsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Người dùng', 'Truyện', 'Lượt đọc'],
-          datasets: [{
-            label: 'Thống kê hệ thống',
-            data: [
-              data.totalUsers,
-              data.totalStories,
-              data.totalViews
-            ],
-            backgroundColor: [
-              'rgba(99, 102, 241, 0.7)',   // Indigo
-              'rgba(34, 197, 94, 0.7)',    // Green
-              'rgba(234, 179, 8, 0.7)'     // Yellow
-            ],
-            borderColor: [
-              'rgba(99, 102, 241, 1)',
-              'rgba(34, 197, 94, 1)',
-              'rgba(234, 179, 8, 1)'
-            ],
-            borderWidth: 2,
-            borderRadius: 8 // bo góc cột biểu đồ
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-          },
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      });
-
-    } catch (err) {
-      console.error('❌ Lỗi khi tải thống kê:', err);
-    }
-  }
-
-  loadStats();
+    loadAdminName();
+    loadStats();
   </script>
 </body>
 </html>

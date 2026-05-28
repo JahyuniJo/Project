@@ -9,109 +9,103 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-200 min-h-screen flex flex-col font-sans">
+
   <!-- HEADER -->
   <header class="bg-white shadow-md sticky top-0 z-50">
-    <div class ="ml-64">
-    <div class="container mx-auto flex items-center justify-between py-4 px-6">
-      <!-- Logo -->
-      <a class="flex items-center gap-2">
-        <img src="/assets/images/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-        <span class="text-2xl font-bold text-indigo-600">DH.story Admin</span>
-      </a>
-      <!-- Thanh công cụ -->
-      <div class="flex items-center gap-4">
-        <span class="text-gray-600 font-medium">Xin chào, Diệu Hoàng 👋</span>
-        <button onclick="logout()" class="px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-red-600 font-semibold transition">
-          <i class="fa-solid fa-right-from-bracket mr-1"></i> Đăng xuất
-        </button>
-      </div>
-    </div>
-    </div>
-  </header>
-
-  <!-- MAIN -->
-  <main class="flex-1 ml-64 px-8 py-8 bg-gray-50 min-h-screen">
-    <aside class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 flex flex-col">
-    <div class="h-16 flex items-center justify-center border-b">
-      <span class="font-bold text-indigo-600 text-lg">Bảng điều khiển</span>
-    </div>
-    <nav class="flex-1 overflow-y-auto p-4 text-gray-700 font-medium">
-      <a href="/user.html"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
-        <i class="fa-solid fa-users"></i> Quản lý người dùng
-      </a>
-      <a href="/stat.html"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
-        <i class="fa-solid fa-chart-column"></i> Thống kê
-      </a>
-      <a href="/stories.html"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
-        <i class="fa-solid fa-book"></i> Quản lý truyện
-      </a>
-      <a href="#"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
-        <i class="fa-solid fa-robot"></i> Quản lý tác vụ AI
-      </a>
-      <a href="/admin-report.html"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
-        <i class="fa-solid fa-triangle-exclamation"></i> Quản lý báo lỗi
-      </a>
-    </nav>
-  </aside>
-  <div class="max-w-6xl mx-auto">
-    <!-- Tiêu đề + nút thêm -->
-    <div class="flex flex-col sm:flex-row justify-between items-center mb-8">
-      <h2 class="text-3xl font-bold text-indigo-700 mb-4 sm:mb-0">
-        👤 Quản lý người dùng
-      </h2>
-      <button id="btnAddUser"
-        class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg shadow-md transition">
-        <i class="fa fa-plus"></i>
-        <span>Thêm người dùng</span>
-      </button>
-    </div>
-
-    <!-- Thanh tìm kiếm -->
-    <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-      <div class="flex flex-col md:flex-row items-center gap-4">
-        <input id="searchInput" type="text" placeholder=" Tìm kiếm theo tên người dùng..."
-          class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
-        <div class="flex gap-3">
-          <button id="searchBtn"
-            class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition font-medium">
-            Tìm
-          </button>
-          <button id="refreshBtn"
-            class="bg-gray-200 px-5 py-2 rounded-lg hover:bg-gray-300 transition font-medium">
-            Làm mới
+    <div class="ml-64">
+      <div class="container mx-auto flex items-center justify-between py-4 px-6">
+        <a class="flex items-center gap-2">
+          <img src="/assets/images/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
+          <span class="text-2xl font-bold text-indigo-600">DH.story Admin</span>
+        </a>
+        <div class="flex items-center gap-4">
+          <span id="adminGreeting" class="text-gray-600 font-medium">Xin chào...</span>
+          <button onclick="logout()" class="px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-red-600 font-semibold transition">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> Đăng xuất
           </button>
         </div>
       </div>
     </div>
+  </header>
 
-    <!-- Bảng người dùng -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-      <table class="min-w-full border-collapse">
-        <thead class="bg-indigo-50 text-indigo-700 text-sm uppercase font-semibold">
-          <tr>
-            <th class="py-3 px-4 text-left">ID</th>
-            <th class="py-3 px-4 text-left">Tên người dùng</th>
-            <th class="py-3 px-4 text-left">Email</th>
-            <th class="py-3 px-4 text-left">Vai trò</th>
-            <th class="py-3 px-4 text-center">Hành động</th>
-          </tr>
-        </thead>
-        <tbody id="userTableBody" class="divide-y divide-gray-200 text-gray-700 text-sm">
-          <!-- Hàng dữ liệu sẽ được render bằng JS -->
-        </tbody>
-      </table>
+  <!-- SIDEBAR -->
+  <aside class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 flex flex-col">
+    <div class="h-16 flex items-center justify-center border-b">
+      <span class="font-bold text-indigo-600 text-lg">Bảng điều khiển</span>
     </div>
+    <nav class="flex-1 overflow-y-auto p-4 text-gray-700 font-medium">
+      <a href="/user.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-semibold">
+        <i class="fa-solid fa-users"></i> Quản lý người dùng
+      </a>
+      <a href="/stat.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        <i class="fa-solid fa-chart-column"></i> Thống kê
+      </a>
+      <a href="/stories.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        <i class="fa-solid fa-book"></i> Quản lý truyện
+      </a>
+      <a href="/admin-report.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        <i class="fa-solid fa-triangle-exclamation"></i> Quản lý báo lỗi
+      </a>
+    </nav>
+  </aside>
 
-  </div>
-</main>
+  <!-- MAIN -->
+  <main class="flex-1 ml-64 px-8 py-8 bg-gray-50 min-h-screen">
+    <div class="max-w-6xl mx-auto">
+      <!-- Tiêu đề + nút thêm -->
+      <div class="flex flex-col sm:flex-row justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold text-indigo-700 mb-4 sm:mb-0">Quản lý người dùng</h2>
+        <button id="btnAddUser"
+          class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg shadow-md transition">
+          <i class="fa fa-plus"></i>
+          <span>Thêm người dùng</span>
+        </button>
+      </div>
+
+      <!-- Thanh tìm kiếm -->
+      <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+        <div class="flex flex-col md:flex-row items-center gap-4">
+          <input id="searchInput" type="text" placeholder="Tìm kiếm theo tên hoặc email..."
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
+          <div class="flex gap-3">
+            <button id="searchBtn"
+              class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition font-medium">
+              Tìm
+            </button>
+            <button id="refreshBtn"
+              class="bg-gray-200 px-5 py-2 rounded-lg hover:bg-gray-300 transition font-medium">
+              Làm mới
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng người dùng -->
+      <div class="bg-white rounded-xl shadow-md overflow-hidden mb-4">
+        <table class="min-w-full border-collapse">
+          <thead class="bg-indigo-50 text-indigo-700 text-sm uppercase font-semibold">
+            <tr>
+              <th class="py-3 px-4 text-left">ID</th>
+              <th class="py-3 px-4 text-left">Tên người dùng</th>
+              <th class="py-3 px-4 text-left">Email</th>
+              <th class="py-3 px-4 text-left">Vai trò</th>
+              <th class="py-3 px-4 text-center">Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody" class="divide-y divide-gray-200 text-gray-700 text-sm"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between text-sm text-gray-500">
+        <span id="paginationInfo"></span>
+        <nav id="pagination" class="flex gap-2"></nav>
+      </div>
+    </div>
+  </main>
 
   <!-- Modal Thêm/Sửa -->
-  <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+  <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white w-96 p-6 rounded-lg shadow-lg">
       <h3 id="modalTitle" class="text-xl font-semibold mb-4">Thêm người dùng</h3>
       <form id="userForm" class="flex flex-col gap-3">
@@ -130,140 +124,200 @@
       </form>
     </div>
   </div>
- <footer class="bg-white mt-auto shadow-inner ml-64">
+
+  <footer class="bg-white mt-auto shadow-inner ml-64">
     <div class="max-w-7xl mx-auto px-4 py-4 text-sm text-gray-500 text-center">
       © 2025 DH.story — Admin Panel
     </div>
   </footer>
+
   <script src="/components/alertModal.js"></script>
   <script>
     const API_URL = '/api/usercontroll';
+    const userTableBody = document.getElementById('userTableBody');
+    const userModal = document.getElementById('userModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const userForm = document.getElementById('userForm');
+    const btnAddUser = document.getElementById('btnAddUser');
+    const cancelModal = document.getElementById('cancelModal');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    let editingId = null;
+    let currentPage = 1;
+    let currentSearch = '';
 
-const userTableBody = document.getElementById("userTableBody");
-const userModal = document.getElementById("userModal");
-const modalTitle = document.getElementById("modalTitle");
-const userForm = document.getElementById("userForm");
-const btnAddUser = document.getElementById("btnAddUser");
-const cancelModal = document.getElementById("cancelModal");
-const searchInput = document.getElementById("searchInput");
-const searchBtn = document.getElementById("searchBtn");
-const refreshBtn = document.getElementById("refreshBtn");
-let editingId = null;
-
-// 🧩 Load danh sách người dùng
-async function loadUsers(query = "") {
-  try {
-    const res = await fetch(`${API_URL}?search=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    renderTable(data.users);
-  } catch (err) {
-    console.error("❌ Lỗi load users:", err);
-  }
-}
-
-function renderTable(users = []) {
-  userTableBody.innerHTML = users.map(users => `
-    <tr>
-      <td class="py-3 px-4">${users.id}</td>
-      <td class="py-3 px-4">${users.username}</td>
-      <td class="py-3 px-4">${users.email}</td>
-      <td class="py-3 px-4">
-        <span class="px-2 py-1 rounded text-sm ${users.role === "admin" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}">
-          ${users.role}
-        </span>
-      </td>
-      <td class="py-3 px-4 text-center">
-        <button onclick="openEdit(${users.id}, '${users.username}', '${users.email}', '${users.role}')" class="text-blue-600 hover:text-blue-800 mx-1"><i class="fa fa-edit"></i></button>
-        <button onclick="deleteUser(${users.id})" class="text-red-600 hover:text-red-800 mx-1"><i class="fa fa-trash"></i></button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-// ➕ Mở modal thêm mới
-btnAddUser.onclick = () => {
-  editingId = null;
-  modalTitle.textContent = "Thêm người dùng";
-  userForm.reset();
-  userModal.classList.remove("hidden");
-  userModal.classList.add("flex");
-};
-
-// ✏️ Mở modal chỉnh sửa
-function openEdit(id, username, email, role) {
-  editingId = id;
-  modalTitle.textContent = "Chỉnh sửa người dùng";
-  document.getElementById("userId").value = id;
-  document.getElementById("username").value = username;
-  document.getElementById("email").value = email;
-  document.getElementById("password").value = "";
-  document.getElementById("role").value = role;
-  userModal.classList.remove("hidden");
-  userModal.classList.add("flex");
-}
-
-// 🗑️ Xóa người dùng
-async function deleteUser(id) {
-  const ok = await showConfirm("Xác nhận xóa", "Bạn có chắc chắn muốn xóa người dùng này?");
-  if (!ok) return;
-  try {
-    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      showAlert("success","Đã xóa người dùng", "Thành công");
-      loadUsers();
+    async function loadAdminName() {
+      try {
+        const res = await fetch('/api/import/me');
+        if (!res.ok) return;
+        const data = await res.json();
+        const name = data.username || data.email || 'Admin';
+        document.getElementById('adminGreeting').textContent = `Xin chào, ${name}`;
+      } catch (_) {}
     }
-  } catch (err) {
-    console.error("❌ Lỗi xóa người dùng:", err);
-  }
-}
 
-// 💾 Submit form (thêm/sửa)
-userForm.onsubmit = async (e) => {
-  e.preventDefault();
-  const username = document.getElementById("username").value.trim();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const role = document.getElementById("role").value;
+    async function loadUsers(page = 1, search = '') {
+      currentPage = page;
+      currentSearch = search;
+      try {
+        const res = await fetch(`${API_URL}?page=${page}&limit=10&search=${encodeURIComponent(search)}`);
+        const data = await res.json();
+        renderTable(data.users || []);
+        renderPagination(data.page, data.totalPages, data.total);
+      } catch (err) {
+        console.error('[user.html] loadUsers:', err);
+      }
+    }
 
-  try {
-    const body = editingId
-      ? { username, email, role }
-      : { username, email, password, role };
+    function renderTable(users) {
+      userTableBody.innerHTML = users.length === 0
+        ? '<tr><td colspan="5" class="py-8 text-center text-gray-400">Không tìm thấy người dùng nào.</td></tr>'
+        : users.map(u => `
+          <tr>
+            <td class="py-3 px-4">${u.id}</td>
+            <td class="py-3 px-4">${escapeHtml(u.username)}</td>
+            <td class="py-3 px-4">${escapeHtml(u.email)}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-1 rounded text-sm ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                ${u.role}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center">
+              <button onclick="openEdit(${u.id}, '${escapeJs(u.username)}', '${escapeJs(u.email)}', '${u.role}')"
+                class="text-blue-600 hover:text-blue-800 mx-1"><i class="fa fa-edit"></i></button>
+              <button onclick="deleteUser(${u.id})"
+                class="text-red-600 hover:text-red-800 mx-1"><i class="fa fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+    }
 
-    const res = await fetch(editingId ? `${API_URL}/${editingId}` : API_URL, {
-      method: editingId ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+    function renderPagination(page, totalPages, total) {
+      document.getElementById('paginationInfo').textContent =
+        `Tổng ${total} người dùng — Trang ${page}/${totalPages || 1}`;
+
+      const nav = document.getElementById('pagination');
+      nav.innerHTML = '';
+      if (!totalPages || totalPages <= 1) return;
+
+      const prevBtn = document.createElement('button');
+      prevBtn.textContent = '←';
+      prevBtn.disabled = page <= 1;
+      prevBtn.className = `px-3 py-1 rounded ${page <= 1 ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      prevBtn.onclick = () => loadUsers(page - 1, currentSearch);
+      nav.appendChild(prevBtn);
+
+      const maxButtons = 5;
+      let start = Math.max(1, page - Math.floor(maxButtons / 2));
+      let end = Math.min(totalPages, start + maxButtons - 1);
+      if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
+
+      for (let i = start; i <= end; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-3 py-1 rounded ${i === page ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
+        btn.onclick = () => loadUsers(i, currentSearch);
+        nav.appendChild(btn);
+      }
+
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = '→';
+      nextBtn.disabled = page >= totalPages;
+      nextBtn.className = `px-3 py-1 rounded ${page >= totalPages ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      nextBtn.onclick = () => loadUsers(page + 1, currentSearch);
+      nav.appendChild(nextBtn);
+    }
+
+    btnAddUser.onclick = () => {
+      editingId = null;
+      modalTitle.textContent = 'Thêm người dùng';
+      userForm.reset();
+      userModal.classList.remove('hidden');
+      userModal.classList.add('flex');
+    };
+
+    function openEdit(id, username, email, role) {
+      editingId = id;
+      modalTitle.textContent = 'Chỉnh sửa người dùng';
+      document.getElementById('userId').value = id;
+      document.getElementById('username').value = username;
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = '';
+      document.getElementById('role').value = role;
+      userModal.classList.remove('hidden');
+      userModal.classList.add('flex');
+    }
+
+    async function deleteUser(id) {
+      const ok = await showConfirm('Xác nhận xóa', 'Bạn có chắc chắn muốn xóa người dùng này?');
+      if (!ok) return;
+      try {
+        const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('success', 'Đã xóa người dùng', 'Thành công');
+          loadUsers(currentPage, currentSearch);
+        } else {
+          showAlert('error', data.message || 'Xóa thất bại');
+        }
+      } catch (err) {
+        console.error('[user.html] deleteUser:', err);
+      }
+    }
+
+    userForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const role = document.getElementById('role').value;
+
+      try {
+        const body = editingId ? { username, email, role } : { username, email, password, role };
+        const res = await fetch(editingId ? `${API_URL}/${editingId}` : API_URL, {
+          method: editingId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          userModal.classList.add('hidden');
+          showAlert('success', editingId ? 'Đã cập nhật người dùng' : 'Đã thêm người dùng mới');
+          loadUsers(currentPage, currentSearch);
+        } else {
+          showAlert('error', data.message || 'Thao tác thất bại');
+        }
+      } catch (err) {
+        console.error('[user.html] submit:', err);
+      }
+    };
+
+    searchBtn.onclick = () => loadUsers(1, searchInput.value.trim());
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadUsers(1, searchInput.value.trim());
     });
+    refreshBtn.onclick = () => {
+      searchInput.value = '';
+      loadUsers(1, '');
+    };
+    cancelModal.onclick = () => userModal.classList.add('hidden');
 
-    if (res.ok) {
-      userModal.classList.add("hidden");
-      showAlert("success", editingId ? "Đã cập nhật người dùng" : "Đã thêm người dùng mới");
-      loadUsers();
-    }
-  } catch (err) {
-    console.error("❌ Lỗi lưu người dùng:", err);
-  }
-};
-
-// 🔍 Tìm kiếm
-searchBtn.onclick = () => loadUsers(searchInput.value.trim());
-refreshBtn.onclick = () => {
-  searchInput.value = ""; // Xóa nội dung ô tìm kiếm
-  loadUsers(); // Gọi lại danh sách toàn bộ người dùng
-};
-// ❌ Đóng modal
-cancelModal.onclick = () => {
-  userModal.classList.add("hidden");
-};
-
-// 🚀 Load lần đầu
-loadUsers();
-    // Đăng xuất
     function logout() {
-      fetch('/api/users/logout')
-        .then(() => window.location.href = '/');
+      fetch('/api/users/logout').then(() => (window.location.href = '/'));
     }
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+    }
+    function escapeJs(s) {
+      if (!s) return '';
+      return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    loadAdminName();
+    loadUsers();
   </script>
 </body>
 </html>

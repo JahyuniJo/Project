@@ -2,13 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/pool");
 const authMiddleware = require("../middleware/authMiddleware");
-
-function requireAdmin(req, res, next) {
-  if (req.user?.role !== "admin") {
-    return res.status(403).json({ message: "Bạn không có quyền thực hiện thao tác này" });
-  }
-  next();
-}
+const requireAdmin = require("../middleware/requireAdmin");
 
 // Thống kê tổng quan (admin)
 router.get("/", authMiddleware, requireAdmin, async (req, res) => {

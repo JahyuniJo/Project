@@ -55,12 +55,8 @@
         <i class="fa-solid fa-chart-column"></i> Thống kê
       </a>
       <a href="/stories.html"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
+        class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-semibold">
         <i class="fa-solid fa-book"></i> Quản lý truyện
-      </a>
-      <a href="#"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
-        <i class="fa-solid fa-robot"></i> Quản lý tác vụ AI
       </a>
       <a href="/admin-report.html"
         class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">
@@ -170,6 +166,8 @@
 
 
 
+  <script src="/components/alertModal.js"></script>
+
   <!-- Script -->
   <script>
     // Gọi api
@@ -203,7 +201,7 @@
 
     qs('totalCount').textContent = totalItems || '--';
   } catch (err) {
-    console.error('❌ Lỗi loadStories:', err);
+    console.error('[stories.html] loadStories:', err);
     renderCards([]);
     renderQuickList([]);
     renderPagination(1, 1);
@@ -324,30 +322,28 @@
     }
 
     // Chỉnh sửa truyện
-    function openEdit(id) {
-      // Fetch single story if needed, for simplicity try to find on current page
-      fetch(`${API}/${id}`)
-        .then(r => { 
-          if (!r.ok){
-            throw new Error(`HTTP error! Status: ${r.status}`);
-          }
-         return r.json()
-        })
-        .then(s => {
-          qs('editId').value = s.id;
-          qs('editTitle').value = s.title || '';
-          qs('editAuthor').value = s.author || '';
-          qs('editStatus').value = s.status || 'ongoing';
-          qs('editCover').value = s.cover_url || '';
-          qs('editSource').value = s.url || '';
-          qs('editModal').classList.remove('hidden');
-          qs('editModal').classList.add('flex');
-
-        })
-        .catch(err => {
-          // fallback: open modal empty then try to fill
-          console.error(err);
-        });
+    async function openEdit(id) {
+      try {
+        const res = await fetch(`${API}/${id}`);
+        const s = res.ok ? await res.json() : await fetchStoryFallback(id);
+        qs('editId').value = s.id || id;
+        qs('editTitle').value = s.title || '';
+        qs('editAuthor').value = s.author || '';
+        qs('editStatus').value = s.status || 'ongoing';
+        qs('editCover').value = s.cover_url || '';
+        qs('editSource').value = s.url || '';
+      } catch (err) {
+        console.error('[stories.html] openEdit:', err);
+        const s = await fetchStoryFallback(id);
+        qs('editId').value = s.id || id;
+        qs('editTitle').value = s.title || '';
+        qs('editAuthor').value = s.author || '';
+        qs('editStatus').value = s.status || 'ongoing';
+        qs('editCover').value = s.cover_url || '';
+        qs('editSource').value = s.url || '';
+      }
+      qs('editModal').classList.remove('hidden');
+      qs('editModal').classList.add('flex');
     }
 
     function closeModal() {
@@ -375,60 +371,59 @@
         });
         if (!res.ok) throw new Error('Update failed');
         closeModal();
-        showToast('✅ Đã cập nhật truyện thành công!');
+        showToast('Đã cập nhật truyện thành công', 'success');
         await loadStories(currentPage);
       } catch (err) {
-         console.error('Lỗi khi lưu thay đổi:', err);
-        showToast('❌ Lỗi khi lưu thay đổi!', 'error');
+        console.error('[stories.html] editForm submit:', err);
+        showToast('Lỗi khi lưu thay đổi, vui lòng thử lại', 'error');
       }
     });
 
     // Xóa truyện
-    function confirmDelete(id, title) {
-      if (!confirm(`Xác nhận xóa truyện: "${title}" ?`)) return;
+    async function confirmDelete(id, title) {
+      const ok = await showConfirm(`Bạn có chắc chắn muốn xóa truyện "${title}"?`, 'Xác nhận xóa');
+      if (!ok) return;
       deleteStory(id);
     }
     async function deleteStory(id) {
       try {
         const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Delete failed');
-        showToast('✅ Đã xóa truyện thành công!');
+        showToast('Đã xóa truyện thành công', 'success');
         await loadStories(currentPage);
       } catch (err) {
-        console.error('Lỗi khi xóa truyện:', err);
-        showToast('❌ Lỗi khi xóa truyện', 'error');
+        console.error('[stories.html] deleteStory:', err);
+        showToast('Lỗi khi xóa truyện, vui lòng thử lại', 'error');
       }
     }
 
     // Mở link nguồn
     function openSource(url) {
-      if (!url) return alert('Không có link nguồn');
+      if (!url) return showToast('Truyện này chưa có link nguồn', 'warning');
       window.open(url, '_blank');
     }
 
     // Hàm đồng bộ dữ liệu từ trang crawl
     qs('syncBtn').addEventListener('click', async () => {
-      if (!confirm('Đồng bộ từ comi sẽ thêm các truyện mới vào DB. Tiếp tục?')) return;
+      const ok = await showConfirm('Đồng bộ từ comi sẽ thêm các truyện mới vào DB. Tiếp tục?', 'Xác nhận đồng bộ');
+      if (!ok) return;
       qs('syncBtn').disabled = true;
-      qs('syncBtn').textContent = 'Đang đồng bộ...';
+      qs('syncBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang đồng bộ...';
       try {
         const res = await fetch(`${API}/sync`, { method: 'POST' });
         const data = await res.json();
-        alert(data.message || 'Đã đồng bộ');
+        showToast(data.message || 'Đồng bộ thành công', 'success');
         await loadStories(1);
       } catch (err) {
-        alert('Đồng bộ thất bại');
-        console.error(err);
+        console.error('[stories.html] sync:', err);
+        showToast('Đồng bộ thất bại, vui lòng thử lại', 'error');
       } finally {
         qs('syncBtn').disabled = false;
-        qs('syncBtn').textContent = 'Đồng bộ';
+        qs('syncBtn').innerHTML = '<i class="fa-solid fa-spider mr-2"></i>Đồng bộ';
       }
     });
 
     
-    // Fetch single story route must exist in backend, otherwise fallback
-    // If not present, we can query list and find it.
-    // Try to provide a safe fallback:
     async function fetchStoryFallback(id) {
       try {
         const res = await fetch(`${API}?page=${currentPage}&limit=${limit}`);
@@ -438,68 +433,37 @@
       } catch (e) { return {}; }
     }
 
-    // If backend lacks GET /api/stories/:id, patch openEdit to use fallback
-    // Override openEdit to use fallback when 404:
-    const originalOpenEdit = openEdit;
-    openEdit = async function (id) {
-      try {
-        const res = await fetch(`${API}/${id}`);
-        if (!res.ok) throw new Error('no single route');
-        const s = await res.json();
-        qs('editId').value = s.id;
-        qs('editTitle').value = s.title || '';
-        qs('editAuthor').value = s.author || '';
-        qs('editStatus').value = s.status || 'ongoing';
-        qs('editCover').value = s.cover_url || '';
-        qs('editSource').value = s.url || '';
-      } catch (err) {
-        const s = await fetchStoryFallback(id);
-        qs('editId').value = s.id || id;
-        qs('editTitle').value = s.title || '';
-        qs('editAuthor').value = s.author || '';
-        qs('editStatus').value = s.status || 'ongoing';
-        qs('editCover').value = s.cover_url || '';
-        qs('editSource').value = s.url || '';
-      }
-      qs('editModal').classList.remove('hidden');
-      qs('editModal').classList.add('flex');
-    };
-
     // Kick off initial load
     loadStories(1);
 
 
-    // Hiển thị thông báo
-  function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
+    // Toast — góc trên phải, 2.5 giây, icon theo loại
+    let toastTimer = null;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastMsg = document.getElementById('toastMsg');
 
-  // Gán màu nền tùy theo loại thông báo
-  const baseClasses =
-    'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ' +
-    'px-6 py-4 rounded-2xl shadow-2xl font-semibold text-lg z-50 ' +
-    'transition-all duration-500 ease-in-out scale-90 opacity-0';
-  const bgClass =
-    type === 'error'
-      ? 'bg-red-500'
-      : type === 'warning'
-      ? 'bg-yellow-500 text-black'
-      : 'bg-green-500';
-  toast.className = `${baseClasses} ${bgClass}`;
+      const config = {
+        success: { icon: 'fa-circle-check',        cls: 'bg-green-600' },
+        error:   { icon: 'fa-circle-xmark',         cls: 'bg-red-600'   },
+        warning: { icon: 'fa-triangle-exclamation', cls: 'bg-yellow-500 text-gray-900' },
+      };
+      const { icon, cls } = config[type] || config.success;
 
-  // Hiện toast với hiệu ứng phóng to + mờ dần vào
-  requestAnimationFrame(() => {
-    toast.classList.remove('hidden');
-    toast.classList.add('scale-100', 'opacity-100');
-  });
+      toastIcon.className = `fa-solid ${icon} text-lg flex-shrink-0`;
+      toastMsg.textContent = message;
+      toast.className = `fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-white font-medium text-sm transition-all duration-300 ${cls}`;
 
-  // Tự ẩn sau 2 giây
-  setTimeout(() => {
-    toast.classList.remove('scale-100', 'opacity-100');
-    toast.classList.add('scale-90', 'opacity-0');
-    setTimeout(() => toast.classList.add('hidden'), 500);
-  }, 1000);
-}
+      toast.classList.remove('opacity-0', 'translate-x-8');
+      toast.classList.add('opacity-100', 'translate-x-0');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-x-0');
+        toast.classList.add('opacity-0', 'translate-x-8');
+      }, 2500);
+    }
 
 
 
@@ -746,13 +710,12 @@
 </script>
 
 
-   <!-- Toast thông báo trung tâm -->
-<div id="toast"
-  class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
-         px-6 py-4 rounded-2xl shadow-2xl text-white font-semibold text-lg
-         transition-all duration-500 ease-in-out scale-90 opacity-0 z-50">
-  ✅ Cập nhật thành công!
-</div>
+  <!-- Toast góc trên phải -->
+  <div id="toast"
+    class="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-white font-medium text-sm opacity-0 translate-x-8 transition-all duration-300 bg-green-600 pointer-events-none">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-lg flex-shrink-0"></i>
+    <span id="toastMsg"></span>
+  </div>
 
 <style>
   /* Một vài chỉnh thêm cho popover */

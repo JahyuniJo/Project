@@ -18,7 +18,7 @@
           <span class="text-2xl font-bold text-indigo-600">DH.story Admin</span>
         </a>
         <div class="flex items-center gap-4">
-          <span class="text-gray-600 font-medium">Xin chào, Admin</span>
+          <span id="adminGreeting" class="text-gray-600 font-medium">Xin chào...</span>
           <button onclick="logout()" class="px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-red-600 font-semibold transition">
             <i class="fa-solid fa-right-from-bracket mr-1"></i> Đăng xuất
           </button>
@@ -35,119 +35,278 @@
       <a href="/user.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600"><i class="fa-solid fa-users"></i> Quản lý người dùng</a>
       <a href="/stat.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600"><i class="fa-solid fa-chart-column"></i> Thống kê</a>
       <a href="/stories.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600"><i class="fa-solid fa-book"></i> Quản lý truyện</a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600"><i class="fa-solid fa-robot"></i> Quản lý tác vụ AI</a>
       <a href="/admin-report.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Quản lý báo lỗi</a>
     </nav>
   </aside>
 
   <main class="flex-1 ml-64 px-8 py-8">
-    <h2 class="text-3xl font-bold text-indigo-700 mb-8 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> Danh sách báo lỗi</h2>
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-3xl font-bold text-indigo-700 mb-6 flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation"></i> Danh sách báo lỗi
+      </h2>
 
-    <div class="overflow-x-auto bg-white shadow-md rounded-xl">
-      <table class="w-full text-left">
-        <thead class="bg-gray-200 text-gray-700 font-semibold">
-          <tr>
-            <th class="p-4">Truyện</th>
-            <th class="p-4">URL</th>
-            <th class="p-4">Mô tả</th>
-            <th class="p-4">Ảnh</th>
-            <th class="p-4">Trạng thái</th>
-            <th class="p-4">Hành động</th>
-          </tr>
-        </thead>
-        <tbody id="reportTable" class="text-gray-700"></tbody>
-      </table>
+      <!-- Filter -->
+      <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-wrap items-center gap-3">
+        <span class="text-sm font-medium text-gray-600">Lọc theo trạng thái:</span>
+        <button data-status="" onclick="setFilter(this)"
+          class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-indigo-600 text-white">
+          Tất cả
+        </button>
+        <button data-status="pending" onclick="setFilter(this)"
+          class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+          Pending
+        </button>
+        <button data-status="fixing" onclick="setFilter(this)"
+          class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+          Fixing
+        </button>
+        <button data-status="done" onclick="setFilter(this)"
+          class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+          Done
+        </button>
+        <button data-status="ignored" onclick="setFilter(this)"
+          class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+          Ignored
+        </button>
+        <span id="reportCount" class="ml-auto text-sm text-gray-500"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto bg-white shadow-md rounded-xl mb-4">
+        <table class="w-full text-left">
+          <thead class="bg-gray-100 text-gray-700 font-semibold text-sm">
+            <tr>
+              <th class="p-4">Truyện</th>
+              <th class="p-4">URL</th>
+              <th class="p-4">Mô tả</th>
+              <th class="p-4">Ảnh</th>
+              <th class="p-4">Trạng thái</th>
+              <th class="p-4">Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="reportTable" class="text-gray-700 text-sm divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between text-sm text-gray-500">
+        <span id="paginationInfo"></span>
+        <nav id="pagination" class="flex gap-2"></nav>
+      </div>
     </div>
   </main>
 
   <footer class="bg-white mt-auto shadow-inner ml-64">
     <div class="max-w-7xl mx-auto px-4 py-4 text-sm text-gray-500 text-center">© 2025 DH.story — Admin Panel</div>
   </footer>
-  <!-- LIGHTBOX OVERLAY -->
-<div id="imageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-[9999] flex items-center justify-center">
-  <div class="relative">
-    <button onclick="closeImage()" class="absolute -top-4 -right-4 bg-white text-gray-700 hover:bg-gray-200 shadow-lg w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold">&times;</button>
-    <img id="modalImage" src="" class="max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl border-4 border-white">
-  </div>
-</div>
 
+  <!-- Lightbox -->
+  <div id="imageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-[9999] flex items-center justify-center">
+    <div class="relative">
+      <button onclick="closeImage()" class="absolute -top-4 -right-4 bg-white text-gray-700 hover:bg-gray-200 shadow-lg w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold">&times;</button>
+      <img id="modalImage" src="" class="max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl border-4 border-white">
+    </div>
+  </div>
 
   <script>
-async function loadReports() {
-  const res = await fetch('/api/admin/reports');
-  const reports = await res.json();
-  const table = document.getElementById('reportTable');
+    const PAGE_SIZE = 10;
+    let allReports = [];
+    let filteredReports = [];
+    let currentFilter = '';
+    let currentPage = 1;
 
-  // render bảng
- // render bảng
-  table.innerHTML = reports.map(r => `
-    <tr class="border-b hover:bg-gray-50">
-      <td class="p-4 font-semibold">${r.title || '-'}</td>
-      <td class="p-4"><a href="${r.story_url}" class="text-indigo-600 hover:underline" target="_blank">Xem</a></td>
-      <td class="p-4">${r.message}</td>
-      <td class="p-4">${r.screenshot_path 
-          ? `<img src="/uploads/${r.screenshot_path}" class="h-16 rounded shadow cursor-pointer hover:opacity-90 transition" onclick="openImage('/uploads/${r.screenshot_path}')">` 
-          : '—'}</td>
-      <td class="p-4">
-        <select id="status-${r.id}" class="block w-full px-3 py-1 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-          <option value="pending" ${r.status==='pending' ? 'selected' : ''}>Pending</option>
-          <option value="fixing" ${r.status==='fixing' ? 'selected' : ''}>Fixing</option>
-          <option value="done" ${r.status==='done' ? 'selected' : ''}>Done</option>
-          <option value="ignored" ${r.status==='ignored' ? 'selected' : ''}>Ignored</option>
-        </select>
-      </td>
-      <td class="p-4 flex flex-col gap-2">
-        <input type="text" id="response-${r.id}" placeholder="Nhập phản hồi..." 
-               value="${r.response || ''}" class="px-2 py-1 border rounded text-sm">
-        <button data-id="${r.id}" class="btn-send px-2 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">Gửi phản hồi</button>
-      </td>
-    </tr>
-  `).join('');
+    const STATUS_LABELS = {
+      pending: { text: 'Pending', cls: 'bg-yellow-100 text-yellow-700' },
+      fixing:  { text: 'Fixing',  cls: 'bg-blue-100 text-blue-700' },
+      done:    { text: 'Done',    cls: 'bg-green-100 text-green-700' },
+      ignored: { text: 'Ignored', cls: 'bg-gray-100 text-gray-500' },
+    };
 
-  // Gắn sự kiện cho nút gửi phản hồi
-  document.querySelectorAll('.btn-send').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const responseText = document.getElementById(`response-${id}`).value.trim();
-      const status = document.getElementById(`status-${id}`).value;
+    async function loadAdminName() {
+      try {
+        const res = await fetch('/api/import/me');
+        if (!res.ok) return;
+        const data = await res.json();
+        const name = data.username || data.email || 'Admin';
+        document.getElementById('adminGreeting').textContent = `Xin chào, ${name}`;
+      } catch (_) {}
+    }
 
-      if (!responseText) return alert("Vui lòng nhập phản hồi!");
+    async function loadReports() {
+      try {
+        const res = await fetch('/api/admin/reports');
+        if (!res.ok) throw new Error('Lỗi API');
+        allReports = await res.json();
+        applyFilter();
+      } catch (err) {
+        console.error('[admin-report.html] loadReports:', err);
+        document.getElementById('reportTable').innerHTML =
+          '<tr><td colspan="6" class="p-6 text-center text-red-500">Không thể tải danh sách báo lỗi.</td></tr>';
+      }
+    }
 
-      await fetch(`/api/admin/reports/${id}/respond`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, response: responseText })
+    function setFilter(btn) {
+      currentFilter = btn.dataset.status;
+      currentPage = 1;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.toggle('bg-indigo-600', b === btn);
+        b.classList.toggle('text-white', b === btn);
+        b.classList.toggle('bg-gray-100', b !== btn);
+        b.classList.toggle('text-gray-700', b !== btn);
+      });
+      applyFilter();
+    }
+
+    function applyFilter() {
+      filteredReports = currentFilter
+        ? allReports.filter(r => r.status === currentFilter)
+        : allReports;
+      renderPage(currentPage);
+    }
+
+    function renderPage(page) {
+      currentPage = page;
+      const total = filteredReports.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const start = (page - 1) * PAGE_SIZE;
+      const pageData = filteredReports.slice(start, start + PAGE_SIZE);
+
+      document.getElementById('reportCount').textContent = `${total} báo lỗi`;
+      document.getElementById('paginationInfo').textContent =
+        total > 0 ? `Trang ${page}/${totalPages} — ${total} mục` : '';
+
+      const table = document.getElementById('reportTable');
+      if (pageData.length === 0) {
+        table.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">Không có báo lỗi nào.</td></tr>';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+
+      table.innerHTML = pageData.map(r => {
+        const sl = STATUS_LABELS[r.status] || { text: r.status, cls: 'bg-gray-100 text-gray-600' };
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="p-4 font-semibold max-w-[140px] truncate">${escapeHtml(r.title || '—')}</td>
+            <td class="p-4">
+              ${r.story_url
+                ? `<a href="${escapeHtml(r.story_url)}" class="text-indigo-600 hover:underline text-xs" target="_blank" rel="noopener">Xem</a>`
+                : '—'}
+            </td>
+            <td class="p-4 max-w-[200px]"><p class="line-clamp-3 text-sm">${escapeHtml(r.message || '')}</p></td>
+            <td class="p-4">
+              ${r.screenshot_path
+                ? `<img src="/uploads/${escapeHtml(r.screenshot_path)}" class="h-16 rounded shadow cursor-pointer hover:opacity-90 transition" onclick="openImage('/uploads/${escapeHtml(r.screenshot_path)}')">`
+                : '—'}
+            </td>
+            <td class="p-4">
+              <span class="px-2 py-1 rounded text-xs font-medium ${sl.cls}">${sl.text}</span>
+            </td>
+            <td class="p-4">
+              <div class="flex flex-col gap-2 min-w-[180px]">
+                <select id="status-${r.id}" class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                  <option value="pending" ${r.status==='pending'?'selected':''}>Pending</option>
+                  <option value="fixing"  ${r.status==='fixing' ?'selected':''}>Fixing</option>
+                  <option value="done"    ${r.status==='done'   ?'selected':''}>Done</option>
+                  <option value="ignored" ${r.status==='ignored'?'selected':''}>Ignored</option>
+                </select>
+                <input type="text" id="response-${r.id}" placeholder="Nhập phản hồi..."
+                  value="${escapeHtml(r.response || '')}"
+                  class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <button data-id="${r.id}" class="btn-send px-2 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition font-medium">
+                  <i class="fa-solid fa-paper-plane mr-1"></i>Gửi phản hồi
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Gắn sự kiện nút gửi
+      document.querySelectorAll('.btn-send').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const responseText = document.getElementById(`response-${id}`).value.trim();
+          const status = document.getElementById(`status-${id}`).value;
+
+          if (!responseText) {
+            alert('Vui lòng nhập nội dung phản hồi!');
+            return;
+          }
+
+          btn.disabled = true;
+          btn.textContent = 'Đang gửi...';
+          try {
+            const res = await fetch(`/api/admin/reports/${id}/respond`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status, response: responseText })
+            });
+            if (!res.ok) throw new Error('Lỗi server');
+            await loadReports();
+          } catch (err) {
+            console.error('[admin-report.html] respond:', err);
+            alert('Gửi phản hồi thất bại, vui lòng thử lại.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i>Gửi phản hồi';
+          }
+        });
       });
 
-      loadReports();
+      renderPagination(page, totalPages);
+    }
+
+    function renderPagination(page, totalPages) {
+      const nav = document.getElementById('pagination');
+      nav.innerHTML = '';
+      if (totalPages <= 1) return;
+
+      const prevBtn = document.createElement('button');
+      prevBtn.textContent = '←';
+      prevBtn.disabled = page <= 1;
+      prevBtn.className = `px-3 py-1 rounded ${page <= 1 ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      prevBtn.onclick = () => renderPage(page - 1);
+      nav.appendChild(prevBtn);
+
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-3 py-1 rounded ${i === page ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
+        btn.onclick = () => renderPage(i);
+        nav.appendChild(btn);
+      }
+
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = '→';
+      nextBtn.disabled = page >= totalPages;
+      nextBtn.className = `px-3 py-1 rounded ${page >= totalPages ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      nextBtn.onclick = () => renderPage(page + 1);
+      nav.appendChild(nextBtn);
+    }
+
+    function logout() {
+      fetch('/api/users/logout').then(() => (window.location.href = '/'));
+    }
+
+    function openImage(src) {
+      document.getElementById('modalImage').src = src;
+      document.getElementById('imageModal').classList.remove('hidden');
+    }
+
+    function closeImage() {
+      document.getElementById('imageModal').classList.add('hidden');
+    }
+
+    document.getElementById('imageModal').addEventListener('click', (e) => {
+      if (e.target.id === 'imageModal') closeImage();
     });
-  });
-}
 
-// logout
-function logout() {
-  fetch('/api/users/logout').then(() => (window.location.href = '/'));
-}
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+    }
 
-// load báo lỗi khi vào trang
-loadReports();
-
-// Hàm mở ảnh trong lightbox
-function openImage(src) {
-  document.getElementById('modalImage').src = src;
-  document.getElementById('imageModal').classList.remove('hidden');
-}
-
-function closeImage() {
-  document.getElementById('imageModal').classList.add('hidden');
-}
-
-// Đóng ảnh nếu click ra ngoài
-document.getElementById('imageModal').addEventListener('click', (e) => {
-  if (e.target.id === 'imageModal') closeImage();
-});
-</script>
-
-
+    loadAdminName();
+    loadReports();
+  </script>
 </body>
 </html>

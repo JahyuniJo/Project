@@ -3,15 +3,9 @@ const router = express.Router();
 const pool = require("../config/pool");
 const bcrypt = require("bcryptjs");
 const authMiddleware = require("../middleware/authMiddleware");
+const requireAdmin = require("../middleware/requireAdmin");
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function requireAdmin(req, res, next) {
-  if (req.user?.role !== "admin") {
-    return res.status(403).json({ message: "Bạn không có quyền thực hiện thao tác này" });
-  }
-  next();
-}
 
 // Lấy danh sách người dùng (có phân trang & tìm kiếm)
 router.get("/", authMiddleware, requireAdmin, async (req, res) => {
@@ -102,6 +96,15 @@ router.put("/:id", authMiddleware, requireAdmin, async (req, res) => {
   }
 
   try {
+    // Kiểm tra email đã tồn tại ở user khác chưa
+    const emailConflict = await pool.query(
+      "SELECT id FROM users WHERE email = $1 AND id != $2",
+      [email, id]
+    );
+    if (emailConflict.rows.length > 0) {
+      return res.status(400).json({ message: "Email đã được sử dụng bởi tài khoản khác" });
+    }
+
     const result = await pool.query(
       "UPDATE users SET username=$1, email=$2, role=$3 WHERE id=$4 RETURNING id",
       [username, email, role || "user", id]
@@ -123,6 +126,10 @@ router.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
     return res.status(400).json({ message: "ID người dùng không hợp lệ" });
+  }
+
+  if (id === req.user.id) {
+    return res.status(400).json({ message: "Bạn không thể tự xóa tài khoản của chính mình" });
   }
 
   try {
