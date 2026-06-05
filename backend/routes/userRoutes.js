@@ -31,6 +31,9 @@ router.post("/register", async (req, res) => {
   if (!username || !email || !password) {
     return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
   }
+  if (username.trim().length < 3 || username.trim().length > 50) {
+    return res.status(400).json({ message: "Tên người dùng phải từ 3 đến 50 ký tự" });
+  }
   if (!EMAIL_REGEX.test(email)) {
     return res.status(400).json({ message: "Email không hợp lệ" });
   }
@@ -65,8 +68,13 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ message: "Vui lòng nhập email và mật khẩu" });
   }
 
+  const trimmedEmail = email.trim();
+
   try {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const result = await pool.query(
+      "SELECT id, username, email, role, password, locked_until FROM users WHERE email = $1",
+      [trimmedEmail]
+    );
     if (result.rows.length === 0) {
       return res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu" });
     }
@@ -77,6 +85,15 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu" });
     }
 
+    if (user.locked_until && user.locked_until > new Date()) {
+      const d = user.locked_until;
+      const pad = n => String(n).padStart(2, "0");
+      const formatted = `${pad(d.getHours())}:${pad(d.getMinutes())} ngày ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+      return res.status(403).json({
+        message: `Tài khoản đã bị khóa đến ${formatted}. Vui lòng liên hệ quản trị viên.`,
+      });
+    }
+
     const token = jwt.sign(
       { userId: user.id, role: user.role, email: user.email, username: user.username },
       process.env.JWT_SECRET,
@@ -85,9 +102,10 @@ router.post("/login", async (req, res) => {
 
     res.cookie("authToken", token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "Lax",
       path: "/",
+      maxAge: 24 * 60 * 60 * 1000, // khớp với JWT expiresIn: "24h"
     });
 
     res.json({ message: "Đăng nhập thành công", role: user.role });
@@ -99,7 +117,7 @@ router.post("/login", async (req, res) => {
 
 // Đăng xuất
 router.get("/logout", (req, res) => {
-  res.clearCookie("authToken", { httpOnly: true, secure: false, path: "/" });
+  res.clearCookie("authToken", { httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
   res.json({ message: "Đăng xuất thành công" });
 });
 

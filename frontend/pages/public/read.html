@@ -42,86 +42,9 @@
   </style>
 </head>
 
-<body class="bg-gradient-to-br from-indigo-50 to-purple-100 min-h-screen flex flex-col font-sans text-gray-800">
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans text-gray-800">
 
-  <!-- HEADER -->
-  <header class="bg-white shadow-md">
-    <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
-
-      <!-- Logo -->
-      <div class="flex items-center gap-3">
-        <a href="index.html" class="flex items-center gap-2">
-          <img src="/assets/images/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-          <span class="text-2xl font-bold text-indigo-600">DH.story</span>
-        </a>
-      </div>
-
-      <!-- Slogan -->
-      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
-        Chúc các bạn đọc truyện vui vẻ!
-      </p>
-
-      <!-- Search + Menu -->
-      <div class="flex flex-col md:flex-row items-center gap-1 mt-4 md:mt-0">
-        <!-- Search -->
-        <div class="relative">
-          <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
-            <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
-              class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
-            <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-          </div>
-
-          <!-- Popover kết quả -->
-          <div id="searchSuggestions"
-            class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
-          </div>
-        </div>
-
-
-
-        <!-- Navigation: Thể loại | Xếp hạng | Truyện mới -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <!-- Thể loại dropdown -->
-          <div class="relative" id="genreDropdownWrapper">
-            <button id="genreBtn"
-              class="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full hover:bg-indigo-100 transition text-sm font-medium">
-              <i class="fa-solid fa-layer-group"></i> Thể loại
-              <i id="genreChevron" class="fa-solid fa-chevron-down text-xs" style="transition: transform 0.2s"></i>
-            </button>
-            <div id="genreDropdown"
-              class="hidden absolute left-0 top-full mt-2 bg-white shadow-xl rounded-2xl border border-gray-100 z-50 w-96 max-h-80 overflow-y-auto">
-              <div id="genreList" class="p-3 grid grid-cols-2 gap-1 text-sm">
-                <p class="col-span-2 text-gray-400 italic px-2 py-1 text-xs">Đang tải...</p>
-              </div>
-            </div>
-          </div>
-          <!-- Xếp hạng -->
-          <a href="/index.html?sort=rating"
-            class="flex items-center gap-1.5 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full hover:bg-yellow-100 transition text-sm font-medium whitespace-nowrap">
-            <i class="fa-solid fa-star"></i> Xếp hạng
-          </a>
-          <!-- Truyện mới -->
-          <a href="/index.html?sort=newest"
-            class="flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 rounded-full hover:bg-green-100 transition text-sm font-medium whitespace-nowrap">
-            <i class="fa-solid fa-clock-rotate-left"></i> Truyện mới
-          </a>
-        </div>
-      </div>
-
-      <!-- Buttons -->
-      <div class="flex gap-3 mt-4 md:mt-0">
-        <a href="login.html" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-          Đăng nhập
-        </a>
-        <a href="register.html"
-          class="px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition">
-          Đăng ký
-        </a>
-      </div>
-    </div>
-  </header>
+  <div id="app-header"></div>
 
   <!-- MAIN -->
   <main class="flex-1 container mx-auto py-10 px-6 fade-in">
@@ -134,7 +57,7 @@
 
       <!-- Nội dung truyện -->
       <div class="flex-1">
-        <h1 id="story-title" class="text-3xl font-bold text-indigo-700 mb-2 title-hover"></h1>
+        <h1 id="story-title" class="text-2xl font-bold text-gray-800 mb-2 title-hover"></h1>
         <p id="story-author" class="text-gray-600 mb-4 italic"></p>
         <p id="story-genres" class="text-sm text-gray-500 mb-6"></p>
         <a id="story-link" href="#" target="_blank"
@@ -144,8 +67,41 @@
         <div id="story-content" class="leading-relaxed text-gray-800 text-justify whitespace-pre-line"></div>
       </div>
     </div>
+    <!-- CHAPTER SECTION -->
+    <div class="bg-white shadow-lg rounded-2xl p-6 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-book-open text-indigo-600"></i>
+          Danh sách chương
+          <span id="chapterCount" class="text-sm font-normal text-gray-400"></span>
+        </h2>
+        <button id="syncChaptersBtn"
+          class="hidden items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition">
+          <i class="fa-solid fa-rotate"></i> Sync chương
+        </button>
+      </div>
+
+      <div id="chapterLoading" class="py-6 text-center">
+        <div class="inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+
+      <p id="chapterEmpty" class="hidden py-6 text-center text-gray-400 text-sm">
+        Chưa có chương nào được đồng bộ
+      </p>
+
+      <div id="chapterGrid"
+        class="hidden grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+      </div>
+
+      <div class="mt-3 text-center">
+        <button id="chapterMoreBtn"
+          class="hidden px-5 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition">
+        </button>
+      </div>
+    </div>
+
     <!-- COMMENT SECTION -->
-    <div class="bg-white shadow-lg rounded-xl p-6">
+    <div class="bg-white shadow-lg rounded-xl p-6 mt-6">
 
       <h2 class="text-xl font-bold mb-4">💬 Bình luận</h2>
 
@@ -171,13 +127,13 @@
 
 
   <!-- FOOTER -->
-  <footer class="bg-white mt-10 shadow-inner">
+  <footer class="bg-white border-t border-gray-200 mt-10">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
       <div class="flex items-center gap-2 mb-4 md:mb-0">
         <img src="/assets/images/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
-        <span class="font-bold text-indigo-600 text-lg">DH.story</span>
+        <span class="font-bold text-indigo-600">DH.story</span>
       </div>
-      <div class="text-center md:text-right text-gray-600 text-sm">
+      <div class="text-center md:text-right text-xs text-gray-400">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
         <a href="https://github.com/JahyuniJo" target="_blank"
           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
@@ -185,56 +141,14 @@
           <img src="/assets/images/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
         <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
-        <p class="mt-2 text-xs text-gray-400">Copyright © 2025 DieuHoang</p>
+        <p class="mt-2">Copyright © 2025 DieuHoang</p>
       </div>
     </div>
   </footer>
   <script src="/components/alertModal.js"></script>
+  <script src="/assets/js/header.js"></script>
   <script src="/assets/js/comments.js"></script>
   <script>
-    /* Genre dropdown — links to /index.html */
-    (function setupGenreDropdown() {
-      const btn = document.getElementById("genreBtn");
-      const dropdown = document.getElementById("genreDropdown");
-      const chevron = document.getElementById("genreChevron");
-      let loaded = false;
-
-      async function loadGenreDropdown() {
-        try {
-          const res = await fetch("/api/stories/genres");
-          const genres = await res.json();
-          const list = document.getElementById("genreList");
-          if (!genres.length) {
-            list.innerHTML = `<p class="col-span-2 text-gray-400 italic px-2 py-1 text-xs">Chưa có thể loại</p>`;
-            return;
-          }
-          list.innerHTML = genres.map(g => `
-            <a href="/index.html?genre=${encodeURIComponent(g)}"
-               class="px-3 py-1.5 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition text-gray-700 text-sm block">
-              ${g}
-            </a>
-          `).join("");
-        } catch (err) {
-          console.error("[read] Lỗi tải thể loại:", err);
-        }
-      }
-
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const opening = dropdown.classList.contains("hidden");
-        dropdown.classList.toggle("hidden");
-        chevron.style.transform = opening ? "rotate(180deg)" : "";
-        if (opening && !loaded) { loadGenreDropdown(); loaded = true; }
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!document.getElementById("genreDropdownWrapper").contains(e.target)) {
-          dropdown.classList.add("hidden");
-          chevron.style.transform = "";
-        }
-      });
-    })();
-
     // Hàm lấy ID truyện từ URL (?id=)
     function getStoryId() {
       const params = new URLSearchParams(window.location.search);
@@ -266,95 +180,116 @@
     loadStory();
 
 
-    // Search logic
-    const searchBox = document.getElementById("searchBox");
-    const searchBtn = document.getElementById("searchBtn");
-    const suggestionBox = document.getElementById("searchSuggestions");
-    let typingTimer;
-
-    //  Hàm debounce tránh spam API
-    function debounce(func, delay) {
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(func, delay);
-    }
-
-    //  Gọi API gợi ý Elasticsearch
-    async function fetchSuggestions(q) {
-      if (!q.trim()) {
-        suggestionBox.classList.add("hidden");
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-
-        if (!data.length) {
-          suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
-          suggestionBox.classList.remove("hidden");
-          return;
-        }
-
-        // Tạo danh sách gợi ý
-        suggestionBox.innerHTML = data.map(item => `
-      <div onclick="openStory(${item.id})"
-           class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
-        <img src="${item.cover_url || '/assets/images/Logo.png'}" class="w-10 h-14 object-cover rounded mr-3">
-        <div>
-          <p class="font-medium text-indigo-700">${item.title}</p>
-          <p class="text-xs text-gray-500">${item.author || "Không rõ tác giả"}</p>
-        </div>
-      </div>
-    `).join("");
-
-        suggestionBox.classList.remove("hidden");
-
-      } catch (err) {
-        console.error("❌ Lỗi fetchSuggest:", err);
-      }
-    }
-    //  Mở truyện khi chọn gợi ý
-    window.openStory = function (id) {
-      window.location.href = `/read.html?id=${id}`;
-    };
-
-    //  Chọn gợi ý → search ngay
-    window.selectSuggestion = function (title) {
-      searchBox.value = title;
-      suggestionBox.classList.add("hidden");
-      loadStories(1, title);
-    };
-
-    // ⌨ Khi người dùng gõ → gọi API gợi ý
-    searchBox.addEventListener("input", () => {
-      debounce(() => fetchSuggestions(searchBox.value), 200);
-    });
-
-    // ⏎ Enter → tìm kiếm
-    searchBox.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        suggestionBox.classList.add("hidden");
-        loadStories(1, searchBox.value.trim());
-      }
-    });
-
-    // 🔍 Click nút tìm kiếm
-    searchBtn.addEventListener("click", () => {
-      suggestionBox.classList.add("hidden");
-      loadStories(1, searchBox.value.trim());
-    });
-
-    // Ẩn popover khi click ra ngoài
-    document.addEventListener("click", (e) => {
-      if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
-        suggestionBox.classList.add("hidden");
-      }
-    });
     initCommentSection({
       storyId: getStoryId,
       enableMenu: true,
       emptyMessage: "Chưa có bình luận nào"
     });
+
+    // ===== CHAPTER SECTION =====
+    const CHAPTER_INIT = 30;
+    let allChaptersData = [];
+
+    function renderChapterGrid(visibleCount) {
+      const grid = document.getElementById("chapterGrid");
+      const moreBtn = document.getElementById("chapterMoreBtn");
+      const slice = allChaptersData.slice(0, visibleCount);
+
+      grid.innerHTML = slice.map(ch => `
+        <a href="/chapter.html?id=${ch.id}"
+           class="px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-center hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition truncate block">
+          Chương ${ch.chapter_num}
+        </a>
+      `).join("");
+
+      const remaining = allChaptersData.length - visibleCount;
+      if (remaining > 0) {
+        const nextCount = Math.min(visibleCount + CHAPTER_INIT, allChaptersData.length);
+        moreBtn.textContent = `Xem thêm`;
+        moreBtn.classList.remove("hidden");
+        moreBtn.onclick = () => renderChapterGrid(nextCount);
+      } else {
+        moreBtn.classList.add("hidden");
+      }
+    }
+
+    async function loadChapters() {
+      const id = getStoryId();
+      if (!id) return;
+      try {
+        const res = await fetch(`/api/stories/${id}/chapters`);
+        const chapters = await res.json();
+
+        document.getElementById("chapterLoading").classList.add("hidden");
+
+        if (!chapters.length) {
+          document.getElementById("chapterEmpty").classList.remove("hidden");
+          return;
+        }
+
+        allChaptersData = chapters;
+        document.getElementById("chapterCount").textContent = `(${chapters.length} chương)`;
+        document.getElementById("chapterGrid").classList.remove("hidden");
+        renderChapterGrid(CHAPTER_INIT);
+      } catch (err) {
+        document.getElementById("chapterLoading").classList.add("hidden");
+        console.error("[read] tải chương:", err);
+      }
+    }
+
+    async function checkAdminSync() {
+      try {
+        const res = await fetch("/api/import/me", { credentials: "include" });
+        if (!res.ok) return;
+        const user = await res.json();
+        if (user.role === "admin") {
+          const btn = document.getElementById("syncChaptersBtn");
+          btn.classList.remove("hidden");
+          btn.classList.add("flex");
+        }
+      } catch {}
+    }
+
+    document.getElementById("syncChaptersBtn").addEventListener("click", async () => {
+      const id = getStoryId();
+      const btn = document.getElementById("syncChaptersBtn");
+      const origHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang sync...';
+      try {
+        const res = await fetch(`/api/stories/${id}/crawl-chapters`, {
+          method: "POST",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById("chapterEmpty").classList.add("hidden");
+          allChaptersData = [];
+          await loadChapters();
+          showChapterToast(data.message, "success");
+        } else {
+          showChapterToast(data.message || "Lỗi server", "error");
+        }
+      } catch {
+        showChapterToast("Không thể kết nối server", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      }
+    });
+
+    function showChapterToast(message, type) {
+      const toast = document.createElement("div");
+      const bg = type === "success" ? "bg-green-600" : "bg-red-600";
+      toast.className = `fixed bottom-6 px-6 py-3 rounded-xl text-white text-sm shadow-lg z-50 ${bg}`;
+      toast.style.cssText = "left:50%;transform:translateX(-50%)";
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+
+    loadChapters();
+    checkAdminSync();
 
   </script>
 </body>

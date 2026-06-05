@@ -6,7 +6,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 router.get("/me", authMiddleware, (req, res) => {
   const user = req.user; // được gắn bởi authMiddleware
   res.json({
-    id: user.id,
+    id: user.userId,
     email: user.email,
     name: user.username || null
   });

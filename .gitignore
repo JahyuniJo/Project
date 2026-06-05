@@ -4,6 +4,9 @@
 !.env.example
 Pass.txt
 
+# Crawl session
+backend/config/comiCookies.json
+
 # Dependencies
 node_modules/
 

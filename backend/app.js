@@ -101,7 +101,7 @@ app.get('/stories.html', authenticateHTML(['admin']), (req, res) => {
 app.get('/user.html', authenticateHTML(['admin']), (req, res) => {
   res.sendFile(path.join(PRIVATE_PAGES_DIR, 'user.html'));
 });
-app.get('/read2.html', authenticateHTML(['user']), (req, res) => {
+app.get('/read2.html', authenticateHTML(['user', 'admin']), (req, res) => {
   res.sendFile(path.join(PRIVATE_PAGES_DIR, 'read2.html'));
 });
 app.get('/fav.html', authenticateHTML(['user']), (req, res) => {
@@ -136,6 +136,7 @@ app.use("/api", require("./routes/report")(io, userSockets));
 app.use("/api/comments", require("./routes/commentRoutes")(io, userSockets));
 app.use("/api/ai", require("./routes/aiRoutes"));
 app.use("/api/recommend", require("./routes/recommendRoutes"));
+app.use("/api/chapters", require("./routes/chapterRoutes"));
 // ========== STATIC ==========
 app.use(express.static(PUBLIC_PAGES_DIR));
 app.use("/assets", express.static(ASSETS_DIR));
@@ -143,7 +144,7 @@ app.use("/components", express.static(COMPONENTS_DIR));
 app.use("/uploads", express.static(path.join(__dirname, "../backend/uploads")));
 
 // ========== START ==========
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () =>
   console.log(`Server chạy tại http://localhost:${PORT}`)
 );

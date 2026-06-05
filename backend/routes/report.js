@@ -16,10 +16,11 @@ module.exports = (io) => {
   const router = express.Router();
 
   // 1. User gửi báo lỗi
-  router.post("/report", upload.single("screenshot"), async (req, res) => {
-    const { title, story, message, email } = req.body;
+  router.post("/report", authMiddleware, upload.single("screenshot"), async (req, res) => {
+    const { title, story, message } = req.body;
+    const email = req.user.email;
 
-    if (!title || !message || !email) {
+    if (!title || !message) {
       return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin báo lỗi" });
     }
 
@@ -34,6 +35,19 @@ module.exports = (io) => {
       res.status(201).json({ message: "Đã gửi báo lỗi thành công" });
     } catch (err) {
       console.error("[report] submit:", err);
+      res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+    }
+  });
+
+  // 2a. Admin lấy số lượng báo lỗi pending
+  router.get("/admin/reports/pending-count", authMiddleware, requireAdmin, async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT COUNT(*) FROM reports WHERE status = 'pending'"
+      );
+      res.json({ count: parseInt(result.rows[0].count, 10) });
+    } catch (err) {
+      console.error("[report] pending-count:", err);
       res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
     }
   });
@@ -95,19 +109,13 @@ module.exports = (io) => {
   });
 
   // 4. User lấy danh sách thông báo
-  router.get("/notifications", async (req, res) => {
-    const { email } = req.query;
-
-    if (!email) {
-      return res.status(400).json({ message: "Vui lòng cung cấp email" });
-    }
-
+  router.get("/notifications", authMiddleware, async (req, res) => {
     try {
       const result = await pool.query(
         "SELECT * FROM notifications WHERE user_email=$1 ORDER BY created_at DESC",
-        [email]
+        [req.user.email]
       );
-      res.json({ data: result.rows });
+      res.json(result.rows);
     } catch (err) {
       console.error("[report] notifications:", err);
       res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
@@ -130,7 +138,7 @@ module.exports = (io) => {
   });
 
   // 5. Đánh dấu thông báo đã đọc
-  router.put("/notifications/:id/read", async (req, res) => {
+  router.put("/notifications/:id/read", authMiddleware, async (req, res) => {
     const id = parseInt(req.params.id);
     if (!id || id <= 0) {
       return res.status(400).json({ message: "ID thông báo không hợp lệ" });
@@ -138,8 +146,8 @@ module.exports = (io) => {
 
     try {
       const result = await pool.query(
-        "UPDATE notifications SET is_read=TRUE WHERE id=$1 RETURNING id",
-        [id]
+        "UPDATE notifications SET is_read=TRUE WHERE id=$1 AND user_email=$2 RETURNING id",
+        [id, req.user.email]
       );
 
       if (result.rowCount === 0) {

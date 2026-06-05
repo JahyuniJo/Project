@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require("../config/pool");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
+const { randomInt } = require("crypto");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,7 +40,7 @@ router.post("/forgot-password", async (req, res) => {
       return res.json({ message: "Nếu email tồn tại, mã OTP đã được gửi" });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = randomInt(100000, 1000000).toString();
     const expires = new Date(Date.now() + OTP_EXPIRY_MS);
 
     await pool.query(
@@ -156,6 +157,9 @@ router.post("/change-password", authMiddleware, async (req, res) => {
   }
   if (newPassword.length < 6) {
     return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+  }
+  if (newPassword === currentPassword) {
+    return res.status(400).json({ message: "Mật khẩu mới không được trùng với mật khẩu hiện tại" });
   }
 
   try {

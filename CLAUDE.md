@@ -244,15 +244,67 @@ Dự án dùng **hai module riêng biệt**:
 ## Database Schema (PostgreSQL)
 
 - `stories` — id, title, author, description, url, cover_url, genres(text[]), status, view_count, ai_summary, created_at
-- `users` — id, email, username, password, role, avatar_url, otp, otp_expires
+- `chapters` — id, story_id (FK→stories CASCADE), chapter_num(float8), title, source_url, created_at. UNIQUE(story_id, chapter_num)
+- `chapter_contents` — chapter_id (PK, FK→chapters CASCADE), images(jsonb), crawled_at. 1-1 với chapters, lưu danh sách URL ảnh của chương
+- `users` — id, email(UNIQUE), username, password, role, avatar_url, otp, otp_expires
 - `comments` — id, story_id, user_id, parent_id, content, likes, created_at, updated_at
-- `comment_likes` — user_id, comment_id (UNIQUE)
-- `ratings` — story_id, user_id, rating (UNIQUE story_id+user_id)
+- `comment_likes` — id, user_id, comment_id. UNIQUE(user_id, comment_id)
+- `ratings` — id, story_id, user_id, rating. UNIQUE(story_id, user_id)
 - `user_story_views` — id, user_id, story_id, viewed_at
 - `notifications` — id, user_email, message, is_read, created_at
-- `favorite_lists` — id, iduser, name
-- `favorite_stories` — id, list_id, story_id, added_at
-- `reports` — id, title, story_url, message, screenshot_path, user_email, status, response, created_at, updated_at
+- `favorite_lists` — id, iduser, name, created_at
+- `favorite_stories` — id, list_id, story_id, added_at. UNIQUE(list_id, story_id)
+- `reports` — id, title, story_url, message, screenshot_path, user_email, status(pending/fixing/done/ignored), response, created_at, updated_at
+
+### Quan hệ chapters
+
+```
+stories (1) ──< chapters (N) ──── chapter_contents (1)
+               story_id FK          chapter_id PK+FK
+               CASCADE DELETE       CASCADE DELETE
+```
+
+- Mỗi `chapter_contents` chứa `images: ["url1", "url2", ...]` — danh sách ảnh của chương đó (truyện tranh)
+- Crawl chương: lưu metadata vào `chapters`, lưu ảnh vào `chapter_contents`
+- `chapter_num` dùng `float8` để hỗ trợ chương thập phân (vd: 10.5)
+
+---
+
+## Database Indexes (PostgreSQL)
+
+Các index hiện có và lý do tồn tại:
+
+| Bảng | Index | Loại | Lý do |
+|---|---|---|---|
+| `stories` | `stories_pkey` | UNIQUE btree(id) | PK |
+| `stories` | `unique_story_title` | UNIQUE btree(title) | Tránh trùng tên khi crawl |
+| `stories` | `idx_stories_genres` | GIN(genres) | Query `ANY(genres)` và filter thể loại |
+| `stories` | `idx_stories_created_at` | btree(created_at DESC) | Sort "Truyện mới nhất" |
+| `chapters` | `chapters_pkey` | UNIQUE btree(id) | PK |
+| `chapters` | `chapters_story_id_chapter_num_key` | UNIQUE btree(story_id, chapter_num) | Tránh trùng chương, đồng thời index cho `WHERE story_id=?` |
+| `chapter_contents` | `chapter_contents_pkey` | UNIQUE btree(chapter_id) | PK + FK lookup |
+| `users` | `users_pkey` | UNIQUE btree(id) | PK |
+| `users` | `users_email_key` | UNIQUE btree(email) | Login lookup |
+| `comments` | `comments_pkey` | UNIQUE btree(id) | PK |
+| `comments` | `idx_comments_story_id` | btree(story_id) | `WHERE story_id=?` mỗi lần load comments |
+| `comments` | `idx_comments_parent_id` | btree(parent_id) WHERE NOT NULL | Build comment tree, CTE xóa thread |
+| `comment_likes` | `comment_likes_pkey` | UNIQUE btree(id) | PK |
+| `comment_likes` | `comment_likes_user_id_comment_id_key` | UNIQUE btree(user_id, comment_id) | Upsert like, check trùng |
+| `ratings` | `ratings_pkey` | UNIQUE btree(id) | PK |
+| `ratings` | `unique_rating` | UNIQUE btree(story_id, user_id) | 1 user 1 rating / truyện |
+| `user_story_views` | `user_story_views_pkey` | UNIQUE btree(id) | PK |
+| `user_story_views` | `idx_viewed_at` | btree(viewed_at) | Filter 7 ngày gần nhất |
+| `user_story_views` | `idx_user_story_views_user_id` | btree(user_id) | Gợi ý truyện, lịch sử đọc |
+| `user_story_views` | `idx_user_story_views_story_viewed` | btree(story_id, viewed_at) | Popular-week: GROUP BY story_id + filter viewed_at |
+| `notifications` | `notifications_pkey` | UNIQUE btree(id) | PK |
+| `notifications` | `idx_notifications_user_email` | btree(user_email) | `WHERE user_email=?` mỗi lần load bell |
+| `favorite_lists` | `favorite_lists_pkey` | UNIQUE btree(id) | PK |
+| `favorite_lists` | `idx_favorite_lists_iduser` | btree(iduser) | `WHERE iduser=?` mỗi lần vào trang Yêu thích |
+| `favorite_stories` | `favorite_stories_pkey` | UNIQUE btree(id) | PK |
+| `favorite_stories` | `favorite_stories_list_id_story_id_key` | UNIQUE btree(list_id, story_id) | Tránh trùng, lookup theo list |
+| `reports` | `reports_pkey` | UNIQUE btree(id) | PK |
+| `reports` | `idx_reports_status` | btree(status) | Filter pending, admin dashboard count |
+| `reports` | `idx_reports_user_email` | btree(user_email) | `WHERE user_email=?` lịch sử báo lỗi user |
 
 ---
 

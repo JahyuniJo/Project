@@ -2,8 +2,10 @@ const express = require("express");
 const pool = require("../config/pool");
 const { syncStories, getStories } = require("../controllers/storyController");
 const authMiddleware = require("../middleware/authMiddleware");
+const optionalAuth = require("../middleware/optionalAuth");
 const { removeVietnameseTones } = require("../utils/normalizeText");
 const { searchStoriesWithSqlFallback, indexStory, deleteStory } = require("../services/searchService");
+const { crawlChapterList } = require("../crawlers/crawlChapterList");
 
 const router = express.Router();
 
@@ -95,14 +97,145 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+// GET /api/stories/crawl-all-chapters/stream — SSE: đồng bộ chương toàn bộ truyện (admin)
+router.get("/crawl-all-chapters/stream", authMiddleware, async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Không đủ quyền" });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const send = (obj) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+
+  try {
+    const { rows: stories } = await pool.query(
+      "SELECT id, title, url FROM stories WHERE url IS NOT NULL AND url <> '' ORDER BY id"
+    );
+
+    send({ type: "start", total: stories.length });
+
+    let success = 0, failed = 0;
+
+    for (let i = 0; i < stories.length; i++) {
+      const story = stories[i];
+      send({ type: "progress", current: i + 1, total: stories.length, title: story.title });
+
+      try {
+        const chapters = await crawlChapterList(story.url);
+        if (!chapters.length) {
+          failed++;
+          send({ type: "item", id: story.id, status: "failed", title: story.title, message: "0 chương" });
+          continue;
+        }
+
+        const client = await pool.connect();
+        try {
+          for (const ch of chapters) {
+            await client.query(
+              `INSERT INTO chapters (story_id, chapter_num, title, source_url)
+               VALUES ($1, $2, $3, $4)
+               ON CONFLICT (story_id, chapter_num) DO UPDATE
+               SET title = EXCLUDED.title, source_url = EXCLUDED.source_url`,
+              [story.id, ch.chapter_num, ch.title, ch.source_url]
+            );
+          }
+          success++;
+          send({ type: "item", id: story.id, status: "ok", title: story.title, count: chapters.length });
+        } finally {
+          client.release();
+        }
+
+        // Nghỉ ngắn giữa các request để tránh overload nguồn
+        await new Promise((r) => setTimeout(r, 400));
+      } catch (err) {
+        failed++;
+        console.error(`[storyRoutes] crawl-all id=${story.id}:`, err.message);
+        send({ type: "item", id: story.id, status: "error", title: story.title, message: err.message });
+      }
+    }
+
+    send({ type: "done", total: stories.length, success, failed });
+  } catch (err) {
+    console.error("[storyRoutes] crawl-all-chapters/stream:", err);
+    send({ type: "error", message: "Lỗi server" });
+  } finally {
+    res.end();
+  }
+});
+
+// GET /api/stories/:id/chapters — danh sách chương (không cần auth)
+router.get("/:id/chapters", async (req, res) => {
+  const storyId = parseInt(req.params.id);
+  if (!storyId || storyId <= 0) {
+    return res.status(400).json({ message: "ID truyện không hợp lệ" });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT id, chapter_num, title, created_at FROM chapters WHERE story_id = $1 ORDER BY chapter_num ASC",
+      [storyId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[storyRoutes] chapters:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  }
+});
+
+// POST /api/stories/:id/crawl-chapters — crawl danh sách chương (admin)
+router.post("/:id/crawl-chapters", authMiddleware, async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Không đủ quyền" });
+  }
+  const storyId = parseInt(req.params.id);
+  if (!storyId || storyId <= 0) {
+    return res.status(400).json({ message: "ID truyện không hợp lệ" });
+  }
+  try {
+    const storyRow = await pool.query("SELECT url FROM stories WHERE id = $1", [storyId]);
+    if (!storyRow.rows.length) return res.status(404).json({ message: "Không tìm thấy truyện" });
+    const storyUrl = storyRow.rows[0].url;
+    if (!storyUrl) return res.status(400).json({ message: "Truyện không có URL nguồn" });
+
+    const chapters = await crawlChapterList(storyUrl);
+    if (!chapters.length) return res.status(404).json({ message: "Không tìm thấy chương nào" });
+
+    const client = await pool.connect();
+    let inserted = 0;
+    try {
+      for (const ch of chapters) {
+        await client.query(
+          `INSERT INTO chapters (story_id, chapter_num, title, source_url)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (story_id, chapter_num) DO UPDATE
+           SET title = EXCLUDED.title, source_url = EXCLUDED.source_url`,
+          [storyId, ch.chapter_num, ch.title, ch.source_url]
+        );
+        inserted++;
+      }
+    } finally {
+      client.release();
+    }
+
+    res.json({ message: `Đã đồng bộ ${inserted} chương`, total: inserted });
+  } catch (err) {
+    console.error("[storyRoutes] crawl-chapters:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  }
+});
+
+router.get("/:id", optionalAuth, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
     return res.status(400).json({ message: "ID truyện không hợp lệ" });
   }
 
   try {
-    await pool.query("UPDATE stories SET view_count = view_count + 1 WHERE id = $1", [id]);
+    if (!req.user) {
+      await pool.query("UPDATE stories SET view_count = view_count + 1 WHERE id = $1", [id]);
+    }
     const result = await pool.query("SELECT * FROM stories WHERE id = $1", [id]);
 
     if (result.rows.length === 0) {

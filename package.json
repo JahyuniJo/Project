@@ -25,11 +25,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon",
     "start": "docker compose up -d elasticsearch && nodemon",
-    "es:up": "docker compose up -d elasticsearch",
+    "es:up": "docker compose up -d --wait elasticsearch",
     "es:down": "docker compose down",
     "es:logs": "docker compose logs -f elasticsearch",
     "es:create-index": "node backend/utils/createIndex.js",
     "es:sync": "node backend/utils/syncSQL.js",
+    "db:chapters": "node backend/utils/createChapterTables.js",
     "build:css": "npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch"
   },
   "keywords": [],

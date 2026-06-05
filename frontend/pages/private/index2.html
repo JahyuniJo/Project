@@ -79,134 +79,9 @@
   </style>
 </head>
 
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
 
-  <!-- Header -->
-  <header class="bg-white shadow-md">
-    <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
-
-      <!-- Logo -->
-      <div class="flex items-center gap-3">
-        <a href="index2.html" class="flex items-center gap-2">
-          <img src="/assets/images/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-          <span class="text-2xl font-bold text-indigo-600">DH.story</span>
-        </a>
-      </div>
-
-      <!-- Slogan -->
-      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
-        Chúc các bạn đọc truyện vui vẻ!
-      </p>
-
-      <!-- Thanh công cụ -->
-      <div class="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
-
-        <!-- Search -->
-        <div class="relative">
-          <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
-            <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
-              class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
-            <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-          </div>
-          <div id="searchSuggestions"
-            class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
-          </div>
-        </div>
-
-        <!-- Navigation: Thể loại | Xếp hạng | Truyện mới -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <!-- Thể loại dropdown -->
-          <div class="relative" id="genreDropdownWrapper">
-            <button id="genreBtn"
-              class="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full hover:bg-indigo-100 transition text-sm font-medium">
-              <i class="fa-solid fa-layer-group"></i> Thể loại
-              <i id="genreChevron" class="fa-solid fa-chevron-down text-xs" style="transition: transform 0.2s"></i>
-            </button>
-            <div id="genreDropdown"
-              class="hidden absolute left-0 top-full mt-2 bg-white shadow-xl rounded-2xl border border-gray-100 z-50 w-96 max-h-80 overflow-y-auto">
-              <div id="genreList" class="p-3 grid grid-cols-2 gap-1 text-sm">
-                <p class="col-span-2 text-gray-400 italic px-2 py-1 text-xs">Đang tải...</p>
-              </div>
-            </div>
-          </div>
-          <!-- Xếp hạng -->
-          <button id="btnRating" onclick="filterBySort('rating')"
-            class="flex items-center gap-1.5 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full hover:bg-yellow-100 transition text-sm font-medium whitespace-nowrap">
-            <i class="fa-solid fa-star"></i> Xếp hạng
-          </button>
-          <!-- Truyện mới -->
-          <button id="btnNewest" onclick="filterBySort('newest')"
-            class="flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 rounded-full hover:bg-green-100 transition text-sm font-medium whitespace-nowrap">
-            <i class="fa-solid fa-clock-rotate-left"></i> Truyện mới
-          </button>
-        </div>
-
-        <!-- Chuông thông báo -->
-        <div id="notifyBell" class="relative cursor-pointer hover:text-indigo-600 transition">
-          <i class="fa-solid fa-bell text-2xl"></i>
-          <span id="notifyCount"
-            class="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
-        </div>
-        <div id="notifyToast"
-          class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-500 opacity-0 z-50">
-        </div>
-
-        <!-- Avatar -->
-        <div class="relative">
-          <button id="avatarButton" class="focus:outline-none">
-            <img id="avatarImage" src="/assets/images/Logo.png" alt="Avatar"
-              class="w-10 h-10 rounded-full border-2 border-indigo-500 object-cover cursor-pointer hover:scale-110 transition-transform">
-          </button>
-          <div id="dropdownMenu"
-            class="hidden absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50">
-            <hr class="my-1">
-            <a href="/info.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
-              <i class="fa-solid fa-user mr-2 text-indigo-500"></i>Thông tin cá nhân
-            </a>
-            <a href="/fav.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
-              <i class="fa-solid fa-heart mr-2 text-pink-500"></i>Yêu thích
-            </a>
-            <a href="/error-report.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">
-              <i class="fa-solid fa-triangle-exclamation mr-2 text-yellow-500"></i>Báo lỗi
-            </a>
-            <div id="openLogoutModal" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
-              <i class="fa-solid fa-right-from-bracket mr-2"></i>Đăng xuất
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- Popup danh sách thông báo -->
-    <div id="notifyBox"
-      class="hidden absolute right-6 top-16 w-80 bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 z-50">
-      <div class="px-4 py-2 bg-indigo-600 text-white font-semibold">Thông báo</div>
-      <ul id="notifyList" class="max-h-60 overflow-y-auto divide-y divide-gray-100"></ul>
-    </div>
-  </header>
-
-  <!-- Modal đăng xuất -->
-  <div id="logoutModal"
-    class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6">
-      <div class="text-center">
-        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-          <i class="fa-solid fa-right-from-bracket text-red-600 text-xl"></i>
-        </div>
-        <h3 class="mt-4 text-lg font-medium text-gray-900">Xác nhận đăng xuất</h3>
-        <p class="mt-2 text-sm text-gray-500">Bạn có chắc chắn muốn đăng xuất không?</p>
-      </div>
-      <div class="mt-5 flex justify-end gap-3">
-        <button id="cancelLogout" type="button"
-          class="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">Hủy</button>
-        <button id="confirmLogout" type="button"
-          class="px-4 py-2 rounded-md bg-red-600 text-sm text-white hover:bg-red-700">Đăng xuất</button>
-      </div>
-    </div>
-  </div>
+  <div id="app-header"></div>
 
   <!-- Hero Banner -->
   <section id="heroBanner" class="hidden container mx-auto px-6 pt-8">
@@ -250,13 +125,13 @@
     <div id="recommendSection" class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-10">
 
       <section class="lg:col-span-3">
-        <h2 class="text-xl font-bold text-indigo-700 mb-4">✨ Gợi ý dành riêng cho bạn</h2>
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">✨ Gợi ý dành riêng cho bạn</h2>
         <p class="text-sm text-gray-500 mb-4">Dựa trên lịch sử đọc và sở thích của bạn</p>
         <div id="recommendBox" class="grid grid-cols-2 gap-4"></div>
       </section>
 
       <section class="lg:col-span-2">
-        <h2 class="text-xl font-bold text-red-600 mb-4">🔥 Truyện được đọc nhiều nhất tuần</h2>
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">🔥 Truyện được đọc nhiều nhất tuần</h2>
         <p class="text-sm text-gray-500 mb-4">Tổng hợp từ lượt đọc của cộng đồng trong 7 ngày gần nhất</p>
         <div id="recommendPopular" class="grid grid-cols-2 gap-4"></div>
       </section>
@@ -269,13 +144,13 @@
     </div>
 
     <div id="genreHeader" class="hidden mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <h2 id="genreTitle" class="text-2xl font-bold text-indigo-700"></h2>
+      <h2 id="genreTitle" class="text-2xl font-bold text-gray-800"></h2>
       <button onclick="resetHome()" class="text-sm px-4 py-2 rounded-lg border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition">
         ← Xem tất cả truyện
       </button>
     </div>
 
-    <div id="story-list" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
+    <div id="story-list" class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"></div>
     <div id="pagination" class="flex justify-center items-center mt-8 gap-2"></div>
   </main>
 
@@ -298,13 +173,13 @@
   </div>
 
   <!-- Footer -->
-  <footer class="bg-white mt-10 shadow-inner">
+  <footer class="bg-white border-t border-gray-200 mt-10">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
       <div class="flex items-center gap-2 mb-4 md:mb-0">
         <img src="/assets/images/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
-        <span class="font-bold text-indigo-600 text-lg">DH.story</span>
+        <span class="font-bold text-indigo-600">DH.story</span>
       </div>
-      <div class="text-center md:text-right text-gray-600 text-sm">
+      <div class="text-center md:text-right text-xs text-gray-400">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
         <a href="https://github.com/JahyuniJo" target="_blank"
           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
@@ -312,13 +187,20 @@
           <img src="/assets/images/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
         <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
-        <p class="mt-2 text-xs text-gray-400">© 2025 DieuHoang</p>
+        <p class="mt-2">© 2025 DieuHoang</p>
       </div>
     </div>
   </footer>
 
   <script src="/components/alertModal.js"></script>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    window.HEADER_CALLBACKS = {
+      onSort:   (type)  => filterBySort(type),
+      onGenre:  (genre) => filterByGenre(genre),
+      onSearch: (q)     => loadStories(1, q),
+    };
+  </script>
+  <script src="/assets/js/header.js"></script>
   <script>
     /* ===========================
        SKELETON LOADING
@@ -438,109 +320,6 @@
     }
 
     /* ===========================
-       SOCKET.IO + NOTIFICATIONS
-    =========================== */
-    const notifyBell = document.getElementById("notifyBell");
-    const notifyBox = document.getElementById("notifyBox");
-    const notifyCount = document.getElementById("notifyCount");
-    const notifyList = document.getElementById("notifyList");
-    let unreadCount = 0;
-
-    const socket = io("http://localhost:3000", { transports: ["websocket", "polling"] });
-    let userEmail = null;
-
-    socket.on("connect", async () => {
-      try {
-        const res = await fetch("/api/import/me", { credentials: "include" });
-        if (!res.ok) return;
-        const user = await res.json();
-        userEmail = user.email;
-        socket.emit("registerEmail", userEmail);
-        loadNotifications(userEmail);
-      } catch (err) {
-        console.error("[index2] Lỗi xác thực user socket:", err);
-      }
-    });
-
-    socket.on("newNotification", (data) => {
-      unreadCount++;
-      notifyCount.textContent = unreadCount;
-      notifyCount.classList.remove("hidden");
-      const li = document.createElement("li");
-      li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
-      li.innerHTML = `
-        <p class="text-sm text-gray-700">${data.message}</p>
-        <p class="text-xs text-gray-400 mt-1">${new Date(data.time).toLocaleString()}</p>
-      `;
-      ringBell();
-      showToast(data.message);
-      notifyList.prepend(li);
-    });
-
-    notifyBell.addEventListener("click", async () => {
-      notifyBox.classList.toggle("hidden");
-      if (!notifyBox.classList.contains("hidden") && userEmail) {
-        unreadCount = 0;
-        notifyCount.classList.add("hidden");
-        try {
-          const res = await fetch(`/api/notifications?email=${userEmail}`);
-          const notifications = await res.json();
-          for (const n of notifications) {
-            if (!n.is_read) await fetch(`/api/notifications/${n.id}/read`, { method: "PUT" });
-          }
-          renderNotificationList(notifications);
-        } catch (err) {
-          console.error("[index2] Không thể mark-read:", err);
-        }
-      }
-    });
-
-    async function loadNotifications(email) {
-      try {
-        const res = await fetch(`/api/notifications?email=${email}`);
-        renderNotificationList(await res.json());
-      } catch (err) {
-        console.error("[index2] Lỗi load thông báo:", err);
-      }
-    }
-
-    function renderNotificationList(notifications) {
-      notifyList.innerHTML = "";
-      unreadCount = 0;
-      notifications.forEach(noti => {
-        const li = document.createElement("li");
-        li.className = "px-4 py-3 hover:bg-indigo-50 cursor-pointer transition";
-        li.innerHTML = `
-          <p class="text-sm text-gray-700">${noti.message}</p>
-          <p class="text-xs text-gray-400 mt-1">${new Date(noti.created_at).toLocaleString()}</p>
-        `;
-        notifyList.appendChild(li);
-        if (!noti.is_read) unreadCount++;
-      });
-      if (unreadCount > 0) {
-        notifyCount.textContent = unreadCount;
-        notifyCount.classList.remove("hidden");
-      } else {
-        notifyCount.classList.add("hidden");
-      }
-    }
-
-    function ringBell() {
-      const icon = notifyBell.querySelector("i");
-      if (!icon) return;
-      icon.classList.add("animate-[ring_0.5s_ease]");
-      setTimeout(() => icon.classList.remove("animate-[ring_0.5s_ease]"), 600);
-    }
-
-    function showToast(text) {
-      const toast = document.getElementById("notifyToast");
-      if (!toast) return;
-      toast.innerHTML = text;
-      toast.classList.remove("opacity-0");
-      setTimeout(() => toast.classList.add("opacity-0"), 3000);
-    }
-
-    /* ===========================
        RECOMMEND + POPULAR
     =========================== */
     async function loadRecommend() {
@@ -640,25 +419,25 @@
             const isHot = story.view_count >= 100;
 
             return `
-<div class="story-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
+<div class="story-card bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
   ${isHot ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">🔥 HOT</span>` : ""}
   <a href="read2.html?id=${story.id}">
     <img src="${story.cover_url || '/assets/images/Logo.png'}" alt="${story.title}"
-         class="w-full h-56 object-cover hover:scale-105 transition-transform duration-500">
+         class="w-full h-44 object-cover hover:scale-105 transition-transform duration-500">
   </a>
-  <div class="p-4">
+  <div class="p-3">
     <a href="read2.html?id=${story.id}">
-      <h3 class="text-lg font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
+      <h3 class="text-sm font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
     </a>
-    <p class="text-sm text-gray-600 mb-2">Tác giả: ${story.author || "Không rõ"}</p>
-    <p class="text-xs text-gray-500 mb-2">Thể loại: ${story.genres || "Chưa rõ"}</p>
-    <p class="description collapsed text-sm text-gray-700 mb-2">${story.description || ""}</p>
-    <button class="text-indigo-600 text-sm hover:underline" onclick="toggleDescription(this)">Xem thêm</button>
-    <button onclick="openFavModal(${story.id})"
-            class="mt-3 px-3 py-1 text-sm bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200">
-      <i class="fa-solid fa-heart mr-1"></i>Yêu thích
-    </button>
-    <p class="text-yellow-600 font-semibold mt-2">⭐ ${rating.avg?.toFixed(1) || 0} / 5 (${rating.total || 0} đánh giá)</p>
+    <p class="text-xs text-gray-600 mb-1">Tác giả: ${story.author || "Không rõ"}</p>
+    <p class="text-xs text-gray-500 mb-1">Thể loại: ${story.genres || "Chưa rõ"}</p>
+    <div class="flex items-center justify-between mt-1">
+      <button onclick="openFavModal(${story.id})"
+              class="px-2 py-0.5 text-xs bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200">
+        <i class="fa-solid fa-heart mr-1"></i>Yêu thích
+      </button>
+      <p class="text-yellow-600 text-xs font-semibold">⭐ ${rating.avg?.toFixed(1) || 0}</p>
+    </div>
     <p class="mt-1 text-xs text-gray-500"><i class="fa-solid fa-eye"></i> ${story.view_count} lượt đọc</p>
   </div>
 </div>`;
@@ -848,129 +627,6 @@
       }
     }
 
-    /* ===========================
-       AVATAR + LOGOUT
-    =========================== */
-    const avatarBtn = document.getElementById('avatarButton');
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    avatarBtn.addEventListener('click', () => dropdownMenu.classList.toggle('hidden'));
-    window.addEventListener('click', (e) => {
-      if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
-        dropdownMenu.classList.add('hidden');
-      }
-    });
-
-    async function loadUserAvatar() {
-      try {
-        const res = await fetch('/api/users/info');
-        const data = await res.json();
-        if (data.avatar_url) document.getElementById('avatarImage').src = data.avatar_url;
-      } catch (err) {
-        console.error('[index2] Không thể tải avatar:', err);
-      }
-    }
-    loadUserAvatar();
-
-    const logoutModal = document.getElementById('logoutModal');
-    document.getElementById('openLogoutModal').addEventListener('click', () => logoutModal.classList.remove('hidden'));
-    document.getElementById('cancelLogout').addEventListener('click', () => logoutModal.classList.add('hidden'));
-    document.getElementById('confirmLogout').addEventListener('click', async () => {
-      logoutModal.classList.add('hidden');
-      try {
-        const res = await fetch('/api/users/logout', { method: 'GET', credentials: 'include' });
-        const data = await res.json();
-        if (res.ok) window.location.href = '/';
-        else alert(data.message || 'Đăng xuất thất bại. Vui lòng thử lại.');
-      } catch (err) {
-        console.error('[index2] Lỗi đăng xuất:', err);
-        alert('Mất kết nối với máy chủ khi đăng xuất.');
-      }
-    });
-
-    /* ===========================
-       SEARCH
-    =========================== */
-    const searchBox = document.getElementById("searchBox");
-    const searchBtn = document.getElementById("searchBtn");
-    const suggestionBox = document.getElementById("searchSuggestions");
-    let typingTimer;
-
-    function debounce(func, delay) {
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(func, delay);
-    }
-
-    async function fetchSuggestions(q) {
-      if (!q.trim()) { suggestionBox.classList.add("hidden"); return; }
-      try {
-        const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        if (!data.length) {
-          suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
-          suggestionBox.classList.remove("hidden");
-          return;
-        }
-        suggestionBox.innerHTML = data.map(item => `
-          <div onclick="openStory(${item.id})" class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
-            <img src="${item.cover_url || '/assets/images/Logo.png'}" class="w-10 h-14 object-cover rounded mr-3">
-            <div>
-              <p class="font-medium text-indigo-700">${item.title}</p>
-              <p class="text-xs text-gray-500">${item.author || "Không rõ tác giả"}</p>
-            </div>
-          </div>
-        `).join("");
-        suggestionBox.classList.remove("hidden");
-      } catch (err) {
-        console.error("[index2] Lỗi fetchSuggest:", err);
-      }
-    }
-
-    window.openStory = (id) => { window.location.href = `/read2.html?id=${id}`; };
-    window.selectSuggestion = (title) => {
-      searchBox.value = title;
-      suggestionBox.classList.add("hidden");
-      loadStories(1, title);
-    };
-
-    searchBox.addEventListener("input", () => debounce(() => fetchSuggestions(searchBox.value), 200));
-    searchBox.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { suggestionBox.classList.add("hidden"); loadStories(1, searchBox.value.trim()); }
-    });
-    searchBtn.addEventListener("click", () => { suggestionBox.classList.add("hidden"); loadStories(1, searchBox.value.trim()); });
-    document.addEventListener("click", (e) => {
-      if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) suggestionBox.classList.add("hidden");
-    });
-
-    /* ===========================
-       GENRE DROPDOWN
-    =========================== */
-    async function loadGenreDropdown() {
-      try {
-        const res = await fetch("/api/stories/genres");
-        const genres = await res.json();
-        const list = document.getElementById("genreList");
-        if (!genres.length) {
-          list.innerHTML = `<p class="col-span-2 text-gray-400 italic px-2 py-1 text-xs">Chưa có thể loại</p>`;
-          return;
-        }
-        list.innerHTML = genres.map(g => `
-          <button onclick="selectGenre('${g.replace(/'/g, "\\'")}')"
-            class="text-left px-3 py-1.5 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition text-gray-700 text-sm w-full">
-            ${g}
-          </button>
-        `).join("");
-      } catch (err) {
-        console.error("[index2] Lỗi tải thể loại:", err);
-      }
-    }
-
-    function selectGenre(genre) {
-      document.getElementById("genreDropdown").classList.add("hidden");
-      document.getElementById("genreChevron").style.transform = "";
-      history.replaceState(null, "", `?genre=${encodeURIComponent(genre)}`);
-      filterByGenre(genre);
-    }
-
     async function filterBySort(sort) {
       try {
         pageMode = sort;
@@ -1006,28 +662,6 @@
         }
       });
     }
-
-    (function setupGenreDropdown() {
-      const btn = document.getElementById("genreBtn");
-      const dropdown = document.getElementById("genreDropdown");
-      const chevron = document.getElementById("genreChevron");
-      let loaded = false;
-
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const opening = dropdown.classList.contains("hidden");
-        dropdown.classList.toggle("hidden");
-        chevron.style.transform = opening ? "rotate(180deg)" : "";
-        if (opening && !loaded) { loadGenreDropdown(); loaded = true; }
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!document.getElementById("genreDropdownWrapper").contains(e.target)) {
-          dropdown.classList.add("hidden");
-          chevron.style.transform = "";
-        }
-      });
-    })();
 
     /* ===========================
        INIT

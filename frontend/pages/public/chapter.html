@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đọc chương | DH.story</title>
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    #imageContainer img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    button:disabled { cursor: not-allowed; }
+    #scrollTopBtn {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateY(8px);
+    }
+    #scrollTopBtn.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans text-gray-800">
+
+  <div id="app-header"></div>
+
+  <!-- INFO BAR: breadcrumb -->
+  <div class="bg-indigo-50 border-b border-indigo-100">
+    <div class="container mx-auto px-6 py-2.5 flex items-center gap-3 min-w-0">
+      <a id="backBtn" href="/"
+        class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white text-indigo-700 border border-indigo-200 rounded-full hover:bg-indigo-100 transition text-sm font-medium">
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+        <span>Về truyện</span>
+      </a>
+      <span class="text-gray-300 hidden sm:inline">/</span>
+      <p id="chapterTitle" class="text-sm text-gray-600 italic truncate min-w-0">Đang tải...</p>
+    </div>
+  </div>
+
+  <!-- CHAPTER NAV TOP (sticky) -->
+  <div class="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30">
+    <div class="container mx-auto px-6 py-3 flex items-center gap-3">
+      <button id="prevBtn" disabled
+        class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium transition opacity-40 hover:bg-indigo-100">
+        <i class="fa-solid fa-chevron-left text-xs"></i>
+        <span class="hidden sm:inline">Trước</span>
+      </button>
+
+      <select id="chapterSelect"
+        class="flex-1 max-w-sm mx-auto bg-white text-gray-700 text-sm px-3 py-2 rounded-full border border-gray-200 focus:outline-none focus:border-indigo-400 cursor-pointer">
+        <option>Chọn chương</option>
+      </select>
+
+      <button id="nextBtn" disabled
+        class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium transition opacity-40 hover:bg-indigo-100">
+        <span class="hidden sm:inline">Sau</span>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- READING AREA -->
+  <main class="flex-1 py-6">
+    <div class="container mx-auto px-4">
+
+      <!-- Loading -->
+      <div id="loadingState"
+        class="bg-white rounded-2xl shadow-sm flex flex-col items-center justify-center py-24 gap-4">
+        <div class="w-10 h-10 rounded-full animate-spin"
+          style="border:3px solid #6366f1;border-top-color:transparent"></div>
+        <p class="text-gray-400 text-sm">Đang tải chương...</p>
+      </div>
+
+      <!-- Error -->
+      <div id="errorState" style="display:none"
+        class="bg-white rounded-2xl shadow-sm flex flex-col items-center justify-center py-24 gap-4 text-center px-6">
+        <i id="errorIcon" class="fa-solid fa-circle-exclamation text-5xl text-red-400"></i>
+        <p id="errorMsg" class="text-gray-600">Không thể tải chương này</p>
+        <button onclick="loadChapter()"
+          class="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition">
+          Thử lại
+        </button>
+      </div>
+
+      <!-- Images -->
+      <div id="imageContainer" style="display:none"
+        class="max-w-3xl mx-auto bg-gray-900 rounded-2xl shadow-lg overflow-hidden">
+      </div>
+
+    </div>
+  </main>
+
+  <!-- CHAPTER NAV BOTTOM -->
+  <div class="bg-white border-t border-gray-200 shadow-sm">
+    <div class="container mx-auto px-6 py-3 flex items-center gap-3">
+      <button id="prevBtnBottom" disabled
+        class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium transition opacity-40 hover:bg-indigo-100">
+        <i class="fa-solid fa-chevron-left text-xs"></i>
+        <span class="hidden sm:inline">Trước</span>
+      </button>
+
+      <select id="chapterSelectBottom"
+        class="flex-1 max-w-sm mx-auto bg-white text-gray-700 text-sm px-3 py-2 rounded-full border border-gray-200 focus:outline-none focus:border-indigo-400 cursor-pointer">
+        <option>Chọn chương</option>
+      </select>
+
+      <button id="nextBtnBottom" disabled
+        class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium transition opacity-40 hover:bg-indigo-100">
+        <span class="hidden sm:inline">Sau</span>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-gray-200">
+    <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center gap-2 mb-4 md:mb-0">
+        <img src="/assets/images/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
+        <span class="font-bold text-indigo-600">DH.story</span>
+      </div>
+      <div class="text-center md:text-right text-xs text-gray-400">
+        <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
+        <a href="https://github.com/JahyuniJo" target="_blank"
+          class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
+          <span>Github</span>
+          <img src="/assets/images/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
+        </a>
+        <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
+        <p class="mt-2">Copyright © 2025 DieuHoang</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCROLL TO TOP -->
+  <button id="scrollTopBtn"
+    class="fixed bottom-8 right-6 w-12 h-12 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 z-50"
+    onclick="window.scrollTo({top:0,behavior:'smooth'})"
+    title="Lên đầu trang">
+    <i class="fa-solid fa-chevron-up"></i>
+  </button>
+
+  <!-- Modal đăng xuất -->
+  <div id="logoutModal"
+    class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6">
+      <div class="text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+          <i class="fa-solid fa-right-from-bracket text-red-600 text-xl"></i>
+        </div>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">Xác nhận đăng xuất</h3>
+        <p class="mt-2 text-sm text-gray-500">Bạn có chắc chắn muốn đăng xuất không?</p>
+      </div>
+      <div class="mt-5 flex justify-end gap-3">
+        <button id="cancelLogout"
+          class="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">Hủy</button>
+        <button id="confirmLogout"
+          class="px-4 py-2 rounded-md bg-red-600 text-sm text-white hover:bg-red-700">Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/header.js"></script>
+  <script src="/assets/js/chapter.js"></script>
+</body>
+
+</html>

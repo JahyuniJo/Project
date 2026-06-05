@@ -66,83 +66,9 @@
   </style>
 </head>
 
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col font-sans">
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
 
-  <!-- Header -->
-  <header class="bg-white shadow-md">
-    <div class="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
-
-      <!-- Logo -->
-      <div class="flex items-center gap-3">
-        <a href="index.html" class="flex items-center gap-2">
-          <img src="/assets/images/Logo.png" alt="Logo" class="w-10 h-10 rounded-full">
-          <span class="text-2xl font-bold text-indigo-600">DH.story</span>
-        </a>
-      </div>
-
-      <!-- Slogan -->
-      <p class="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
-        Chúc các bạn đọc truyện vui vẻ!
-      </p>
-
-      <!-- Search + Menu -->
-      <div class="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
-
-        <!-- Search -->
-        <div class="relative">
-          <div class="flex items-center bg-gray-100 rounded-full overflow-hidden shadow-inner">
-            <input id="searchBox" type="text" placeholder="Tìm kiếm truyện..."
-              class="px-4 py-2 bg-transparent focus:outline-none w-48 md:w-64 text-gray-700">
-            <button id="searchBtn" class="px-3 text-indigo-600 hover:text-indigo-800" aria-label="Tìm kiếm">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-          </div>
-          <div id="searchSuggestions"
-            class="absolute left-0 right-0 bg-white shadow-lg rounded-lg mt-1 hidden max-h-64 overflow-y-auto z-50 border border-gray-200">
-          </div>
-        </div>
-
-        <!-- Navigation: Thể loại | Xếp hạng | Truyện mới -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <!-- Thể loại dropdown -->
-          <div class="relative" id="genreDropdownWrapper">
-            <button id="genreBtn"
-              class="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full hover:bg-indigo-100 transition text-sm font-medium">
-              <i class="fa-solid fa-layer-group"></i> Thể loại
-              <i id="genreChevron" class="fa-solid fa-chevron-down text-xs" style="transition: transform 0.2s"></i>
-            </button>
-            <div id="genreDropdown"
-              class="hidden absolute left-0 top-full mt-2 bg-white shadow-xl rounded-2xl border border-gray-100 z-50 w-96 max-h-80 overflow-y-auto">
-              <div id="genreList" class="p-3 grid grid-cols-2 gap-1 text-sm">
-                <p class="col-span-2 text-gray-400 italic px-2 py-1 text-xs">Đang tải...</p>
-              </div>
-            </div>
-          </div>
-          <!-- Xếp hạng -->
-          <a href="?sort=rating" id="btnRating"
-            class="flex items-center gap-1.5 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full hover:bg-yellow-100 transition text-sm font-medium whitespace-nowrap">
-            <i class="fa-solid fa-star"></i> Xếp hạng
-          </a>
-          <!-- Truyện mới -->
-          <a href="?sort=newest" id="btnNewest"
-            class="flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 rounded-full hover:bg-green-100 transition text-sm font-medium whitespace-nowrap">
-            <i class="fa-solid fa-clock-rotate-left"></i> Truyện mới
-          </a>
-        </div>
-      </div>
-
-      <!-- Buttons -->
-      <div class="flex gap-3 mt-4 md:mt-0">
-        <a href="login.html" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-          Đăng nhập
-        </a>
-        <a href="register.html"
-          class="px-4 py-2 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition">
-          Đăng ký
-        </a>
-      </div>
-    </div>
-  </header>
+  <div id="app-header"></div>
 
   <!-- Hero Banner (ẩn mặc định, hiện nếu có truyện hot) -->
   <section id="heroBanner" class="hidden container mx-auto px-6 pt-8">
@@ -193,26 +119,26 @@
   <!-- Nội dung chính -->
   <main class="flex-grow container mx-auto px-6 py-8">
     <div id="listHeader" class="flex items-center justify-between mb-6">
-      <h2 id="listTitle" class="text-2xl font-bold text-indigo-700">Danh sách truyện</h2>
+      <h2 id="listTitle" class="text-2xl font-bold text-gray-800">Danh sách truyện</h2>
       <button id="resetGenreBtn" onclick="resetGenre()" class="hidden text-sm px-4 py-2 rounded-lg
                  border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition">
         ← Xem tất cả truyện
       </button>
     </div>
 
-    <div id="story-list" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
+    <div id="story-list" class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"></div>
 
     <div id="pagination" class="flex justify-center items-center mt-8 gap-2"></div>
   </main>
 
   <!-- Footer -->
-  <footer class="bg-white mt-10 shadow-inner">
+  <footer class="bg-white border-t border-gray-200 mt-10">
     <div class="container mx-auto py-6 px-6 flex flex-col md:flex-row justify-between items-center">
       <div class="flex items-center gap-2 mb-4 md:mb-0">
         <img src="/assets/images/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
-        <span class="font-bold text-indigo-600 text-lg">DH.story</span>
+        <span class="font-bold text-indigo-600">DH.story</span>
       </div>
-      <div class="text-center md:text-right text-gray-600 text-sm">
+      <div class="text-center md:text-right text-xs text-gray-400">
         <p class="font-semibold text-gray-800 mb-1">LIÊN HỆ VỚI TÔI</p>
         <a href="https://github.com/JahyuniJo" target="_blank"
           class="flex items-center justify-center md:justify-end gap-2 hover:text-indigo-600">
@@ -220,11 +146,17 @@
           <img src="/assets/images/Github.jpg" alt="Github" class="w-5 h-5 rounded-full">
         </a>
         <p>Email: <a href="mailto:dieu300504@gmail.com" class="hover:text-indigo-600">dieu300504@gmail.com</a></p>
-        <p class="mt-2 text-xs text-gray-400">Copyright © 2025 DieuHoang</p>
+        <p class="mt-2">Copyright © 2025 DieuHoang</p>
       </div>
     </div>
   </footer>
 
+  <script>
+    window.HEADER_CALLBACKS = {
+      onSearch: (q) => loadStories(1, q),
+    };
+  </script>
+  <script src="/assets/js/header.js"></script>
   <script>
     let currentPage = 1;
     const limit = 12;
@@ -317,21 +249,19 @@
             const isHot = story.view_count >= 100;
 
             return `
-<div class="story-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
+<div class="story-card bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
   ${isHot ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">🔥 HOT</span>` : ""}
   <a href="read.html?id=${story.id}">
-    <img src="${story.cover_url || '/assets/images/Logo.png'}" class="w-full h-56 object-cover">
+    <img src="${story.cover_url || '/assets/images/Logo.png'}" class="w-full h-44 object-cover">
   </a>
-  <div class="p-4">
+  <div class="p-3">
     <a href="read.html?id=${story.id}">
-      <h3 class="text-lg font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
+      <h3 class="text-sm font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
     </a>
-    <p class="text-sm text-gray-600">Tác giả: ${story.author || "Không rõ"}</p>
-    <p class="text-xs text-gray-500 mb-2">Thể loại: ${(story.genres || []).join(", ")}</p>
-    <p class="description collapsed text-sm text-gray-700 mb-2">${story.description || ""}</p>
-    <button class="text-indigo-600 text-sm hover:underline" onclick="toggleDescription(this)">Xem thêm</button>
-    <p class="text-yellow-600 font-semibold mt-2">⭐ ${rating.avg?.toFixed(1) || 0} / 5 (${rating.total || 0})</p>
-    <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-eye"></i> ${story.view_count} lượt đọc</p>
+    <p class="text-xs text-gray-600">Tác giả: ${story.author || "Không rõ"}</p>
+    <p class="text-xs text-gray-500 mb-1">Thể loại: ${(story.genres || []).join(", ")}</p>
+    <p class="text-yellow-600 text-xs font-semibold">⭐ ${rating.avg?.toFixed(1) || 0} / 5 (${rating.total || 0})</p>
+    <p class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-eye"></i> ${story.view_count} lượt đọc</p>
   </div>
 </div>`;
           })
@@ -487,140 +417,27 @@
     }
 
     /* ===========================
-       SEARCH
-    =========================== */
-    const searchBox = document.getElementById("searchBox");
-    const searchBtn = document.getElementById("searchBtn");
-    const suggestionBox = document.getElementById("searchSuggestions");
-    let typingTimer;
-
-    function debounce(func, delay) {
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(func, delay);
-    }
-
-    async function fetchSuggestions(q) {
-      if (!q.trim()) {
-        suggestionBox.classList.add("hidden");
-        return;
-      }
-      try {
-        const res = await fetch(`/api/stories/search?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-
-        if (!data.length) {
-          suggestionBox.innerHTML = `<p class="p-3 text-gray-500 text-sm">Không tìm thấy...</p>`;
-          suggestionBox.classList.remove("hidden");
-          return;
-        }
-
-        suggestionBox.innerHTML = data.map(item => `
-          <div onclick="openStory(${item.id})"
-               class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
-            <img src="${item.cover_url || '/assets/images/Logo.png'}" class="w-10 h-14 object-cover rounded mr-3">
-            <div>
-              <p class="font-medium text-indigo-700">${item.title}</p>
-              <p class="text-xs text-gray-500">${item.author || "Không rõ tác giả"}</p>
-            </div>
-          </div>
-        `).join("");
-        suggestionBox.classList.remove("hidden");
-      } catch (err) {
-        console.error("[index] Lỗi fetchSuggest:", err);
-      }
-    }
-
-    window.openStory = function (id) {
-      window.location.href = `/read.html?id=${id}`;
-    };
-
-    window.selectSuggestion = function (title) {
-      searchBox.value = title;
-      suggestionBox.classList.add("hidden");
-      loadStories(1, title);
-    };
-
-    searchBox.addEventListener("input", () => debounce(() => fetchSuggestions(searchBox.value), 200));
-    searchBox.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        suggestionBox.classList.add("hidden");
-        loadStories(1, searchBox.value.trim());
-      }
-    });
-    searchBtn.addEventListener("click", () => {
-      suggestionBox.classList.add("hidden");
-      loadStories(1, searchBox.value.trim());
-    });
-    document.addEventListener("click", (e) => {
-      if (!searchBox.contains(e.target) && !suggestionBox.contains(e.target)) {
-        suggestionBox.classList.add("hidden");
-      }
-    });
-
-    /* ===========================
-       GENRE DROPDOWN
-    =========================== */
-    async function loadGenreDropdown() {
-      try {
-        const res = await fetch("/api/stories/genres");
-        const genres = await res.json();
-        const list = document.getElementById("genreList");
-        if (!genres.length) {
-          list.innerHTML = `<p class="col-span-2 text-gray-400 italic px-2 py-1 text-xs">Chưa có thể loại</p>`;
-          return;
-        }
-        list.innerHTML = genres.map(g => `
-          <a href="?genre=${encodeURIComponent(g)}"
-             class="px-3 py-1.5 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 truncate cursor-pointer transition text-gray-700 text-sm">
-            ${g}
-          </a>
-        `).join("");
-      } catch (err) {
-        console.error("[index] Lỗi tải thể loại:", err);
-      }
-    }
-
-    (function setupGenreDropdown() {
-      const btn = document.getElementById("genreBtn");
-      const dropdown = document.getElementById("genreDropdown");
-      const chevron = document.getElementById("genreChevron");
-      let loaded = false;
-
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const opening = dropdown.classList.contains("hidden");
-        dropdown.classList.toggle("hidden");
-        chevron.style.transform = opening ? "rotate(180deg)" : "";
-        if (opening && !loaded) { loadGenreDropdown(); loaded = true; }
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!document.getElementById("genreDropdownWrapper").contains(e.target)) {
-          dropdown.classList.add("hidden");
-          chevron.style.transform = "";
-        }
-      });
-
-      // Highlight active nav button
-      if (currentGenre) {
-        btn.classList.replace("bg-indigo-50", "bg-indigo-200");
-        btn.classList.replace("text-indigo-700", "text-indigo-900");
-      } else if (currentSort === "rating") {
-        const r = document.getElementById("btnRating");
-        r.classList.replace("bg-yellow-50", "bg-yellow-200");
-        r.classList.replace("text-yellow-700", "text-yellow-900");
-      } else if (currentSort === "newest") {
-        const n = document.getElementById("btnNewest");
-        n.classList.replace("bg-green-50", "bg-green-200");
-        n.classList.replace("text-green-700", "text-green-900");
-      }
-    })();
-
-    /* ===========================
        INIT
     =========================== */
     loadHeroBanner();
     loadStories(1);
+
+    // Highlight active sort/genre button sau khi header.js render xong
+    setTimeout(() => {
+      if (currentGenre) {
+        const btn = document.getElementById("genreBtn");
+        btn?.classList.replace("bg-indigo-50", "bg-indigo-200");
+        btn?.classList.replace("text-indigo-700", "text-indigo-900");
+      } else if (currentSort === "rating") {
+        const r = document.getElementById("btnRating");
+        r?.classList.replace("bg-yellow-50", "bg-yellow-200");
+        r?.classList.replace("text-yellow-700", "text-yellow-900");
+      } else if (currentSort === "newest") {
+        const n = document.getElementById("btnNewest");
+        n?.classList.replace("bg-green-50", "bg-green-200");
+        n?.classList.replace("text-green-700", "text-green-900");
+      }
+    }, 300);
   </script>
 </body>
 

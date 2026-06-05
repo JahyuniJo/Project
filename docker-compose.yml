@@ -10,11 +10,11 @@ services:
     volumes:
       - esdata:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | findstr /C:\"status\" > nul"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -q 'status'"]
+      interval: 10s
       timeout: 10s
-      retries: 8
-      start_period: 30s
+      retries: 12
+      start_period: 40s
 
 volumes:
   esdata:
