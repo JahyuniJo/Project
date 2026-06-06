@@ -39,7 +39,6 @@ router.get("/:id/content", async (req, res) => {
     }
 
     const ch = chRow.rows[0];
-    console.error(`[chapterRoutes] crawl chapter ${chapterId}: ${ch.source_url}`);
     const { images, blocked } = await crawlChapterImages(ch.source_url);
     if (blocked) {
       return res.status(403).json({

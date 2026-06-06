@@ -31,6 +31,7 @@
     "es:create-index": "node backend/utils/createIndex.js",
     "es:sync": "node backend/utils/syncSQL.js",
     "db:chapters": "node backend/utils/createChapterTables.js",
+    "db:chat": "node backend/utils/createChatTables.js",
     "build:css": "npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch"
   },
   "keywords": [],

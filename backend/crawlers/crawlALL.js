@@ -1,5 +1,7 @@
 // crawlAll().catch((err) => console.error("❌ Lỗi tổng:", err.message));
   // 📄 middleware/crawlALL.js
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 const axios = require("axios");
 const cheerio = require("cheerio");
 const { Client } = require("pg");
@@ -110,11 +112,11 @@ async function crawlAllStories() {
 if (require.main === module) {
   (async () => {
     const client = new Client({
-      user: "story_user",
-      host: "localhost",
-      database: "story_db",
-      password: "002016",
-      port: 5432,
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST || "localhost",
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASS,
+      port: parseInt(process.env.DB_PORT) || 5432,
     });
     await client.connect();
     console.log("✅ Đã kết nối PostgreSQL");

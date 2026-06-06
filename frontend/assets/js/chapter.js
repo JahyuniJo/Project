@@ -17,7 +17,7 @@ function getParam(name) {
 }
 
 function goToChapter(id) {
-  window.location.href = `/chapter.html?id=${id}`;
+  window.location.replace(`/chapter.html?id=${id}`);
 }
 
 function setButtonEnabled(btn, enabled) {
@@ -104,12 +104,22 @@ async function loadChapter() {
 
     const ref      = getParam('ref');
     const backBase = ref === 'read2' ? '/read2.html' : '/read.html';
-    document.getElementById('backBtn').href = `${backBase}?id=${chapter.story_id}`;
+    const backUrl  = `${backBase}?id=${chapter.story_id}`;
+    const backBtnEl = document.getElementById('backBtn');
+    backBtnEl.href = backUrl;
+    backBtnEl.addEventListener('click', e => {
+      e.preventDefault();
+      history.length > 1 ? history.back() : window.location.replace(backUrl);
+    });
 
     renderImages(images);
     show('imageContainer', 'block');
 
     await loadChapterList(chapter.story_id);
+
+    if (typeof window.initChatWidget === 'function') {
+      window.initChatWidget({ storyId: chapter.story_id });
+    }
   } catch (err) {
     console.error('[chapter] tải chương:', err);
     show('errorState', 'flex');

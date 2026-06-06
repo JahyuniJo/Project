@@ -233,9 +233,7 @@ router.get("/:id", optionalAuth, async (req, res) => {
   }
 
   try {
-    if (!req.user) {
-      await pool.query("UPDATE stories SET view_count = view_count + 1 WHERE id = $1", [id]);
-    }
+    await pool.query("UPDATE stories SET view_count = view_count + 1 WHERE id = $1", [id]);
     const result = await pool.query("SELECT * FROM stories WHERE id = $1", [id]);
 
     if (result.rows.length === 0) {
@@ -250,6 +248,10 @@ router.get("/:id", optionalAuth, async (req, res) => {
 });
 
 router.put("/:id", authMiddleware, async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Không đủ quyền" });
+  }
+
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
     return res.status(400).json({ message: "ID truyện không hợp lệ" });
@@ -281,6 +283,10 @@ router.put("/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/:id", authMiddleware, async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Không đủ quyền" });
+  }
+
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
     return res.status(400).json({ message: "ID truyện không hợp lệ" });
@@ -311,10 +317,6 @@ router.post("/:id/view", authMiddleware, async (req, res) => {
     await pool.query(
       "INSERT INTO user_story_views (user_id, story_id) VALUES ($1, $2)",
       [req.user.userId, storyId]
-    );
-    await pool.query(
-      "UPDATE stories SET view_count = view_count + 1 WHERE id = $1",
-      [storyId]
     );
     res.json({ message: "Ghi nhận lượt xem thành công" });
   } catch (err) {

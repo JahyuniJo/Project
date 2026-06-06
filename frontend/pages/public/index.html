@@ -208,6 +208,12 @@
     async function loadStories(page = 1, search = "") {
       try {
         currentPage = page;
+
+        // Sync số trang vào URL để history.back() khôi phục đúng trang
+        const _p = new URLSearchParams(window.location.search);
+        if (page > 1) _p.set("page", page); else _p.delete("page");
+        history.replaceState(null, "", _p.toString() ? "?" + _p.toString() : window.location.pathname);
+
         showSkeletons();
 
         let url = `/api/stories?page=${page}&limit=${limit}`;
@@ -420,7 +426,7 @@
        INIT
     =========================== */
     loadHeroBanner();
-    loadStories(1);
+    loadStories(parseInt(params.get("page")) || 1);
 
     // Highlight active sort/genre button sau khi header.js render xong
     setTimeout(() => {

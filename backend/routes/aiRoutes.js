@@ -6,14 +6,15 @@ const { callAI } = require("../services/aiService");
 router.post("/summarize", async (req, res) => {
   const { story_id } = req.body;
 
-  if (!story_id || isNaN(parseInt(story_id))) {
+  const id = parseInt(story_id);
+  if (!id || id <= 0) {
     return res.status(400).json({ message: "Vui lòng cung cấp story_id hợp lệ" });
   }
 
   try {
     const result = await pool.query(
       "SELECT title, author, description, ai_summary FROM stories WHERE id = $1",
-      [story_id]
+      [id]
     );
 
     if (result.rows.length === 0) {
@@ -50,7 +51,7 @@ YÊU CẦU BẮT BUỘC:
 
     const summary = await callAI(prompt);
 
-    await pool.query("UPDATE stories SET ai_summary = $1 WHERE id = $2", [summary, story_id]);
+    await pool.query("UPDATE stories SET ai_summary = $1 WHERE id = $2", [summary, id]);
 
     res.json({ summary });
   } catch (err) {

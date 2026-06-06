@@ -1,16 +1,11 @@
+const path = require("path");
 const express = require("express");
 const multer = require("multer");
 const pool = require("../config/pool");
 const authMiddleware = require("../middleware/authMiddleware");
+const requireAdmin = require("../middleware/requireAdmin");
 
-const upload = multer({ dest: "uploads/" });
-
-function requireAdmin(req, res, next) {
-  if (req.user?.role !== "admin") {
-    return res.status(403).json({ message: "Bạn không có quyền thực hiện thao tác này" });
-  }
-  next();
-}
+const upload = multer({ dest: path.join(__dirname, "../uploads") });
 
 module.exports = (io) => {
   const router = express.Router();
@@ -55,7 +50,11 @@ module.exports = (io) => {
   // 2. Admin lấy danh sách báo lỗi
   router.get("/admin/reports", authMiddleware, requireAdmin, async (req, res) => {
     try {
-      const result = await pool.query("SELECT * FROM reports ORDER BY created_at DESC");
+      const result = await pool.query(
+        `SELECT id, title, story_url, message, screenshot_path, user_email,
+                status, response, created_at, updated_at
+         FROM reports ORDER BY created_at DESC`
+      );
       res.json({ data: result.rows });
     } catch (err) {
       console.error("[report] admin list:", err);

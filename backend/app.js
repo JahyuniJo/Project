@@ -20,8 +20,9 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   }
 });
 
@@ -47,8 +48,6 @@ app.use((req, res, next) => {
 
 // ========== SOCKET LOGIC ==========
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
-
   socket.on("registerEmail", (email) => {
     if (!email) return;
     socket.join(email);
@@ -56,7 +55,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
+    for (const [email, id] of Object.entries(userSockets)) {
+      if (id === socket.id) { delete userSockets[email]; break; }
+    }
   });
 });
 
@@ -124,6 +125,10 @@ app.get('/', (req, res) => {
 
 
 // ========== API ROUTES ==========
+const { router: chatRouter, initChat } = require("./routes/chatRoutes");
+initChat(io);
+app.use("/api/chat", chatRouter);
+
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/stories", require("./routes/storyRoutes"));
 app.use("/api/usercontroll", require("./routes/usercontrollRoutes"));

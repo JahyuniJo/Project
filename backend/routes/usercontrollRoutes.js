@@ -4,8 +4,7 @@ const pool = require("../config/pool");
 const bcrypt = require("bcryptjs");
 const authMiddleware = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const { EMAIL_REGEX } = require("../utils/validators");
 
 // Lấy danh sách người dùng (phân trang, tìm kiếm, lọc role)
 router.get("/", authMiddleware, requireAdmin, async (req, res) => {

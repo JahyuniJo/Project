@@ -23,7 +23,8 @@ Project/
 │   │   └── storyController.js  # Crawl trigger, search suggest
 │   ├── crawlers/
 │   │   ├── crawler.js          # Axios + Cheerio (trang tĩnh)
-│   │   └── crawlALL.js         # Axios + Cheerio (batch crawl)
+│   │   ├── crawlALL.js         # Axios + Cheerio (batch crawl)
+│   │   └── crawlChapterList.js # Crawl danh sách chương + ảnh (Axios + Cheerio, Puppeteer fallback)
 │   ├── middleware/
 │   │   ├── authMiddleware.js   # Bắt buộc đăng nhập (JWT cookie)
 │   │   └── optionalAuth.js     # Không bắt buộc (dùng cho comments)
@@ -38,24 +39,28 @@ Project/
 │   │   ├── recommendRoutes.js  # GET gợi ý truyện
 │   │   ├── report.js           # Báo lỗi + notifications (nhận io)
 │   │   ├── statRoutes.js       # Thống kê admin + popular-week
+│   │   ├── chapterRoutes.js    # GET /api/chapters/:id/content (lazy crawl + cache)
+│   │   ├── chatRoutes.js       # Socket.io chatMessage + GET/DELETE /api/chat/history
 │   │   ├── storyRoutes.js      # CRUD truyện + search + view
 │   │   ├── usercontrollRoutes.js # Admin quản lý user
 │   │   └── userRoutes.js       # Register, login, logout, info, upload avatar
 │   ├── services/
-│   │   ├── aiService.js        # callAI() — Groq API
+│   │   ├── aiService.js        # callAI() + callAIStream() — Groq API
 │   │   ├── searchService.js    # Elasticsearch + SQL fallback
 │   │   └── embedding.js        # OpenAI embeddings (tuỳ chọn)
 │   └── utils/
 │       ├── createIndex.js      # Script tạo ES index
 │       ├── syncSQL.js          # Script sync PostgreSQL → Elasticsearch
-│       └── normalizeText.js    # removeVietnameseTones()
+│       ├── normalizeText.js    # removeVietnameseTones()
+│       ├── validators.js       # Hằng số validate dùng chung (EMAIL_REGEX, MIN_PASSWORD_LENGTH)
+│       └── createChatTables.js # Migration script: bảng chat_messages + index
 ├── frontend/
 │   ├── pages/
 │   │   ├── public/             # index, login, register, read, forgot/reset-password
 │   │   └── private/            # index2, admin, info, stories, user, read2, fav, stat, reports
 │   ├── assets/
 │   │   ├── images/             # Logo, favicon
-│   │   └── js/                 # comments.js và các file JS theo trang
+│   │   └── js/                 # comments.js, chat.js và các file JS theo trang
 │   └── components/             # alertModal.html, alertModal.js
 ├── .env.example                # Template biến môi trường
 ├── nodemon.json                # Dev watcher
@@ -73,7 +78,7 @@ Project/
 | Search | Elasticsearch (với SQL fallback) |
 | AI | **Groq API** — model `llama-3.1-8b-instant` |
 | Realtime | Socket.io |
-| Crawler | Axios + Cheerio |
+| Crawler | Axios + Cheerio + Puppeteer (fallback cho trang yêu cầu JS) |
 | Frontend | **Vanilla HTML + CSS + JavaScript** |
 | Auth | JWT trong HTTP-only cookie (`authToken`) |
 | ORM | `pg` Pool (queries) + Sequelize (model schema) |
@@ -165,6 +170,9 @@ Dự án dùng **hai module riêng biệt**:
 | DELETE | `/api/stories/:id` | Xóa truyện | User |
 | POST | `/api/stories/:id/view` | Ghi lịch sử xem | User |
 | POST | `/api/stories/sync` | Crawl + sync ES | User |
+| GET | `/api/chapters/:id/content` | Lấy ảnh chương (lazy crawl + cache DB) | Không |
+| GET | `/api/chat/history?story_id=N` | Lịch sử chat (50 tin gần nhất) | User |
+| DELETE | `/api/chat/history?story_id=N` | Xóa lịch sử chat theo truyện | User |
 | POST | `/api/ai/summarize` | Tóm tắt bằng Groq AI | Không |
 | GET | `/api/recommend` | Gợi ý truyện | User |
 | GET | `/api/comments` | Lấy comments (cây) | Optional |
@@ -205,7 +213,7 @@ Dự án dùng **hai module riêng biệt**:
 | `/read.html` | `public/read.html` | Tất cả |
 | `/index2.html` | `private/index2.html` | Đăng nhập |
 | `/info.html` | `private/info.html` | Đăng nhập |
-| `/read2.html` | `private/read2.html` | Role: `user` |
+| `/read2.html` | `private/read2.html` | Role: `user` hoặc `admin` |
 | `/fav.html` | `private/fav.html` | Role: `user` |
 | `/error-report.html` | `private/error-report.html` | Role: `user` |
 | `/admin.html` | `private/admin.html` | Role: `admin` |
@@ -217,6 +225,15 @@ Dự án dùng **hai module riêng biệt**:
 ---
 
 ## Tính năng AI & Search
+
+### Chatbot trợ lý truyện (Groq API + Socket.io)
+- Widget nổi (floating, bottom-right) trên `read2.html` và `chapter.html`
+- Bắt buộc đăng nhập; lịch sử lưu vào bảng `chat_messages` (PostgreSQL)
+- Streaming qua Socket.io: client emit `chatMessage` → server emit từng `chatChunk` → `chatDone`
+- System prompt tự động nhúng context truyện (title, author, genres, description, ai_summary)
+- Cooldown 2 giây per socket để tránh spam
+- Lịch sử 20 tin gần nhất được đưa vào context mỗi lần gọi AI
+- File: [backend/routes/chatRoutes.js](backend/routes/chatRoutes.js), [frontend/assets/js/chat.js](frontend/assets/js/chat.js)
 
 ### Tóm tắt truyện (Groq API)
 - `POST /api/ai/summarize` với `{ story_id }`
@@ -255,6 +272,7 @@ Dự án dùng **hai module riêng biệt**:
 - `favorite_lists` — id, iduser, name, created_at
 - `favorite_stories` — id, list_id, story_id, added_at. UNIQUE(list_id, story_id)
 - `reports` — id, title, story_url, message, screenshot_path, user_email, status(pending/fixing/done/ignored), response, created_at, updated_at
+- `chat_messages` — id, user_id (FK→users CASCADE), story_id (FK→stories CASCADE), role(user/assistant), content, created_at
 
 ### Quan hệ chapters
 
@@ -402,5 +420,6 @@ Mọi tính năng và thay đổi phải được viết theo hướng có thể
 - [ ] Chatbot realtime (nhân vật ảo qua Socket.io + Groq)
 - [ ] Tích hợp embedding để semantic search nâng cao
 - [ ] Pagination cho comments
-- [ ] Trang đọc truyện theo chương (chapters)
-- [ ] Crawl trang JavaScript-rendered bằng Puppeteer (crawlALL.js cần mở rộng)
+- [x] Chatbot realtime — widget floating trên read2 + chapter, Socket.io streaming, lịch sử lưu DB
+- [x] Trang đọc truyện theo chương — `GET /api/chapters/:id/content`, lazy crawl + cache vào `chapter_contents`
+- [x] Crawl trang JavaScript-rendered bằng Puppeteer — `crawlChapterList.js` (Axios + Cheerio ưu tiên, Puppeteer fallback)

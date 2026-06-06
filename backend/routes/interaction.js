@@ -165,18 +165,14 @@ router.post("/:id/stories", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "Bạn không có quyền thêm vào danh sách này" });
     }
 
-    const exists = await pool.query(
-      "SELECT id FROM favorite_stories WHERE list_id = $1 AND story_id = $2",
+    const inserted = await pool.query(
+      `INSERT INTO favorite_stories (list_id, story_id) VALUES ($1, $2)
+       ON CONFLICT (list_id, story_id) DO NOTHING`,
       [listId, storyId]
     );
-    if (exists.rows.length > 0) {
+    if (inserted.rowCount === 0) {
       return res.status(400).json({ message: "Truyện đã có trong danh sách" });
     }
-
-    await pool.query(
-      "INSERT INTO favorite_stories (list_id, story_id) VALUES ($1, $2)",
-      [listId, storyId]
-    );
 
     res.status(201).json({ message: "Đã thêm truyện vào danh sách" });
   } catch (err) {

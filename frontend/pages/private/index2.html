@@ -391,6 +391,14 @@
       if (pageMode === "genre") return;
       try {
         currentPage = page;
+
+        // Sync page + mode vào URL để history.back() khôi phục đúng trang
+        const _p = new URLSearchParams();
+        if (pageMode === "rating") _p.set("sort", "rating");
+        else if (pageMode === "newest") _p.set("sort", "newest");
+        if (page > 1) _p.set("page", page);
+        history.replaceState(null, "", _p.toString() ? "?" + _p.toString() : "/index2.html");
+
         showSkeletons("story-list");
 
         let url;
@@ -627,7 +635,7 @@
       }
     }
 
-    async function filterBySort(sort) {
+    async function filterBySort(sort, initialPage = 1) {
       try {
         pageMode = sort;
         currentPage = 1;
@@ -636,9 +644,8 @@
         header.classList.remove("hidden");
         document.getElementById("genreTitle").textContent =
           sort === "rating" ? "⭐ Xếp hạng cao nhất" : "🆕 Truyện mới nhất";
-        history.replaceState(null, "", `?sort=${sort}`);
         setActiveNavBtn(sort === "rating" ? "btnRating" : "btnNewest");
-        await loadStories(1);
+        await loadStories(initialPage);
       } catch (err) {
         console.error("[index2] filterBySort error:", err);
       }
@@ -671,15 +678,16 @@
       const urlParams = new URLSearchParams(window.location.search);
       const genre = urlParams.get("genre");
       const sort = urlParams.get("sort");
+      const page = parseInt(urlParams.get("page")) || 1;
       if (genre) {
         filterByGenre(genre);
       } else if (sort === "rating" || sort === "newest") {
-        filterBySort(sort);
+        filterBySort(sort, page);
       } else {
         pageMode = "home";
         loadRecommend();
         loadPopularWeek();
-        loadStories();
+        loadStories(page);
       }
     });
   </script>

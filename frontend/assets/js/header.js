@@ -34,6 +34,7 @@
   const storyPage = loggedIn ? '/read2.html'  : '/read.html';
 
   window.HEADER_STATE = { loggedIn, user, indexPage, storyPage };
+  window.dispatchEvent(new CustomEvent('headerReady'));
 
   // ── Render ────────────────────────────────────────────────────────────────
   root.innerHTML = mode === 'simple'
@@ -185,6 +186,14 @@
     if (!box) return;
     let timer;
 
+    function esc(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
     async function suggest(q) {
       if (!q.trim()) { sug.classList.add('hidden'); return; }
       try {
@@ -196,12 +205,12 @@
           return;
         }
         sug.innerHTML = data.map(item => `
-          <div onclick="window.location.href='${storyPage}?id=${item.id}'"
+          <div onclick="window.location.href='${storyPage}?id=${encodeURIComponent(item.id)}'"
                class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
-            <img src="${item.cover_url || '/assets/images/Logo.png'}" class="w-10 h-14 object-cover rounded mr-3">
+            <img src="${esc(item.cover_url) || '/assets/images/Logo.png'}" class="w-10 h-14 object-cover rounded mr-3">
             <div>
-              <p class="font-medium text-indigo-700">${item.title}</p>
-              <p class="text-xs text-gray-500">${item.author || 'Không rõ tác giả'}</p>
+              <p class="font-medium text-indigo-700">${esc(item.title)}</p>
+              <p class="text-xs text-gray-500">${esc(item.author) || 'Không rõ tác giả'}</p>
             </div>
           </div>`).join('');
         sug.classList.remove('hidden');
@@ -408,6 +417,7 @@
     // Load socket.io only when user is logged in
     await loadSocketIO();
     const socket = io({ transports: ['websocket', 'polling'] });
+    window.APP_SOCKET = socket;
 
     socket.on('connect', () => {
       socket.emit('registerEmail', email);

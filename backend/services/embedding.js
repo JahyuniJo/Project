@@ -1,3 +1,4 @@
+// Tính năng semantic search — chưa tích hợp vào searchService.js (OPENAI_KEY tuỳ chọn)
 const { OpenAI } = require("openai");
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_KEY });

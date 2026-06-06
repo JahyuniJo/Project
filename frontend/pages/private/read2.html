@@ -75,6 +75,11 @@
 
   <!-- MAIN -->
   <main class="flex-1 container mx-auto py-10 px-6 fade-in">
+    <button onclick="history.length > 1 ? history.back() : window.location.href='/index2.html'"
+      class="mb-6 inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 transition">
+      <i class="fa-solid fa-arrow-left"></i> Quay lại
+    </button>
+
     <div id="story-container" class="bg-white shadow-lg rounded-2xl p-8 flex flex-col md:flex-row gap-8">
 
       <!-- Ảnh bìa -->
@@ -568,6 +573,20 @@
       emptyMessage: "Chưa có bình luận nào"
     });
 
+  </script>
+
+  <script src="/assets/js/chat.js"></script>
+  <script>
+    (function () {
+      const storyId = parseInt(new URLSearchParams(location.search).get('id'));
+      if (storyId > 0) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => initChatWidget({ storyId }));
+        } else {
+          initChatWidget({ storyId });
+        }
+      }
+    })();
   </script>
 </body>
 

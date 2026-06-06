@@ -420,7 +420,7 @@ module.exports = function (io) {
             });
         } catch (err) {
             await client.query("ROLLBACK");
-            console.error("ERROR /api/comments/like:", err);
+            console.error("[commentRoutes] like:", err);
             res.status(500).json({ message: "Lỗi server" });
         } finally {
             client.release();

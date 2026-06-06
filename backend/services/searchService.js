@@ -37,9 +37,6 @@ const ES_RETRY_INTERVAL_MS = 30_000;
 async function checkElasticsearch() {
   try {
     await client.ping();
-    if (esAvailable !== true) {
-      console.log("[Elasticsearch] Kết nối thành công");
-    }
     esAvailable = true;
   } catch {
     if (esAvailable !== false) {

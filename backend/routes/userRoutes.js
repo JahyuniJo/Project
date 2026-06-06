@@ -6,9 +6,7 @@ const path = require("path");
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middleware/authMiddleware");
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD_LENGTH = 6;
+const { EMAIL_REGEX, MIN_PASSWORD_LENGTH } = require("../utils/validators");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, "../uploads")),

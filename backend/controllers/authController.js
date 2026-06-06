@@ -5,8 +5,7 @@ const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const { randomInt } = require("crypto");
 const authMiddleware = require("../middleware/authMiddleware");
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const { EMAIL_REGEX } = require("../utils/validators");
 const OTP_EXPIRY_MS = 2 * 60 * 1000; // 2 phút
 
 const transporter = nodemailer.createTransport({
