@@ -39,7 +39,7 @@ async function crawlStory(url) {
       "";
     let status = "ongoing";
     if (raw_status.includes("hoàn") || raw_status.includes("complete")) status = "completed";
-    else if (raw_status.includes("drop") || raw_status.includes("ngưng")) status = "dropped";
+    else if (raw_status.includes("drop") || raw_status.includes("ngưng")) status = "stopped";
 
     if (!title) return null;
 

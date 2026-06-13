@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Quản lý Truyện - DH.story</title>
   <link rel="icon" type="image/png" href="/assets/images/favicon.png">
-  <!-- Fontawesome (optional) + Tailwind -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -13,7 +12,7 @@
 
   <!-- Header -->
   <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
-    <div class="ml-64"> <!-- chừa khoảng cho sidebar -->
+    <div class="ml-64">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <div class="flex items-center gap-4">
@@ -23,18 +22,15 @@
               <p class="text-xs text-gray-500">Trang admin</p>
             </div>
           </div>
-
           <div class="flex items-center gap-3">
             <button id="syncBtn" title="Đồng bộ truyện từ Comi"
               class="px-3 py-2 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 text-sm">
               <i class="fa-solid fa-spider mr-2"></i>Đồng bộ
             </button>
-
             <button id="syncAllChaptersBtn" title="Đồng bộ chương toàn bộ truyện"
               class="px-3 py-2 bg-purple-100 text-purple-800 rounded hover:bg-purple-200 text-sm">
               <i class="fa-solid fa-book-open mr-2"></i>Sync tất cả chương
             </button>
-
             <button onclick="window.location.href='admin.html'"
               class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition">
               ← Quay lại
@@ -67,32 +63,67 @@
         class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
         <i class="fa-solid fa-triangle-exclamation w-4"></i> Quản lý báo lỗi
       </a>
+      <a href="/admin-chat.html"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+        <i class="fa-solid fa-robot w-4"></i> Giám sát Chat AI
+      </a>
     </nav>
   </aside>
 
   <!-- Main -->
   <main class="flex-1 ml-64">
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
       <!-- Controls -->
-      <div class="bg-white p-4 rounded-lg shadow mb-6">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="bg-white p-4 rounded-lg shadow mb-6 space-y-3">
+        <!-- Row 1: search + limit -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div class="flex items-center gap-3 w-full md:w-2/3">
             <input id="searchInput" type="text" placeholder="Tìm theo tên truyện..."
-              class="flex-1 border rounded px-3 py-2 focus:outline-none" />
-            <button id="searchBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Tìm</button>
-            <button id="refreshBtn" class="bg-gray-200 px-3 py-2 rounded hover:bg-gray-300">Làm mới</button>
+              class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <button id="searchBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">Tìm</button>
+            <button id="refreshBtn" class="bg-gray-200 px-3 py-2 rounded hover:bg-gray-300 text-sm">Làm mới</button>
           </div>
-
-          <div class="flex items-center gap-3 justify-end w-full md:w-auto">
+          <div class="flex items-center gap-3 justify-end">
             <label class="text-sm text-gray-600">Hiển thị:</label>
-            <select id="limitSelect" class="border rounded px-2 py-1">
-              <option value="8">8 / trang</option>
-              <option value="12" selected>12 / trang</option>
-              <option value="24">24 / trang</option>
-              <option value="48">48 / trang</option>
-            </select>
+            <div class="relative dd-wrapper" id="limitSelect-wrapper">
+              <input type="hidden" id="limitSelect" value="12">
+              <button type="button" class="custom-dropdown-btn flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1 text-sm text-gray-700"
+                      onclick="toggleDD('limitSelect-wrapper')">
+                <span class="dd-label">12 / trang</span>
+                <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+              </button>
+              <div class="hidden custom-dropdown-menu right-0 left-auto min-w-[130px]">
+                <div class="p-1.5 space-y-0.5">
+                  <div class="custom-dropdown-option" data-value="8" onclick="pickDD('limitSelect-wrapper','8','8 / trang')">8 / trang</div>
+                  <div class="custom-dropdown-option selected" data-value="12" onclick="pickDD('limitSelect-wrapper','12','12 / trang')">12 / trang</div>
+                  <div class="custom-dropdown-option" data-value="24" onclick="pickDD('limitSelect-wrapper','24','24 / trang')">24 / trang</div>
+                  <div class="custom-dropdown-option" data-value="48" onclick="pickDD('limitSelect-wrapper','48','48 / trang')">48 / trang</div>
+                </div>
+              </div>
+            </div>
             <div class="text-xs text-gray-500">Tổng: <span id="totalCount">--</span></div>
           </div>
+        </div>
+
+        <!-- Row 2: status filter -->
+        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 flex-wrap">
+          <span class="text-sm text-gray-500 mr-1">Trạng thái:</span>
+          <button data-status="" class="status-btn active px-3 py-1 text-sm rounded-full transition flex items-center gap-1">
+            Tất cả <span id="badge-all" class="text-xs font-semibold opacity-75">--</span>
+          </button>
+          <button data-status="ongoing" class="status-btn px-3 py-1 text-sm rounded-full transition flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>Đang ra
+            <span id="badge-ongoing" class="text-xs font-semibold opacity-75">--</span>
+          </button>
+          <button data-status="completed" class="status-btn px-3 py-1 text-sm rounded-full transition flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>Hoàn thành
+            <span id="badge-completed" class="text-xs font-semibold opacity-75">--</span>
+          </button>
+          <button data-status="stopped" class="status-btn px-3 py-1 text-sm rounded-full transition flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-yellow-500 inline-block"></span>Tạm Ngưng
+            <span id="badge-stopped" class="text-xs font-semibold opacity-75">--</span>
+          </button>
         </div>
       </div>
 
@@ -101,7 +132,6 @@
         <section class="lg:col-span-3">
           <div id="story-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4"></div>
         </section>
-
         <aside class="hidden lg:block">
           <div class="bg-white p-4 rounded-lg shadow h-full overflow-auto">
             <h3 class="font-semibold mb-3">Danh sách nhanh</h3>
@@ -138,11 +168,21 @@
           </div>
           <div>
             <label class="text-sm text-gray-600">Trạng thái</label>
-            <select id="editStatus" class="w-full border rounded px-2 py-2">
-              <option>Đang ra</option>
-              <option>Hoàn thành</option>
-              <option>Tạm Ngưng</option>
-            </select>
+            <div class="relative dd-wrapper" id="editStatus-wrapper">
+              <input type="hidden" id="editStatus" value="Đang ra">
+              <button type="button" class="custom-dropdown-btn w-full flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                      onclick="toggleDD('editStatus-wrapper')">
+                <span class="dd-label">Đang ra</span>
+                <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+              </button>
+              <div class="hidden custom-dropdown-menu left-0 right-0">
+                <div class="p-1.5 space-y-0.5">
+                  <div class="custom-dropdown-option selected" data-value="Đang ra" onclick="pickDD('editStatus-wrapper','Đang ra','Đang ra')">Đang ra</div>
+                  <div class="custom-dropdown-option" data-value="Hoàn thành" onclick="pickDD('editStatus-wrapper','Hoàn thành','Hoàn thành')">Hoàn thành</div>
+                  <div class="custom-dropdown-option" data-value="Tạm Ngưng" onclick="pickDD('editStatus-wrapper','Tạm Ngưng','Tạm Ngưng')">Tạm Ngưng</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div>
@@ -153,7 +193,6 @@
           <label class="text-sm text-gray-600">Link nguồn (url)</label>
           <input id="editSource" class="w-full border rounded px-3 py-2">
         </div>
-
         <div class="flex justify-end gap-2 mt-4">
           <button type="button" onclick="closeModal()" class="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300">Hủy</button>
           <button type="submit" class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Lưu</button>
@@ -168,8 +207,6 @@
       © 2025 DH.story — Admin Panel
     </div>
   </footer>
-
-
 
   <!-- Modal tiến trình sync tất cả chương -->
   <div id="syncAllModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[100]">
@@ -202,47 +239,130 @@
 
   <script src="/components/alertModal.js"></script>
 
-  <!-- Script -->
+  <style>
+    .status-btn { background: #f3f4f6; color: #4b5563; }
+    .status-btn:hover { background: #e5e7eb; }
+    .status-btn.active { background: #4f46e5; color: #fff; }
+    .suggest-pop { max-height: 360px; overflow: auto; -webkit-overflow-scrolling: touch; }
+    .suggest-item-active { background-color: rgba(99,102,241,0.12); }
+    .custom-dropdown-btn {
+      background: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
+    }
+    .custom-dropdown-btn:hover { border-color: #a5b4fc; background-color: #f0f3ff; }
+    .custom-dropdown-btn.open { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background-color: #f0f3ff; }
+    .custom-dropdown-menu {
+      position: absolute; z-index: 200;
+      background: #fff; border: 1px solid #e0e7ff; border-radius: 0.75rem;
+      box-shadow: 0 8px 28px -4px rgba(99,102,241,0.18), 0 4px 10px -4px rgba(0,0,0,0.1);
+    }
+    .custom-dropdown-option {
+      padding: 0.45rem 0.75rem; border-radius: 0.5rem;
+      font-size: 0.875rem; color: #374151;
+      cursor: pointer; transition: background-color 0.12s, color 0.12s;
+    }
+    .custom-dropdown-option:hover { background-color: #eef2ff; color: #4338ca; }
+    .custom-dropdown-option.selected { background-color: #eef2ff; color: #4338ca; font-weight: 500; }
+  </style>
+
   <script>
-    // Gọi api
-    let limit = parseInt(document.getElementById('limitSelect').value, 10);
+    function closeAllDD() {
+      document.querySelectorAll('.custom-dropdown-menu').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('.custom-dropdown-btn').forEach(b => { b.classList.remove('open'); b.querySelector('i')?.classList.remove('rotate-180'); });
+    }
+    function toggleDD(id) {
+      const w = document.getElementById(id); if (!w) return;
+      const isOpen = !w.querySelector('.custom-dropdown-menu').classList.contains('hidden');
+      closeAllDD();
+      if (!isOpen) { w.querySelector('.custom-dropdown-menu').classList.remove('hidden'); const btn = w.querySelector('.custom-dropdown-btn'); btn.classList.add('open'); btn.querySelector('i')?.classList.add('rotate-180'); }
+    }
+    function pickDD(wrapperId, value, label) {
+      const w = document.getElementById(wrapperId); if (!w) return;
+      const input = w.querySelector('input[type="hidden"]');
+      if (input) { input.value = value; input.dispatchEvent(new Event('change', {bubbles: true})); }
+      const lbl = w.querySelector('.dd-label'); if (lbl) lbl.textContent = label;
+      closeAllDD();
+      w.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.toggle('selected', o.dataset.value === value));
+    }
+    function setDD(wrapperId, value, label) {
+      const w = document.getElementById(wrapperId); if (!w) return;
+      const input = w.querySelector('input[type="hidden"]'); if (input) input.value = value;
+      const lbl = w.querySelector('.dd-label'); if (lbl) lbl.textContent = label;
+      w.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.toggle('selected', o.dataset.value === value));
+    }
+    document.addEventListener('click', e => { if (!e.target.closest('.dd-wrapper')) closeAllDD(); });
+
     const API = '/api/stories';
     let currentPage = 1;
-    // Tối giản lệnh doucument.getElementById
+    let currentStatus = '';
+
     function qs(id) { return document.getElementById(id); }
 
-    // Tải dữ liệu và xử lý API
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, m =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]
+      );
+    }
+
+    function escapeJs(s) {
+      if (!s) return '';
+      return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // ── Status badge ────────────────────────────────────────────────────────
+    const STATUS_CFG = {
+      'ongoing':   { cls: 'bg-green-100 text-green-700',  label: 'Đang ra' },
+      'completed': { cls: 'bg-blue-100 text-blue-700',    label: 'Hoàn thành' },
+      'stopped':   { cls: 'bg-yellow-100 text-yellow-700', label: 'Tạm Ngưng' },
+    };
+
+    // Ánh xạ giá trị DB sang display text cho edit modal
+    const STATUS_TO_DISPLAY = {
+      'ongoing':   'Đang ra',
+      'completed': 'Hoàn thành',
+      'stopped':   'Tạm Ngưng',
+    };
+
+    function statusBadge(status) {
+      const cfg = STATUS_CFG[status];
+      const cls   = cfg ? cfg.cls   : 'bg-gray-100 text-gray-500';
+      const label = cfg ? cfg.label : (status || 'Không rõ');
+      return `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${cls}">${escapeHtml(label)}</span>`;
+    }
+
+    // ── Load & render ───────────────────────────────────────────────────────
     async function loadStories(page) {
       currentPage = page;
-  const search = qs('searchInput').value.trim(); // Lấy giá trị từ ô tìm kiếm và xóa khoảng trắng thừa
-  const limit = parseInt(qs('limitSelect').value, 10) || 12;
-  const url = `${API}?page=${page}&limit=${limit}` + (search ? `&search=${encodeURIComponent(search)}` : ''); // Url API hoàn chỉnh
-      // Thực hiện xử lý luồng khi call API
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Lỗi khi gọi API');
-    const data = await res.json();
+      const search = qs('searchInput').value.trim();
+      const limit  = parseInt(qs('limitSelect').value, 10) || 12;
 
-    // Hỗ trợ nhiều kiểu dữ liệu trả về khác nhau
-    const stories = data.data || data.stories || data.rows || [];
-    const totalItems = data.total || data.totalCount || data.totalItems || stories.length;
-    const totalPages = data.totalPages || Math.max(1, Math.ceil(totalItems / limit));
-    const currentPage = data.page || data.currentPage || page;
+      let url = `${API}?page=${page}&limit=${limit}`;
+      if (search)        url += `&search=${encodeURIComponent(search)}`;
+      if (currentStatus) url += `&status=${encodeURIComponent(currentStatus)}`;
 
-    renderCards(stories);
-    renderQuickList(stories);
-    renderPagination(totalPages, currentPage);
+      try {
+        const res  = await fetch(url);
+        if (!res.ok) throw new Error('Lỗi khi gọi API');
+        const data = await res.json();
 
-    qs('totalCount').textContent = totalItems || '--';
-  } catch (err) {
-    console.error('[stories.html] loadStories:', err);
-    renderCards([]);
-    renderQuickList([]);
-    renderPagination(1, 1);
-  }
-}
+        const stories    = data.data || data.stories || data.rows || [];
+        const totalItems = data.total || data.totalCount || stories.length;
+        const totalPages = data.totalPages || Math.max(1, Math.ceil(totalItems / limit));
+        const serverPage = data.page || data.currentPage || page;
 
-    // Hiển thị danh sách truyện
+        renderCards(stories);
+        renderQuickList(stories);
+        renderPagination(totalPages, serverPage);
+        qs('totalCount').textContent = totalItems || '--';
+      } catch (err) {
+        console.error('[stories.html] loadStories:', err);
+        renderCards([]);
+        renderQuickList([]);
+        renderPagination(1, 1);
+      }
+    }
+
     function renderCards(stories) {
       const container = qs('story-container');
       container.innerHTML = '';
@@ -250,19 +370,24 @@
         container.innerHTML = '<div class="col-span-full bg-white p-6 rounded shadow text-center text-gray-500">Không tìm thấy truyện nào.</div>';
         return;
       }
-
       stories.forEach(s => {
         const card = document.createElement('div');
         card.className = 'bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition group';
         card.innerHTML = `
           <div class="w-full h-44 bg-gray-100 overflow-hidden">
-            <img src="${s.cover_url || '/assets/images/Logo.png'}" alt="${escapeHtml(s.title)}" class="w-full h-full object-cover transform group-hover:scale-105 transition">
+            <img src="${s.cover_url || '/assets/images/Logo.png'}" alt="${escapeHtml(s.title)}"
+              class="w-full h-full object-cover transform group-hover:scale-105 transition">
           </div>
           <div class="p-3">
-            <h3 class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(s.title)}</h3>
-            <p class="text-xs text-gray-500 truncate">${escapeHtml(s.author || '')}</p>
-            <div class="mt-3 flex items-center justify-between">
-              <div class="text-xs text-gray-600">${escapeHtml(s.status || 'Đang cập nhật')}</div>
+            <div class="flex items-start justify-between gap-1 mb-0.5">
+              <h3 class="text-sm font-semibold text-gray-800 truncate flex-1">${escapeHtml(s.title)}</h3>
+              ${s.ai_summary
+                ? `<span class="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-600" title="Đã có AI Summary">AI</span>`
+                : `<span class="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-400" title="Chưa có AI Summary">—</span>`}
+            </div>
+            <p class="text-xs text-gray-500 truncate mb-2">${escapeHtml(s.author || '')}</p>
+            <div class="flex items-center justify-between">
+              ${statusBadge(s.status)}
               <div class="flex items-center gap-2">
                 <button class="text-blue-600 text-xs hover:underline" onclick="openEdit(${s.id})">Sửa</button>
                 <button class="text-red-600 text-xs hover:underline" onclick="confirmDelete(${s.id}, '${escapeJs(s.title)}')">Xóa</button>
@@ -270,78 +395,65 @@
                 <button id="syncChBtn-${s.id}" class="text-indigo-600 text-xs hover:underline" onclick="syncChapters(${s.id})">Chương</button>
               </div>
             </div>
-          </div>
-        `;
+          </div>`;
         container.appendChild(card);
       });
     }
 
-    // Vẽ 1 danh sách nhanh 
     function renderQuickList(stories) {
       const wrap = qs('quickList');
       wrap.innerHTML = '';
       if (!stories || stories.length === 0) {
-        wrap.innerHTML = '<div class="text-gray-400">Không có mục nào</div>';
+        wrap.innerHTML = '<div class="text-gray-400 text-sm">Không có mục nào</div>';
         return;
       }
       stories.forEach(s => {
         const el = document.createElement('div');
         el.className = 'flex items-center justify-between gap-2 p-2 border rounded';
         el.innerHTML = `
-          <div class="flex items-center gap-2">
-            <img src="${s.cover_url || '/assets/images/Logo.png'}" class="w-10 h-12 object-cover rounded">
-            <div class="text-sm">${escapeHtml(s.title)}</div>
+          <div class="flex items-center gap-2 min-w-0">
+            <img src="${s.cover_url || '/assets/images/Logo.png'}" class="w-10 h-12 object-cover rounded flex-shrink-0">
+            <div class="min-w-0">
+              <div class="text-sm truncate">${escapeHtml(s.title)}</div>
+              ${statusBadge(s.status)}
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <button class="text-xs text-blue-600" onclick="openEdit(${s.id})">Sửa</button>
-            <button class="text-xs text-red-600" onclick="confirmDelete(${s.id}, '${escapeJs(s.title)}')">Xóa</button>
-          </div>
-        `;
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button class="text-xs text-blue-600 hover:underline" onclick="openEdit(${s.id})">Sửa</button>
+            <button class="text-xs text-red-600 hover:underline" onclick="confirmDelete(${s.id}, '${escapeJs(s.title)}')">Xóa</button>
+          </div>`;
         wrap.appendChild(el);
       });
     }
 
-    // Tạo các nút điều hướng và phân trang
     function renderPagination(total, current) {
       const nav = qs('pagination');
       nav.innerHTML = '';
 
-      // Prev
       const prev = document.createElement('button');
-      prev.className = `px-3 py-1 rounded ${current === 1 ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      prev.className = `px-3 py-1 rounded text-sm ${current === 1 ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
       prev.textContent = '← Trang trước';
       prev.disabled = current === 1;
       prev.onclick = () => loadStories(current - 1);
       nav.appendChild(prev);
 
-      // window of pages (show max 7 buttons)
-      const maxButtons = 7;
-      let start = Math.max(1, current - Math.floor(maxButtons / 2));
-      let end = Math.min(total, start + maxButtons - 1);
-      if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
+      const maxBtns = 7;
+      let start = Math.max(1, current - Math.floor(maxBtns / 2));
+      let end   = Math.min(total, start + maxBtns - 1);
+      if (end - start < maxBtns - 1) start = Math.max(1, end - maxBtns + 1);
 
       if (start > 1) {
-        const btn1 = pageButton(1, current);
-        nav.appendChild(btn1);
-        if (start > 2) {
-          const dots = document.createElement('span'); dots.className = 'px-2 text-sm text-gray-500'; dots.textContent = '...';
-          nav.appendChild(dots);
-        }
+        nav.appendChild(pageButton(1, current));
+        if (start > 2) nav.appendChild(dots());
       }
-
       for (let i = start; i <= end; i++) nav.appendChild(pageButton(i, current));
-
       if (end < total) {
-        if (end < total - 1) {
-          const dots = document.createElement('span'); dots.className = 'px-2 text-sm text-gray-500'; dots.textContent = '...';
-          nav.appendChild(dots);
-        }
+        if (end < total - 1) nav.appendChild(dots());
         nav.appendChild(pageButton(total, current));
       }
 
-      // Next
       const next = document.createElement('button');
-      next.className = `px-3 py-1 rounded ${current === total ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      next.className = `px-3 py-1 rounded text-sm ${current === total ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
       next.textContent = 'Trang sau →';
       next.disabled = current === total;
       next.onclick = () => loadStories(current + 1);
@@ -351,31 +463,41 @@
     function pageButton(i, current) {
       const btn = document.createElement('button');
       btn.textContent = i;
-      btn.className = `px-3 py-1 rounded ${i === current ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
+      btn.className = `px-3 py-1 rounded text-sm ${i === current ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
       btn.onclick = () => loadStories(i);
       return btn;
     }
 
-    // Chỉnh sửa truyện
+    function dots() {
+      const s = document.createElement('span');
+      s.className = 'px-2 text-sm text-gray-500';
+      s.textContent = '...';
+      return s;
+    }
+
+    // ── Status filter pills ─────────────────────────────────────────────────
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentStatus = btn.dataset.status;
+        document.querySelectorAll('.status-btn').forEach(b => b.classList.toggle('active', b === btn));
+        loadStories(1);
+      });
+    });
+
+    // ── Edit ────────────────────────────────────────────────────────────────
     async function openEdit(id) {
       try {
         const res = await fetch(`${API}/${id}`);
-        const s = res.ok ? await res.json() : await fetchStoryFallback(id);
-        qs('editId').value = s.id || id;
-        qs('editTitle').value = s.title || '';
+        const s = res.ok ? await res.json() : {};
+        qs('editId').value    = s.id    || id;
+        qs('editTitle').value  = s.title  || '';
         qs('editAuthor').value = s.author || '';
-        qs('editStatus').value = s.status || 'ongoing';
-        qs('editCover').value = s.cover_url || '';
-        qs('editSource').value = s.url || '';
+        setDD('editStatus-wrapper', STATUS_TO_DISPLAY[s.status] || 'Đang ra', STATUS_TO_DISPLAY[s.status] || 'Đang ra');
+        qs('editCover').value  = s.cover_url || '';
+        qs('editSource').value = s.url   || '';
       } catch (err) {
         console.error('[stories.html] openEdit:', err);
-        const s = await fetchStoryFallback(id);
-        qs('editId').value = s.id || id;
-        qs('editTitle').value = s.title || '';
-        qs('editAuthor').value = s.author || '';
-        qs('editStatus').value = s.status || 'ongoing';
-        qs('editCover').value = s.cover_url || '';
-        qs('editSource').value = s.url || '';
+        qs('editId').value = id;
       }
       qs('editModal').classList.remove('hidden');
       qs('editModal').classList.add('flex');
@@ -387,68 +509,63 @@
       qs('editForm').reset();
     }
 
-    // Xử lí sự kiện ấn nút submit và hiển thị toast nếu thành công
     qs('editForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const id = qs('editId').value;
       const payload = {
-        title: qs('editTitle').value.trim(),
-        author: qs('editAuthor').value.trim(),
-        status: qs('editStatus').value,
+        title:     qs('editTitle').value.trim(),
+        author:    qs('editAuthor').value.trim(),
+        status:    qs('editStatus').value,
         cover_url: qs('editCover').value.trim(),
-        url: qs('editSource').value.trim()
+        url:       qs('editSource').value.trim(),
       };
       try {
         const res = await fetch(`${API}/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error('Update failed');
         closeModal();
         showToast('Đã cập nhật truyện thành công', 'success');
-        await loadStories(currentPage);
+        await Promise.all([loadStories(currentPage), loadStatusCounts()]);
       } catch (err) {
         console.error('[stories.html] editForm submit:', err);
         showToast('Lỗi khi lưu thay đổi, vui lòng thử lại', 'error');
       }
     });
 
-    // Xóa truyện
+    // ── Delete ──────────────────────────────────────────────────────────────
     async function confirmDelete(id, title) {
       const ok = await showConfirm(`Bạn có chắc chắn muốn xóa truyện "${title}"?`, 'Xác nhận xóa');
       if (!ok) return;
-      deleteStory(id);
-    }
-    async function deleteStory(id) {
       try {
         const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Delete failed');
         showToast('Đã xóa truyện thành công', 'success');
-        await loadStories(currentPage);
+        await Promise.all([loadStories(currentPage), loadStatusCounts()]);
       } catch (err) {
         console.error('[stories.html] deleteStory:', err);
         showToast('Lỗi khi xóa truyện, vui lòng thử lại', 'error');
       }
     }
 
-    // Mở link nguồn
     function openSource(url) {
       if (!url) return showToast('Truyện này chưa có link nguồn', 'warning');
       window.open(url, '_blank');
     }
 
-    // Hàm đồng bộ dữ liệu từ trang crawl
+    // ── Sync ────────────────────────────────────────────────────────────────
     qs('syncBtn').addEventListener('click', async () => {
       const ok = await showConfirm('Đồng bộ từ comi sẽ thêm các truyện mới vào DB. Tiếp tục?', 'Xác nhận đồng bộ');
       if (!ok) return;
       qs('syncBtn').disabled = true;
       qs('syncBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang đồng bộ...';
       try {
-        const res = await fetch(`${API}/sync`, { method: 'POST' });
+        const res  = await fetch(`${API}/sync`, { method: 'POST' });
         const data = await res.json();
         showToast(data.message || 'Đồng bộ thành công', 'success');
-        await loadStories(1);
+        await Promise.all([loadStories(1), loadStatusCounts()]);
       } catch (err) {
         console.error('[stories.html] sync:', err);
         showToast('Đồng bộ thất bại, vui lòng thử lại', 'error');
@@ -458,31 +575,13 @@
       }
     });
 
-    
-    async function fetchStoryFallback(id) {
-      try {
-        const res = await fetch(`${API}?page=${currentPage}&limit=${limit}`);
-        const data = await res.json();
-        const arr = data.stories || [];
-        return arr.find(x => String(x.id) === String(id)) || {};
-      } catch (e) { return {}; }
-    }
-
-    // Sync chương cho 1 truyện
     async function syncChapters(id) {
-      const btn = document.getElementById(`syncChBtn-${id}`);
+      const btn = qs(`syncChBtn-${id}`);
       if (btn) { btn.disabled = true; btn.textContent = '...'; }
       try {
-        const res = await fetch(`/api/stories/${id}/crawl-chapters`, {
-          method: 'POST',
-          credentials: 'include',
-        });
+        const res  = await fetch(`/api/stories/${id}/crawl-chapters`, { method: 'POST', credentials: 'include' });
         const data = await res.json();
-        if (res.ok) {
-          showToast(data.message || 'Đồng bộ chương thành công', 'success');
-        } else {
-          showToast(data.message || 'Lỗi khi đồng bộ chương', 'error');
-        }
+        showToast(data.message || (res.ok ? 'Đồng bộ chương thành công' : 'Lỗi khi đồng bộ chương'), res.ok ? 'success' : 'error');
       } catch (err) {
         console.error('[stories.html] syncChapters:', err);
         showToast('Không thể kết nối server', 'error');
@@ -491,7 +590,7 @@
       }
     }
 
-    // ─── Sync tất cả chương (SSE) ───────────────────────────────────────
+    // ── Sync all chapters (SSE) ─────────────────────────────────────────────
     let syncAllES = null;
 
     qs('syncAllChaptersBtn').addEventListener('click', async () => {
@@ -509,13 +608,13 @@
     });
 
     function openSyncAllModal() {
-      const modal = qs('syncAllModal');
       qs('syncAllLog').innerHTML = '<p class="text-gray-400">Đang kết nối...</p>';
       qs('syncAllProgressBar').style.width = '0%';
       qs('syncAllProgressLabel').textContent = 'Đang chuẩn bị...';
       qs('syncAllProgressCount').textContent = '';
       qs('syncAllSummary').classList.add('hidden');
       qs('syncAllCloseBtn').classList.add('hidden');
+      const modal = qs('syncAllModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       startSyncAllSSE();
@@ -538,49 +637,37 @@
 
     function startSyncAllSSE() {
       if (syncAllES) syncAllES.close();
-
       syncAllES = new EventSource('/api/stories/crawl-all-chapters/stream', { withCredentials: true });
 
       syncAllES.onmessage = (e) => {
         const data = JSON.parse(e.data);
-
         if (data.type === 'start') {
           qs('syncAllLog').innerHTML = '';
           appendLog(`Bắt đầu đồng bộ ${data.total} truyện...`, 'text-purple-600 font-medium');
-        }
-
-        else if (data.type === 'progress') {
+        } else if (data.type === 'progress') {
           const pct = Math.round((data.current / data.total) * 100);
           qs('syncAllProgressBar').style.width = pct + '%';
           qs('syncAllProgressLabel').textContent = `Đang xử lý: ${data.title}`;
           qs('syncAllProgressCount').textContent = `${data.current}/${data.total}`;
-        }
-
-        else if (data.type === 'item') {
-          if (data.status === 'ok') {
+        } else if (data.type === 'item') {
+          if (data.status === 'ok')
             appendLog(`✓ [${data.id}] ${data.title} — ${data.count} chương`, 'text-green-600');
-          } else if (data.status === 'failed') {
+          else if (data.status === 'failed')
             appendLog(`✗ [${data.id}] ${data.title} — ${data.message}`, 'text-orange-500');
-          } else {
+          else
             appendLog(`! [${data.id}] ${data.title} — ${data.message}`, 'text-red-500');
-          }
-        }
-
-        else if (data.type === 'done') {
+        } else if (data.type === 'done') {
           syncAllES.close(); syncAllES = null;
           qs('syncAllProgressBar').style.width = '100%';
           qs('syncAllProgressLabel').textContent = 'Hoàn tất!';
           qs('syncAllProgressCount').textContent = `${data.total}/${data.total}`;
           qs('syncAllCloseBtn').classList.remove('hidden');
-
           const summary = qs('syncAllSummary');
           summary.classList.remove('hidden');
-          const ok = data.success, fail = data.failed;
+          const fail = data.failed;
           summary.className = `mt-4 p-3 rounded-lg text-sm font-medium ${fail === 0 ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`;
-          summary.textContent = `Hoàn tất: ${ok} thành công, ${fail} thất bại / ${data.total} truyện`;
-        }
-
-        else if (data.type === 'error') {
+          summary.textContent = `Hoàn tất: ${data.success} thành công, ${fail} thất bại / ${data.total} truyện`;
+        } else if (data.type === 'error') {
           syncAllES.close(); syncAllES = null;
           appendLog('Lỗi server: ' + data.message, 'text-red-600 font-medium');
           qs('syncAllCloseBtn').classList.remove('hidden');
@@ -594,299 +681,146 @@
       };
     }
 
-    // Kick off initial load
-    loadStories(1);
-
-
-    // Toast — góc trên phải, 2.5 giây, icon theo loại
-    let toastTimer = null;
-    function showToast(message, type = 'success') {
-      const toast = document.getElementById('toast');
-      const toastIcon = document.getElementById('toastIcon');
-      const toastMsg = document.getElementById('toastMsg');
-
-      const config = {
-        success: { icon: 'fa-circle-check',        cls: 'bg-green-600' },
-        error:   { icon: 'fa-circle-xmark',         cls: 'bg-red-600'   },
-        warning: { icon: 'fa-triangle-exclamation', cls: 'bg-yellow-500 text-gray-900' },
-      };
-      const { icon, cls } = config[type] || config.success;
-
-      toastIcon.className = `fa-solid ${icon} text-lg flex-shrink-0`;
-      toastMsg.textContent = message;
-      toast.className = `fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-white font-medium text-sm transition-all duration-300 pointer-events-none ${cls}`;
-
-      toast.classList.remove('opacity-0', 'translate-x-8');
-      toast.classList.add('opacity-100', 'translate-x-0');
-
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toast.classList.remove('opacity-100', 'translate-x-0');
-        toast.classList.add('opacity-0', 'translate-x-8');
-      }, 2500);
+    // ── Status counts (badges) ──────────────────────────────────────────────
+    async function loadStatusCounts() {
+      try {
+        const res = await fetch('/api/stories/status-counts');
+        if (!res.ok) return;
+        const counts = await res.json();
+        qs('badge-all').textContent       = counts.total     ?? '--';
+        qs('badge-ongoing').textContent   = counts.ongoing   ?? 0;
+        qs('badge-completed').textContent = counts.completed ?? 0;
+        qs('badge-stopped').textContent   = counts.stopped   ?? 0;
+      } catch { /* Bỏ qua nếu endpoint chưa sẵn sàng */ }
     }
 
-
-
-// Hàm tìm kiếm
+    // ── Event wiring ────────────────────────────────────────────────────────
     let searchTimeout;
     qs('searchInput').addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => loadStories(1), 400); // đợi 400ms sau khi ngừng gõ
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => loadStories(1), 400);
     });
-
     qs('searchBtn').addEventListener('click', () => loadStories(1));
     qs('refreshBtn').addEventListener('click', () => {
-    qs('searchInput').value = '';
-    loadStories(1);
+      qs('searchInput').value = '';
+      currentStatus = '';
+      document.querySelectorAll('.status-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+      loadStories(1);
     });
     qs('limitSelect').addEventListener('change', () => loadStories(1));
 
-    // Utilities to avoid XSS in injected HTML
-    function escapeHtml(s) {
+    loadStories(1);
+    loadStatusCounts();
+  </script>
+
+  <!-- Search suggest popover (IIFE) -->
+  <script>
+  (function () {
+    const input = qs('searchInput');
+    const DEBOUNCE = 300;
+    let items = [], activeIndex = -1, timer = null;
+
+    const pop = document.createElement('div');
+    pop.className = 'hidden suggest-pop absolute bg-white border rounded-lg shadow-lg w-full z-50';
+    pop.setAttribute('role', 'listbox');
+    pop.id = 'suggestPopover';
+    document.body.appendChild(pop);
+
+    function escHtml(s) {
       if (!s) return '';
-      return String(s).replace(/[&<>"']/g, function (m) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-      });
+      return String(s).replace(/[&<>"']/g, m =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]
+      );
     }
-    function escapeJs(s) {
-      if (!s) return '';
-      return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
-    }
+    function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-
-
-// Logic thanh tìm kiếm
-(function () {
-  const input = document.getElementById('searchInput'); // Khởi tạo input là văn bản nhập vào thanh tìm kiếm
-
-  
-  let pop = document.createElement('div'); // Tạo 1 popover (div) trong bộ nhớ để chưa danh sách trả về
-  pop.className = 'hidden suggest-pop absolute bg-white border rounded-lg shadow-lg w-full z-50'; // Set Tailwind Css
-  pop.setAttribute('role', 'listbox'); // Set giá trị
-  pop.id = 'suggestPopover'; // Set id
-  document.body.appendChild(pop); // Đưa phần tử popover vừa tạo vào cuối thẻ <body> của tài liệu
-  
-    // Hàm cấu tạo hiển thị popover ngay dưới thanh tìm kiếm (Responsive)
-  function positionPopover() {
-    const rect = input.getBoundingClientRect();
-    pop.style.width = Math.max(rect.width, 300) + 'px';
-    pop.style.left = rect.left + window.scrollX + 'px';
-    pop.style.top = rect.bottom + window.scrollY + 'px';
-  }
-
-  // Hẹn giờ và delay call API tránh quá tải server
-  let timer = null; 
-  const DEBOUNCE = 300;
-
-  // Lưu trữ danh sách kết quả gợi ý từ API
-  let items = [];
-  // theo dõi mục gợi ý đang được chọn bằng bàn phím (UX)
-  let activeIndex = -1;
-
-  // Hàm hiển thị suggest, nhận 1 list
-  function render(list) {
-    items = list || [];
-    activeIndex = -1;
-  // Nếu danh sách rỗng thì ẩn popover
-    if (!items || items.length === 0) {
-      pop.classList.add('hidden');
-      pop.innerHTML = '';
-      return;
+    function positionPopover() {
+      const rect = input.getBoundingClientRect();
+      pop.style.width  = Math.max(rect.width, 300) + 'px';
+      pop.style.left   = rect.left + window.scrollX + 'px';
+      pop.style.top    = rect.bottom + window.scrollY + 'px';
     }
 
-    // Tạo HTML chi tiết cho mỗi truyện
-    pop.innerHTML = items.map((s, idx) => `
-      <div
-        class="cursor-pointer p-2 flex gap-3 items-center hover:bg-gray-100"
-        role="option"
-        data-idx="${idx}"
-        data-id="${s.id}"
-        data-title="${escapeHtml(s.title)}" 
-      >
-        <img src="${s.cover_url || '/assets/images/Logo.png'}"
-             onerror="this.src='/assets/images/Logo.png'"
-             class="w-12 h-14 object-cover rounded-sm flex-shrink-0">
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium text-gray-800 truncate">${highlight(s.title, input.value)}</div>
-          <div class="text-xs text-gray-500 truncate">${escapeHtml(s.author || '')} ${s.status ? ' · ' + escapeHtml(s.status) : ''}</div>
-        </div>
-      </div>
-    `).join('');
-
-    positionPopover();
-    pop.classList.remove('hidden');
-  }
-
-  // Làm nổi bật chữ tìm kiếm
-  function highlight(text, q) {
-    if (!q) return escapeHtml(text);
-    const re = new RegExp(escapeRegExp(q), 'ig');
-    return escapeHtml(text).replace(re, m => `<mark class="bg-yellow-200 text-yellow-900 px-0">${m}</mark>`);
-  }
-
-  // Biến các ký tự đặc biệt thành các thực thể HTML tương đương tránh tấn công XSS
-  function escapeHtml(s) {
-    if (!s) return '';
-    return String(s).replace(/[&<>"']/g, function (m) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-    });
-  }
-  // Đảm bảo chuỗi nhập của người dùng là văn bản
-  function escapeRegExp(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  // Gọi API đến /api/stories/search để lấy dữ liệu với từ khóa đã mã hóa encodeURIComponent, trả về dữ liệu JSON và render ra màn hình
-  async function fetchSuggest(q) {
-    if (!q || q.trim() === '') {
-      render([]);
-      return;
+    function highlight(text, q) {
+      if (!q) return escHtml(text);
+      return escHtml(text).replace(new RegExp(escRe(q), 'ig'), m =>
+        `<mark class="bg-yellow-200 text-yellow-900 px-0">${m}</mark>`
+      );
     }
-    try {
-      const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
-      if (!res.ok) throw new Error('network');
-      const data = await res.json();
-      // expect array of {id,title,cover,author,status}
-      render(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Suggest error', err);
-      render([]);
-    }
-  }
 
-  // Lắng nghe dữ liệu nhập vào, xóa bộ hẹn giờ cũ và active Debounce
-  input.addEventListener('input', (e) => {
-    clearTimeout(timer);
-    const q = e.target.value;
-    timer = setTimeout(() => fetchSuggest(q), DEBOUNCE);
-  });
-
- 
-  // Khi người dùng nhấn vào 1 mục trong popover nó sẽ lấy data-id và data-title để gọi hàm selectAndNavigate
-  pop.addEventListener('click', (ev) => {
-    const item = ev.target.closest('[data-id]');
-    if (!item) return;
-    const id = item.getAttribute('data-id');
-    const title = item.getAttribute('data-title');
-    selectAndNavigate(id, title);
-  });
-
- 
-  // Cập nhật thanh tìm kiếm bằng mục đã được chọn và gọi lại loadStories để hiển thị truyện với mục ở thanh tìm kiếm
-  function selectAndNavigate(id, title) {
-  input.value = title || input.value;
-  pop.classList.add('hidden');
-
-  // Gọi loadStories để lọc theo tiêu đề (search input đang có)
-  loadStories(currentPage);
-}
-
-
- // Khi người dùng nhập ra khỏi thanh tìm kiếm thì ẩn popover
-  document.addEventListener('click', (ev) => {
-    if (ev.target === input || pop.contains(ev.target)) return;
-    pop.classList.add('hidden');
-  });
-
- // Người dùng nhấp vào thanh tìm kiếm nếu vẫn có dl thì sẽ hiển thị lại popover (UX)
-  input.addEventListener('focus', () => {
-    if (pop.innerHTML.trim()) {
+    function render(list) {
+      items = list || [];
+      activeIndex = -1;
+      if (!items.length) { pop.classList.add('hidden'); pop.innerHTML = ''; return; }
+      pop.innerHTML = items.map((s, idx) => `
+        <div class="cursor-pointer p-2 flex gap-3 items-center hover:bg-gray-100"
+          role="option" data-idx="${idx}" data-id="${s.id}" data-title="${escHtml(s.title)}">
+          <img src="${s.cover_url || '/assets/images/Logo.png'}"
+            onerror="this.src='/assets/images/Logo.png'"
+            class="w-12 h-14 object-cover rounded-sm flex-shrink-0">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-800 truncate">${highlight(s.title, input.value)}</div>
+            <div class="text-xs text-gray-500 truncate">${escHtml(s.author || '')}${s.status ? ' · ' + escHtml(s.status) : ''}</div>
+          </div>
+        </div>`).join('');
       positionPopover();
       pop.classList.remove('hidden');
     }
-  });
 
+    async function fetchSuggest(q) {
+      if (!q.trim()) { render([]); return; }
+      try {
+        const res  = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        render(Array.isArray(data) ? data : []);
+      } catch { render([]); }
+    }
 
-
- // Xử lí người dùng xử dụng các nút lên xuống chọn dữ liệu và enter để xác nhận (UX)
-  input.addEventListener('keydown', (ev) => {
-    if (pop.classList.contains('hidden')) return;
-
-    const count = items.length;
-    if (ev.key === 'ArrowDown') {
-      ev.preventDefault();
-      activeIndex = Math.min(count - 1, activeIndex + 1);
-      setActive(activeIndex);
-    } else if (ev.key === 'ArrowUp') {
-      ev.preventDefault();
-      activeIndex = Math.max(0, activeIndex - 1);
-      setActive(activeIndex);
-    } else if (ev.key === 'Enter') {
-      ev.preventDefault();
-      if (activeIndex >= 0 && items[activeIndex]) {
-        const it = items[activeIndex];
-        selectAndNavigate(it.id, it.title);
-      } else {
-        currentPage = 1; 
-        loadStories(currentPage);
-        pop.classList.add('hidden');
-      }
-    } else if (ev.key === 'Escape') {
+    function selectItem(id, title) {
+      input.value = title || input.value;
       pop.classList.add('hidden');
+      loadStories(currentPage);
     }
-  });
 
+    function setActive(idx) {
+      Array.from(pop.children).forEach((c, i) => {
+        c.classList.toggle('suggest-item-active', i === idx);
+        if (i === idx) {
+          const cR = c.getBoundingClientRect(), pR = pop.getBoundingClientRect();
+          if (cR.top < pR.top || cR.bottom > pR.bottom) c.scrollIntoView({ block: 'nearest' });
+        }
+      });
+    }
 
-
-
-
- // Thêm lớp CSS vào mục đang được chọn bằng bàn phím trong popover
-  function setActive(idx) {
-    Array.from(pop.children).forEach((c, i) => {
-      c.classList.toggle('suggest-item-active', i === idx);
-      if (i === idx) {
-        // ensure visible
-        const cRect = c.getBoundingClientRect();
-        const pRect = pop.getBoundingClientRect();
-        if (cRect.top < pRect.top) c.scrollIntoView({ block: 'nearest' });
-        else if (cRect.bottom > pRect.bottom) c.scrollIntoView({ block: 'nearest' });
-      }
+    input.addEventListener('input', e => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fetchSuggest(e.target.value), DEBOUNCE);
     });
-  }
+    input.addEventListener('focus', () => {
+      if (pop.innerHTML.trim()) { positionPopover(); pop.classList.remove('hidden'); }
+    });
+    input.addEventListener('keydown', ev => {
+      if (pop.classList.contains('hidden')) return;
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); activeIndex = Math.min(items.length - 1, activeIndex + 1); setActive(activeIndex); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); activeIndex = Math.max(0, activeIndex - 1); setActive(activeIndex); }
+      else if (ev.key === 'Enter') {
+        ev.preventDefault();
+        if (activeIndex >= 0 && items[activeIndex]) selectItem(items[activeIndex].id, items[activeIndex].title);
+        else { loadStories(1); pop.classList.add('hidden'); }
+      } else if (ev.key === 'Escape') pop.classList.add('hidden');
+    });
+    pop.addEventListener('click', ev => {
+      const item = ev.target.closest('[data-id]');
+      if (item) selectItem(item.getAttribute('data-id'), item.getAttribute('data-title'));
+    });
+    document.addEventListener('click', ev => {
+      if (ev.target !== input && !pop.contains(ev.target)) pop.classList.add('hidden');
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') pop.classList.add('hidden'); });
+    window.addEventListener('resize', positionPopover);
+    window.addEventListener('scroll', positionPopover, true);
+  })();
+  </script>
 
-
-  // Xử lí sự kiện người dùng thay đổi kích thước trình duyệt và lăn chuột thì popover vẫn hiển thị dễ nhìn (UI/UX)
-  window.addEventListener('resize', positionPopover);
-  window.addEventListener('scroll', positionPopover, true);
-
-  // initial click outside handler to close (immediately)
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') pop.classList.add('hidden');
-  });
-
-  // ensure tab focus goes into items (keyboard accessible)
-  pop.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const el = document.activeElement.closest('[data-id]');
-      if (el) {
-        selectAndNavigate(el.getAttribute('data-id'), el.getAttribute('data-title'));
-        pop.classList.add('hidden');
-      }
-    }
-  });
-
-})();
-</script>
-
-  <!-- Toast góc trên phải -->
-  <div id="toast"
-    class="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-white font-medium text-sm opacity-0 translate-x-8 transition-all duration-300 bg-green-600 pointer-events-none">
-    <i id="toastIcon" class="fa-solid fa-circle-check text-lg flex-shrink-0"></i>
-    <span id="toastMsg"></span>
-  </div>
-
-<style>
-  /* Một vài chỉnh thêm cho popover */
-  .suggest-pop {
-    max-height: 360px;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .suggest-item-active {
-    background-color: rgba(99,102,241,0.12); /* indigo-300/opacity */
-  }
-</style>
 </body>
 </html>

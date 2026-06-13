@@ -52,6 +52,10 @@
         class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
         <i class="fa-solid fa-triangle-exclamation w-4"></i> Quản lý báo lỗi
       </a>
+      <a href="/admin-chat.html"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+        <i class="fa-solid fa-robot w-4"></i> Giám sát Chat AI
+      </a>
     </nav>
   </aside>
 
@@ -72,8 +76,8 @@
       </div>
 
       <!-- KPI CARDS -->
-      <div id="kpiGrid" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-        <div class="col-span-2 md:col-span-3 flex justify-center py-10">
+      <div id="kpiGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="col-span-2 md:col-span-4 flex justify-center py-10">
           <div class="w-8 h-8 border-4 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
         </div>
       </div>
@@ -206,13 +210,31 @@
           sub: data.pendingReports > 0 ? 'Cần xử lý ngay' : 'Không có',
           subColor: data.pendingReports > 0 ? 'text-red-500' : 'text-gray-400',
           href: data.pendingReports > 0 ? '/admin-report.html' : null,
+          hoverBorder: 'hover:border-red-300',
+        },
+        {
+          icon: 'fa-robot', bg: 'bg-sky-50', color: 'text-sky-500',
+          label: 'Tin nhắn Chat AI',
+          value: (data.totalChatMessages ?? 0).toLocaleString(),
+          sub: null,
+          href: '/admin-chat.html',
+          hoverBorder: 'hover:border-sky-300',
+        },
+        {
+          icon: 'fa-wand-magic-sparkles', bg: 'bg-violet-50', color: 'text-violet-500',
+          label: 'Truyện có AI Summary',
+          value: (data.storiesWithSummary ?? 0).toLocaleString(),
+          sub: data.totalStories > 0
+            ? `${Math.round((data.storiesWithSummary ?? 0) / data.totalStories * 100)}% đã tóm tắt`
+            : null,
+          subColor: 'text-violet-400',
         },
       ];
 
       document.getElementById('kpiGrid').innerHTML = cards.map(c => {
         const tag = c.href ? `a href="${c.href}"` : 'div';
         const endTag = c.href ? 'a' : 'div';
-        const hover = c.href ? 'hover:border-red-300 hover:shadow-sm cursor-pointer' : '';
+        const hover = c.href ? `hover:shadow-sm cursor-pointer ${c.hoverBorder || 'hover:border-gray-300'}` : '';
         return `
           <${tag} class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 transition ${hover}">
             <div class="w-12 h-12 rounded-xl ${c.bg} flex items-center justify-center flex-shrink-0">

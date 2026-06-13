@@ -263,33 +263,51 @@
         body: JSON.stringify({ story_id: storyId })
       });
 
+      if (!res.ok) {
+        box.textContent = "Không thể tạo tóm tắt, vui lòng thử lại.";
+        return;
+      }
       const data = await res.json();
-      box.innerHTML = data.summary;
+      // Dùng renderMarkdown (exposed từ chat.js) nếu có, fallback về textContent
+      if (typeof window.renderMarkdown === "function") {
+        box.innerHTML = window.renderMarkdown(data.summary || "");
+      } else {
+        box.textContent = data.summary || "";
+      }
     });
 
 
+    function escHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
     async function loadRecommend() {
-      const res = await fetch("/api/recommend", {
-        credentials: "include"
-      });
-      const data = await res.json();
-
-      const box = document.getElementById("recommendBox");
-      box.innerHTML = data.map(story => `
-    <a href="/read2.html?id=${story.id}"
-       class="flex gap-3 hover:bg-indigo-50 p-2 rounded">
-      <img src="${story.cover_url}" class="w-14 h-20 object-cover rounded">
-      <div>
-        <p class="font-semibold text-indigo-700">${story.title}</p>
-        <p class="text-xs text-gray-500">${story.genres}</p>
-        <p class="text-xs text-gray-500 italic">Lượt xem: ${story.view_count}</p>
-        <p class="text-xs text-yellow-600">
-  ⭐ ${story.avg_rating ? story.avg_rating.toFixed(1) : "Chưa có đánh giá"}
-</p>
-
-      </div>
-    </a>
-  `).join("");
+      try {
+        const res = await fetch("/api/recommend", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        const box = document.getElementById("recommendBox");
+        if (!Array.isArray(data) || !data.length) return;
+        box.innerHTML = data.map(story => {
+          const id = parseInt(story.id) || 0;
+          const rating = story.avg_rating ? Number(story.avg_rating).toFixed(1) : null;
+          return `
+            <a href="/read2.html?id=${id}" class="flex gap-3 hover:bg-indigo-50 p-2 rounded">
+              <img src="${escHtml(story.cover_url)}" class="w-14 h-20 object-cover rounded"
+                   onerror="this.src='/assets/images/Logo.png'">
+              <div>
+                <p class="font-semibold text-indigo-700">${escHtml(story.title)}</p>
+                <p class="text-xs text-gray-500">${escHtml(story.genres)}</p>
+                <p class="text-xs text-gray-500 italic">Lượt xem: ${escHtml(story.view_count)}</p>
+                <p class="text-xs text-yellow-600">⭐ ${rating ? rating : "Chưa có đánh giá"}</p>
+              </div>
+            </a>`;
+        }).join("");
+      } catch (err) {
+        console.error("[read2] loadRecommend:", err);
+      }
     }
 
 
@@ -413,7 +431,7 @@
         showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
         favBtn.click(); // reload lại modal
       } catch (err) {
-        alert("❌ " + err.message);
+        showAlert("error", err.message, "Lỗi");
       }
     });
 
@@ -439,7 +457,7 @@
         }
       } catch (err) {
         console.error("❌ Lỗi thêm truyện:", err);
-        alert("Lỗi kết nối server!");
+        showAlert("error", "Lỗi kết nối server!", "Lỗi");
       }
     }
 
@@ -558,11 +576,15 @@
 
     async function loadRating() {
       const id = getStoryId();
-      const res = await fetch(`/api/rating?story_id=${id}`);
-      const data = await res.json();
-
-      document.getElementById("story-rating").innerHTML =
-        `⭐ ${data.avg.toFixed(1)} / 5 (${data.total} đánh giá)`;
+      try {
+        const res = await fetch(`/api/rating?story_id=${id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById("story-rating").innerHTML =
+          `⭐ ${Number(data.avg).toFixed(1)} / 5 (${data.total} đánh giá)`;
+      } catch (err) {
+        console.error("[read2] loadRating:", err);
+      }
     }
 
     loadRating();

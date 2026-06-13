@@ -85,4 +85,41 @@ function hideAlert() {
   document.getElementById("alertModal")?.classList.add("hidden");
 }
 
+// ── Toast (bottom-right, tự ẩn) ──────────────────────────────────────────
+let _toastTimer = null;
+function showToast(message, type = "success", duration = 3000) {
+  let toast = document.getElementById("_sharedToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "_sharedToast";
+    document.body.appendChild(toast);
+  }
+
+  const cfg = {
+    success: { icon: "fa-circle-check",        bg: "bg-green-600" },
+    error:   { icon: "fa-circle-xmark",         bg: "bg-red-600"   },
+    warning: { icon: "fa-triangle-exclamation", bg: "bg-yellow-500 text-gray-900" },
+    info:    { icon: "fa-circle-info",           bg: "bg-blue-600"  },
+  };
+  const { icon, bg } = cfg[type] || cfg.success;
+
+  toast.className =
+    `fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3 ` +
+    `rounded-xl shadow-2xl font-medium text-sm text-white transition-all duration-300 pointer-events-none ` +
+    `opacity-0 translate-y-2 ${bg}`;
+  toast.innerHTML =
+    `<i class="fa-solid ${icon} text-lg flex-shrink-0"></i><span>${message}</span>`;
+
+  requestAnimationFrame(() => {
+    toast.classList.remove("opacity-0", "translate-y-2");
+    toast.classList.add("opacity-100", "translate-y-0");
+  });
+
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    toast.classList.remove("opacity-100", "translate-y-0");
+    toast.classList.add("opacity-0", "translate-y-2");
+  }, duration);
+}
+
 document.addEventListener("DOMContentLoaded", loadAlertModal);

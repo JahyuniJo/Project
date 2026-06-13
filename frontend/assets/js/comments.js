@@ -11,20 +11,11 @@
   }
 
   function showMessage(type, message, title) {
-    if (typeof window.showAlert === "function") {
-      window.showAlert(type, message, title || "Thông báo");
-      return;
-    }
-
-    alert(message);
+    window.showAlert(type, message, title || "Thông báo");
   }
 
   async function confirmAction(message, title) {
-    if (typeof window.showConfirm === "function") {
-      return window.showConfirm(message, title || "Xác nhận");
-    }
-
-    return window.confirm(message);
+    return window.showConfirm(message, title || "Xác nhận");
   }
 
   async function requestJSON(url, options = {}) {
@@ -78,6 +69,40 @@
     }
 
     return null;
+  }
+
+  // Trả về mảng id của các comment cha cần mở để nhìn thấy targetId
+  function findPathToComment(comments, targetId, path = []) {
+    for (const comment of comments) {
+      if (comment.id === targetId) return path;
+      if (comment.replies?.length) {
+        const found = findPathToComment(comment.replies, targetId, [...path, comment.id]);
+        if (found !== null) return found;
+      }
+    }
+    return null;
+  }
+
+  function getHashCommentId() {
+    const match = window.location.hash.match(/^#comment-(\d+)$/);
+    return match ? Number(match[1]) : null;
+  }
+
+  function scrollToComment(commentId) {
+    const el = document.getElementById(`comment-${commentId}`);
+    if (!el) return;
+    const header = document.querySelector("header");
+    const offset = (header ? header.offsetHeight : 0) + 24;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: "smooth" });
+  }
+
+  function highlightComment(commentId) {
+    scrollToComment(commentId);
+    const el = document.getElementById(`comment-${commentId}`);
+    if (!el) return;
+    el.classList.add("ring-2", "ring-indigo-400", "rounded-xl");
+    setTimeout(() => el.classList.remove("ring-2", "ring-indigo-400", "rounded-xl"), 3000);
   }
 
   function makeButton(label, action, commentId, className) {
@@ -332,7 +357,22 @@
         state.currentUserId = data.currentUserId || null;
         state.comments = Array.isArray(data.comments) ? data.comments : [];
         setComposerState();
+
+        // Mở replies cha trước khi render để comment đích hiện ra ngay
+        const hashId = getHashCommentId();
+        if (hashId !== null) {
+          const path = findPathToComment(state.comments, hashId);
+          path?.forEach(id => state.openReplies.add(id));
+        }
+
         render();
+
+        if (hashId !== null) {
+          // Lần 1: scroll + highlight ngay sau render
+          requestAnimationFrame(() => requestAnimationFrame(() => highlightComment(hashId)));
+          // Lần 2: scroll lại sau khi ảnh đã load xong (không highlight lại)
+          setTimeout(() => scrollToComment(hashId), 100);
+        }
       } catch (err) {
         console.error("Load comments error:", err);
         showMessage("error", err.message || "Không thể tải bình luận", "Lỗi");

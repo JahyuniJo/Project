@@ -2,57 +2,47 @@ const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const SUMMARY_MODEL = "llama-3.1-8b-instant";
+const CHAT_MODEL = "llama-3.3-70b-versatile";
 
 if (!GROQ_API_KEY) {
   console.warn("⚠️ GROQ_API_KEY not set");
 }
 
 async function callAI(prompt) {
-  try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          {
-            role: "system",
-            content: `
-                Bạn là AI chuyên tóm tắt truyện tiếng Việt cho website đọc truyện.
-                  Quy tắc:
-                  - Không tự suy đoán nội dung
-                  - Không hỏi thêm thông tin
-                  - Nếu dữ liệu không đủ, trả về: "Không đủ dữ liệu để tóm tắt"
-                  - Không tiết lộ nội dung quan trọng hoặc kết truyện
-`
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.3
-      })
-    });
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: SUMMARY_MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Bạn là AI chuyên tóm tắt truyện tiếng Việt cho website đọc truyện. " +
+            "Quy tắc: Không tự suy đoán nội dung. Không hỏi thêm thông tin. " +
+            'Nếu dữ liệu không đủ, trả về: "Không đủ dữ liệu để tóm tắt". ' +
+            "Không tiết lộ nội dung quan trọng hoặc kết truyện.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.3,
+    }),
+  });
 
+  if (!res.ok) {
     const raw = await res.text();
-
-    if (!res.ok) {
-      console.error("GROQ RAW ERROR:", raw);
-      return "⚠️ AI không phản hồi hợp lệ.";
-    }
-
-    const data = JSON.parse(raw);
-
-    return data.choices?.[0]?.message?.content || "⚠️ AI không tạo được nội dung.";
-
-  } catch (err) {
-    console.error("GROQ ERROR:", err);
-    return "⚠️ AI đang gặp sự cố.";
+    console.error("[aiService] callAI error:", raw);
+    throw new Error("Groq API lỗi");
   }
+
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error("AI không tạo được nội dung");
+  return content;
 }
 
 async function callAIStream(messages, onChunk, temperature = 0.7, timeoutMs = 45000) {
@@ -70,7 +60,7 @@ async function callAIStream(messages, onChunk, temperature = 0.7, timeoutMs = 45
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: CHAT_MODEL,
         messages,
         temperature,
         stream: true,
@@ -121,4 +111,28 @@ async function callAIStream(messages, onChunk, temperature = 0.7, timeoutMs = 45
   return fullContent;
 }
 
-module.exports = { callAI, callAIStream };
+async function callAIRaw(messages, { temperature = 0.2, maxTokens = 120 } = {}) {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: SUMMARY_MODEL,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+    }),
+  });
+
+  if (!res.ok) {
+    const raw = await res.text();
+    throw new Error(`Groq API lỗi: ${raw.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+module.exports = { callAI, callAIStream, callAIRaw };

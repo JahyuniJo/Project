@@ -7,6 +7,26 @@
   <link rel="icon" type="image/png" href="/assets/images/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .custom-dropdown-btn {
+      background: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
+    }
+    .custom-dropdown-btn:hover { border-color: #a5b4fc; background-color: #f0f3ff; }
+    .custom-dropdown-btn.open { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background-color: #f0f3ff; }
+    .custom-dropdown-menu {
+      position: absolute; z-index: 200;
+      background: #fff; border: 1px solid #e0e7ff; border-radius: 0.75rem;
+      box-shadow: 0 8px 28px -4px rgba(99,102,241,0.18), 0 4px 10px -4px rgba(0,0,0,0.1);
+    }
+    .custom-dropdown-option {
+      padding: 0.45rem 0.75rem; border-radius: 0.5rem;
+      font-size: 0.875rem; color: #374151;
+      cursor: pointer; transition: background-color 0.12s, color 0.12s;
+    }
+    .custom-dropdown-option:hover { background-color: #eef2ff; color: #4338ca; }
+    .custom-dropdown-option.selected { background-color: #eef2ff; color: #4338ca; font-weight: 500; }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col font-sans">
 
@@ -37,6 +57,7 @@
       <a href="/stat.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition"><i class="fa-solid fa-chart-column w-4"></i> Thống kê</a>
       <a href="/stories.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition"><i class="fa-solid fa-book w-4"></i> Quản lý truyện</a>
       <a href="/admin-report.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-semibold"><i class="fa-solid fa-triangle-exclamation w-4"></i> Quản lý báo lỗi</a>
+      <a href="/admin-chat.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition"><i class="fa-solid fa-robot w-4"></i> Giám sát Chat AI</a>
     </nav>
   </aside>
 
@@ -109,7 +130,29 @@
     </div>
   </div>
 
+  <script src="/components/alertModal.js"></script>
   <script>
+    function closeAllDD() {
+      document.querySelectorAll('.custom-dropdown-menu').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('.custom-dropdown-btn').forEach(b => { b.classList.remove('open'); b.querySelector('i')?.classList.remove('rotate-180'); });
+    }
+    function toggleDD(id) {
+      const w = document.getElementById(id); if (!w) return;
+      const isOpen = !w.querySelector('.custom-dropdown-menu').classList.contains('hidden');
+      closeAllDD();
+      if (!isOpen) { w.querySelector('.custom-dropdown-menu').classList.remove('hidden'); const btn = w.querySelector('.custom-dropdown-btn'); btn.classList.add('open'); btn.querySelector('i')?.classList.add('rotate-180'); }
+    }
+    function pickDD(wrapperId, value, label) {
+      const w = document.getElementById(wrapperId); if (!w) return;
+      const input = w.querySelector('input[type="hidden"]');
+      if (input) { input.value = value; input.dispatchEvent(new Event('change', {bubbles: true})); }
+      const lbl = w.querySelector('.dd-label'); if (lbl) lbl.textContent = label;
+      closeAllDD();
+      w.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.toggle('selected', o.dataset.value === value));
+    }
+    function statusLabel(s) { return {pending:'Pending',fixing:'Fixing',done:'Done',ignored:'Ignored'}[s] || s; }
+    document.addEventListener('click', e => { if (!e.target.closest('.dd-wrapper')) closeAllDD(); });
+
     const PAGE_SIZE = 10;
     let allReports = [];
     let filteredReports = [];
@@ -205,12 +248,22 @@
             </td>
             <td class="p-4">
               <div class="flex flex-col gap-2 min-w-[180px]">
-                <select id="status-${r.id}" class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                  <option value="pending" ${r.status==='pending'?'selected':''}>Pending</option>
-                  <option value="fixing"  ${r.status==='fixing' ?'selected':''}>Fixing</option>
-                  <option value="done"    ${r.status==='done'   ?'selected':''}>Done</option>
-                  <option value="ignored" ${r.status==='ignored'?'selected':''}>Ignored</option>
-                </select>
+                <div class="relative dd-wrapper" id="status-${r.id}-wrapper">
+                  <input type="hidden" id="status-${r.id}" value="${r.status}">
+                  <button type="button" class="custom-dropdown-btn w-full flex items-center justify-between border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-700"
+                          onclick="toggleDD('status-${r.id}-wrapper')">
+                    <span class="dd-label">${statusLabel(r.status)}</span>
+                    <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                  </button>
+                  <div class="hidden custom-dropdown-menu left-0 right-0 min-w-[140px]">
+                    <div class="p-1.5 space-y-0.5">
+                      <div class="custom-dropdown-option${r.status==='pending'?' selected':''}" data-value="pending" onclick="pickDD('status-${r.id}-wrapper','pending','Pending')">Pending</div>
+                      <div class="custom-dropdown-option${r.status==='fixing'?' selected':''}" data-value="fixing" onclick="pickDD('status-${r.id}-wrapper','fixing','Fixing')">Fixing</div>
+                      <div class="custom-dropdown-option${r.status==='done'?' selected':''}" data-value="done" onclick="pickDD('status-${r.id}-wrapper','done','Done')">Done</div>
+                      <div class="custom-dropdown-option${r.status==='ignored'?' selected':''}" data-value="ignored" onclick="pickDD('status-${r.id}-wrapper','ignored','Ignored')">Ignored</div>
+                    </div>
+                  </div>
+                </div>
                 <input type="text" id="response-${r.id}" placeholder="Nhập phản hồi..."
                   value="${escapeHtml(r.response || '')}"
                   class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
@@ -231,12 +284,15 @@
           const status = document.getElementById(`status-${id}`).value;
 
           if (!responseText) {
-            alert('Vui lòng nhập nội dung phản hồi!');
+            showToast('Vui lòng nhập nội dung phản hồi', 'warning');
             return;
           }
 
+          const ok = await showConfirm('Gửi phản hồi và cập nhật trạng thái cho báo lỗi này?', 'Xác nhận gửi');
+          if (!ok) return;
+
           btn.disabled = true;
-          btn.textContent = 'Đang gửi...';
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang gửi...';
           try {
             const res = await fetch(`/api/admin/reports/${id}/respond`, {
               method: 'POST',
@@ -244,10 +300,11 @@
               body: JSON.stringify({ status, response: responseText })
             });
             if (!res.ok) throw new Error('Lỗi server');
+            showToast('Đã gửi phản hồi thành công', 'success');
             await loadReports();
           } catch (err) {
             console.error('[admin-report.html] respond:', err);
-            alert('Gửi phản hồi thất bại, vui lòng thử lại.');
+            showToast('Gửi phản hồi thất bại, vui lòng thử lại', 'error');
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i>Gửi phản hồi';
           }

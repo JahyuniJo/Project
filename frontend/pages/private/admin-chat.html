@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giám sát Chat AI - DH.story Admin</title>
+  <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .custom-dropdown-btn {
+      background: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
+    }
+    .custom-dropdown-btn:hover { border-color: #a5b4fc; background-color: #f0f3ff; }
+    .custom-dropdown-btn.open { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background-color: #f0f3ff; }
+    .custom-dropdown-menu {
+      position: absolute; z-index: 200;
+      background: #fff; border: 1px solid #e0e7ff; border-radius: 0.75rem;
+      box-shadow: 0 8px 28px -4px rgba(99,102,241,0.18), 0 4px 10px -4px rgba(0,0,0,0.1);
+    }
+    .custom-dropdown-option {
+      padding: 0.45rem 0.75rem; border-radius: 0.5rem;
+      font-size: 0.875rem; color: #374151;
+      cursor: pointer; transition: background-color 0.12s, color 0.12s;
+    }
+    .custom-dropdown-option:hover { background-color: #eef2ff; color: #4338ca; }
+    .custom-dropdown-option.selected { background-color: #eef2ff; color: #4338ca; font-weight: 500; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
+
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="ml-64">
+      <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+        <div class="flex items-center gap-2">
+          <img src="/assets/images/Logo.png" alt="Logo" class="w-8 h-8 rounded-full">
+          <span class="font-bold text-indigo-600">DH.story Admin</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="adminGreeting" class="text-sm text-gray-500">Xin chào...</span>
+          <button onclick="logout()"
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition">
+            <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <aside class="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-50 flex flex-col">
+    <div class="h-16 flex items-center px-6 border-b border-gray-200">
+      <span class="font-bold text-indigo-600">Bảng điều khiển</span>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-sm">
+      <a href="/user.html"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+        <i class="fa-solid fa-users w-4"></i> Quản lý người dùng
+      </a>
+      <a href="/stat.html"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+        <i class="fa-solid fa-chart-column w-4"></i> Thống kê
+      </a>
+      <a href="/stories.html"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+        <i class="fa-solid fa-book w-4"></i> Quản lý truyện
+      </a>
+      <a href="/admin-report.html"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+        <i class="fa-solid fa-triangle-exclamation w-4"></i> Quản lý báo lỗi
+      </a>
+      <a href="/admin-chat.html"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-semibold">
+        <i class="fa-solid fa-robot w-4"></i> Giám sát Chat AI
+      </a>
+    </nav>
+  </aside>
+
+  <main class="flex-1 ml-64 px-8 py-8">
+    <div class="max-w-6xl mx-auto">
+
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-robot text-indigo-500"></i> Giám sát Chat AI
+        </h1>
+        <button onclick="loadAll()"
+          class="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition">
+          <i class="fa-solid fa-rotate"></i> Làm mới
+        </button>
+      </div>
+
+      <!-- Stats cards -->
+      <div id="statsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="col-span-4 flex justify-center py-8">
+          <div class="w-8 h-8 border-4 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h3 class="font-semibold text-gray-800">Hoạt động chat 7 ngày gần nhất</h3>
+            <p class="text-xs text-gray-400 mt-0.5">Phân tách tin nhắn người dùng và phản hồi AI</p>
+          </div>
+          <span id="chartWeekTotal"
+            class="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100"></span>
+        </div>
+        <canvas id="activityChart" height="100"></canvas>
+      </div>
+
+      <!-- Filter -->
+      <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap items-center gap-3">
+        <span class="text-sm font-medium text-gray-600">Lọc:</span>
+        <button data-mode="all" onclick="setMode(this)"
+          class="mode-btn px-3 py-1 rounded-full text-sm font-medium bg-indigo-600 text-white">
+          Tất cả
+        </button>
+        <button data-mode="story" onclick="setMode(this)"
+          class="mode-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+          <i class="fa-solid fa-book mr-1"></i>Theo truyện
+        </button>
+        <button data-mode="library" onclick="setMode(this)"
+          class="mode-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+          <i class="fa-solid fa-layer-group mr-1"></i>Thư viện
+        </button>
+        <div class="ml-auto flex items-center gap-2">
+          <label class="text-sm text-gray-500">Hiển thị:</label>
+          <div class="relative dd-wrapper" id="limitSelect-wrapper">
+            <input type="hidden" id="limitSelect" value="20">
+            <button type="button" class="custom-dropdown-btn flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1 text-sm text-gray-700"
+                    onclick="toggleDD('limitSelect-wrapper')">
+              <span class="dd-label">20 / trang</span>
+              <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+            </button>
+            <div class="hidden custom-dropdown-menu right-0 left-auto min-w-[130px]">
+              <div class="p-1.5 space-y-0.5">
+                <div class="custom-dropdown-option selected" data-value="20" onclick="pickDD('limitSelect-wrapper','20','20 / trang')">20 / trang</div>
+                <div class="custom-dropdown-option" data-value="50" onclick="pickDD('limitSelect-wrapper','50','50 / trang')">50 / trang</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span id="logCount" class="text-sm text-gray-500"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 mb-4">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
+            <tr>
+              <th class="px-4 py-3">Người dùng</th>
+              <th class="px-4 py-3">Ngữ cảnh</th>
+              <th class="px-4 py-3">Vai trò</th>
+              <th class="px-4 py-3">Nội dung</th>
+              <th class="px-4 py-3 whitespace-nowrap">Thời gian</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="logTable" class="divide-y divide-gray-100 text-gray-700"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between text-sm text-gray-500">
+        <span id="paginationInfo"></span>
+        <nav id="pagination" class="flex gap-2"></nav>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white border-t border-gray-200 ml-64">
+    <div class="max-w-7xl mx-auto px-6 py-4 text-xs text-gray-400 text-center">
+      © 2025 DH.story — Admin Panel
+    </div>
+  </footer>
+
+  <script>
+    function closeAllDD() {
+      document.querySelectorAll('.custom-dropdown-menu').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('.custom-dropdown-btn').forEach(b => { b.classList.remove('open'); b.querySelector('i')?.classList.remove('rotate-180'); });
+    }
+    function toggleDD(id) {
+      const w = document.getElementById(id); if (!w) return;
+      const isOpen = !w.querySelector('.custom-dropdown-menu').classList.contains('hidden');
+      closeAllDD();
+      if (!isOpen) { w.querySelector('.custom-dropdown-menu').classList.remove('hidden'); const btn = w.querySelector('.custom-dropdown-btn'); btn.classList.add('open'); btn.querySelector('i')?.classList.add('rotate-180'); }
+    }
+    function pickDD(wrapperId, value, label) {
+      const w = document.getElementById(wrapperId); if (!w) return;
+      const input = w.querySelector('input[type="hidden"]');
+      if (input) { input.value = value; input.dispatchEvent(new Event('change', {bubbles: true})); }
+      const lbl = w.querySelector('.dd-label'); if (lbl) lbl.textContent = label;
+      closeAllDD();
+      w.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.toggle('selected', o.dataset.value === value));
+    }
+    document.addEventListener('click', e => { if (!e.target.closest('.dd-wrapper')) closeAllDD(); });
+
+    let currentMode = 'all';
+    let currentPage = 1;
+    let activityChart = null;
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, m =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleString('vi-VN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    async function loadAdminName() {
+      try {
+        const res = await fetch('/api/import/me');
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('adminGreeting').textContent =
+          `Xin chào, ${data.username || data.email || 'Admin'}`;
+      } catch (_) {}
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/chat/stats');
+        if (!res.ok) throw new Error();
+        const d = await res.json();
+
+        const cards = [
+          { icon: 'fa-comments', bg: 'bg-indigo-50', color: 'text-indigo-600',
+            label: 'Tổng tin nhắn', value: d.totalMessages.toLocaleString() },
+          { icon: 'fa-sun', bg: 'bg-yellow-50', color: 'text-yellow-500',
+            label: 'Hôm nay', value: d.todayMessages.toLocaleString() },
+          { icon: 'fa-calendar-week', bg: 'bg-green-50', color: 'text-green-600',
+            label: 'Tuần này', value: d.weekMessages.toLocaleString() },
+          { icon: 'fa-users', bg: 'bg-purple-50', color: 'text-purple-600',
+            label: 'Users chat / tuần', value: d.activeUsers.toLocaleString() },
+        ];
+
+        document.getElementById('statsGrid').innerHTML = cards.map(c => `
+          <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl ${c.bg} flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid ${c.icon} text-xl ${c.color}"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-medium uppercase tracking-wide leading-none mb-1">${c.label}</p>
+              <p class="text-2xl font-bold text-gray-800">${c.value}</p>
+            </div>
+          </div>
+        `).join('');
+
+        renderActivityChart(d.dailyActivity || []);
+      } catch (_) {
+        document.getElementById('statsGrid').innerHTML =
+          '<p class="col-span-4 text-center text-red-500 py-8">Không thể tải thống kê</p>';
+      }
+    }
+
+    function renderActivityChart(dailyActivity) {
+      // Tạo nhãn 7 ngày gần nhất theo định dạng DD/MM khớp với TO_CHAR PostgreSQL
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        days.push(`${dd}/${mm}`);
+      }
+
+      const dataMap = {};
+      dailyActivity.forEach(r => {
+        dataMap[r.day] = { user: parseInt(r.user_msgs), ai: parseInt(r.ai_msgs) };
+      });
+
+      const userValues = days.map(d => dataMap[d]?.user || 0);
+      const aiValues   = days.map(d => dataMap[d]?.ai   || 0);
+      const weekTotal  = userValues.reduce((a, b) => a + b, 0) + aiValues.reduce((a, b) => a + b, 0);
+
+      document.getElementById('chartWeekTotal').textContent =
+        `${weekTotal.toLocaleString()} tin / tuần`;
+
+      const ctx = document.getElementById('activityChart').getContext('2d');
+      if (activityChart) activityChart.destroy();
+
+      activityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: days,
+          datasets: [
+            {
+              label: 'Người dùng',
+              data: userValues,
+              borderColor: 'rgba(99,102,241,1)',
+              backgroundColor: (context) => {
+                const chart = context.chart;
+                const { ctx: c, chartArea } = chart;
+                if (!chartArea) return 'transparent';
+                const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                grad.addColorStop(0, 'rgba(99,102,241,0.15)');
+                grad.addColorStop(1, 'rgba(99,102,241,0)');
+                return grad;
+              },
+              borderWidth: 2,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: 'rgba(99,102,241,1)',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.4,
+            },
+            {
+              label: 'Phản hồi AI',
+              data: aiValues,
+              borderColor: 'rgba(16,185,129,1)',
+              backgroundColor: (context) => {
+                const chart = context.chart;
+                const { ctx: c, chartArea } = chart;
+                if (!chartArea) return 'transparent';
+                const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                grad.addColorStop(0, 'rgba(16,185,129,0.12)');
+                grad.addColorStop(1, 'rgba(16,185,129,0)');
+                return grad;
+              },
+              borderWidth: 2,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: 'rgba(16,185,129,1)',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              align: 'end',
+              labels: {
+                boxWidth: 12,
+                boxHeight: 12,
+                borderRadius: 3,
+                useBorderRadius: true,
+                color: '#6b7280',
+                font: { size: 12 },
+              },
+            },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              titleColor: '#9ca3af',
+              bodyColor: '#fff',
+              padding: 10,
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} tin`,
+              },
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, color: '#9ca3af', font: { size: 11 } },
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              border: { display: false },
+            },
+            x: {
+              ticks: { color: '#9ca3af', font: { size: 11 } },
+              grid: { display: false },
+              border: { display: false },
+            },
+          },
+        },
+      });
+    }
+
+    async function loadLogs(page = 1) {
+      currentPage = page;
+      const limit = parseInt(document.getElementById('limitSelect').value) || 20;
+      const url = `/api/admin/chat/logs?page=${page}&limit=${limit}&mode=${currentMode}`;
+
+      const table = document.getElementById('logTable');
+      table.innerHTML = `
+        <tr><td colspan="6" class="py-10 text-center">
+          <div class="inline-block w-6 h-6 border-4 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
+        </td></tr>`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+
+        document.getElementById('logCount').textContent = `${data.total} tin nhắn`;
+        document.getElementById('paginationInfo').textContent =
+          data.total > 0 ? `Trang ${page}/${data.totalPages} — ${data.total} mục` : '';
+
+        if (!data.messages.length) {
+          table.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-400">Chưa có tin nhắn nào.</td></tr>';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        table.innerHTML = data.messages.map(m => {
+          const roleBadge = m.role === 'user'
+            ? '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">User</span>'
+            : '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">AI</span>';
+
+          const context = m.story_id
+            ? `<span class="text-xs text-indigo-600 font-medium truncate max-w-[120px] block" title="${escapeHtml(m.story_title)}">${escapeHtml(m.story_title)}</span>`
+            : `<span class="text-xs text-gray-400 italic">Thư viện</span>`;
+
+          const preview = escapeHtml((m.content || '').slice(0, 120)) + (m.content?.length > 120 ? '…' : '');
+
+          return `
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3">
+                <p class="font-medium text-gray-800">${escapeHtml(m.username || '—')}</p>
+                <p class="text-xs text-gray-400">${escapeHtml(m.email || '')}</p>
+              </td>
+              <td class="px-4 py-3">${context}</td>
+              <td class="px-4 py-3">${roleBadge}</td>
+              <td class="px-4 py-3 max-w-xs">
+                <p class="text-sm text-gray-700 line-clamp-2">${preview}</p>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${fmtDate(m.created_at)}</td>
+              <td class="px-4 py-3">
+                <button onclick="deleteMessage(${m.id}, this)"
+                  class="p-1.5 rounded text-red-400 hover:bg-red-50 hover:text-red-600 transition"
+                  title="Xóa tin nhắn">
+                  <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        renderPagination(page, data.totalPages);
+      } catch (_) {
+        table.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-red-500">Không thể tải dữ liệu.</td></tr>';
+      }
+    }
+
+    async function deleteMessage(id, btn) {
+      if (!await showConfirm('Xóa tin nhắn này?', 'Xác nhận xóa')) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/api/admin/chat/messages/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        btn.closest('tr').remove();
+        showToast('Đã xóa tin nhắn', 'success');
+      } catch (_) {
+        showToast('Xóa thất bại, vui lòng thử lại', 'error');
+        btn.disabled = false;
+      }
+    }
+
+    function setMode(btn) {
+      currentMode = btn.dataset.mode;
+      currentPage = 1;
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('bg-indigo-600', b === btn);
+        b.classList.toggle('text-white', b === btn);
+        b.classList.toggle('bg-gray-100', b !== btn);
+        b.classList.toggle('text-gray-700', b !== btn);
+      });
+      loadLogs(1);
+    }
+
+    function renderPagination(page, totalPages) {
+      const nav = document.getElementById('pagination');
+      nav.innerHTML = '';
+      if (totalPages <= 1) return;
+
+      const prev = document.createElement('button');
+      prev.textContent = '←';
+      prev.disabled = page <= 1;
+      prev.className = `px-3 py-1 rounded ${page <= 1 ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      prev.onclick = () => loadLogs(page - 1);
+      nav.appendChild(prev);
+
+      const maxBtns = 7;
+      let start = Math.max(1, page - Math.floor(maxBtns / 2));
+      let end = Math.min(totalPages, start + maxBtns - 1);
+      if (end - start < maxBtns - 1) start = Math.max(1, end - maxBtns + 1);
+
+      for (let i = start; i <= end; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-3 py-1 rounded ${i === page ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
+        btn.onclick = () => loadLogs(i);
+        nav.appendChild(btn);
+      }
+
+      const next = document.createElement('button');
+      next.textContent = '→';
+      next.disabled = page >= totalPages;
+      next.className = `px-3 py-1 rounded ${page >= totalPages ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 hover:bg-gray-300'}`;
+      next.onclick = () => loadLogs(page + 1);
+      nav.appendChild(next);
+    }
+
+    async function loadAll() {
+      await Promise.all([loadStats(), loadLogs(currentPage)]);
+    }
+
+    function logout() {
+      fetch('/api/users/logout').then(() => (window.location.href = '/'));
+    }
+
+    let toastTimer = null;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const msg = document.getElementById('toastMsg');
+      const cfg = {
+        success: { icon: 'fa-circle-check', cls: 'bg-green-600' },
+        error:   { icon: 'fa-circle-xmark', cls: 'bg-red-600' },
+      };
+      const { icon: ic, cls } = cfg[type] || cfg.success;
+      icon.className = `fa-solid ${ic} text-lg flex-shrink-0`;
+      msg.textContent = message;
+      toast.className = `fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-white font-medium text-sm transition-all duration-300 ${cls}`;
+      toast.classList.remove('opacity-0', 'translate-x-8');
+      toast.classList.add('opacity-100', 'translate-x-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-x-0');
+        toast.classList.add('opacity-0', 'translate-x-8');
+      }, 2500);
+    }
+
+    document.getElementById('limitSelect').addEventListener('change', () => loadLogs(1));
+    loadAdminName();
+    loadAll();
+  </script>
+
+  <script src="/components/alertModal.js"></script>
+
+  <div id="toast"
+    class="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-white font-medium text-sm opacity-0 translate-x-8 transition-all duration-300 bg-green-600 pointer-events-none">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-lg flex-shrink-0"></i>
+    <span id="toastMsg"></span>
+  </div>
+</body>
+</html>

@@ -63,6 +63,56 @@
       width: 24px;
       border-radius: 4px;
     }
+
+    /* Filter panel */
+    #filterContent {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    #filterContent.open {
+      max-height: 800px;
+      opacity: 1;
+      overflow: visible;
+    }
+
+    /* Filter dropdown buttons — thể loại, trạng thái, độ dài, sắp xếp */
+    #genreDropdownBtn, .custom-filter-btn {
+      background-color: #fafbff;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
+    }
+    #genreDropdownBtn:hover, .custom-filter-btn:hover { border-color: #a5b4fc; background-color: #f0f3ff; }
+    #genreDropdownBtn.active, .custom-filter-btn.active { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background-color: #f0f3ff; }
+
+    /* Filter dropdown menus */
+    #genreDropdownMenu, .custom-filter-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 200;
+      box-shadow: 0 8px 28px -4px rgba(99,102,241,0.18), 0 4px 10px -4px rgba(0,0,0,0.1);
+      border-color: #e0e7ff;
+    }
+
+    /* Dropdown option items */
+    .custom-dropdown-option {
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      color: #374151;
+      cursor: pointer;
+      transition: background-color 0.12s, color 0.12s;
+    }
+    .custom-dropdown-option:hover { background-color: #eef2ff; color: #4338ca; }
+    .custom-dropdown-option.selected { background-color: #eef2ff; color: #4338ca; font-weight: 500; }
+
+    /* Custom scrollbar trong danh sách thể loại */
+    #genreCheckList::-webkit-scrollbar { width: 4px; }
+    #genreCheckList::-webkit-scrollbar-track { background: transparent; }
+    #genreCheckList::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 9999px; }
+    #genreCheckList::-webkit-scrollbar-thumb:hover { background: #818cf8; }
   </style>
 </head>
 
@@ -126,6 +176,109 @@
       </button>
     </div>
 
+    <!-- Filter Panel -->
+    <div id="filterPanel" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <button onclick="toggleFilterPanel()"
+          class="flex items-center gap-2 text-base font-semibold text-gray-700 hover:text-indigo-600 transition select-none">
+          <i class="fa-solid fa-sliders text-indigo-500"></i>
+          Tìm kiếm nâng cao
+          <span id="filterBadge"
+            class="hidden bg-indigo-500 text-white text-xs rounded-full w-5 h-5 items-center justify-center font-bold"></span>
+          <i id="filterChevron" class="fa-solid fa-chevron-down text-sm text-gray-400 transition-transform duration-300"></i>
+        </button>
+        <div id="filterSummary" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <div id="filterContent">
+        <div class="border-t border-gray-100 mt-4 pt-4 space-y-4">
+          <!-- Thể loại -->
+          <div>
+            <label class="text-sm font-medium text-gray-600 mb-1.5 block">Thể loại</label>
+            <div class="relative" id="filterGenreDropdownWrapper">
+              <button type="button" id="genreDropdownBtn" onclick="toggleGenreDropdown()"
+                class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 hover:border-indigo-400 focus:outline-none transition">
+                <span id="genreDropdownLabel">Tất cả thể loại</span>
+                <i id="genreDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+              </button>
+              <div id="genreDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl">
+                <div id="genreCheckList" class="max-h-52 overflow-y-auto p-2 space-y-0.5">
+                  <p class="text-sm text-gray-400 italic px-2 py-1">Đang tải...</p>
+                </div>
+                <div class="border-t border-gray-100 px-3 py-2 flex justify-between items-center bg-gray-50 rounded-b-xl">
+                  <span id="genreSelectedCount" class="text-xs text-gray-500">Chưa chọn</span>
+                  <button onclick="clearGenres()" class="text-xs text-red-400 hover:text-red-600 transition">Xóa chọn</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Trạng thái / Độ dài / Sắp xếp -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="text-sm font-medium text-gray-600 mb-1 block">Trạng thái</label>
+              <div class="relative" id="statusDropdownWrapper">
+                <button type="button" id="statusDropdownBtn" onclick="toggleCustomDropdown('status')"
+                  class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none custom-filter-btn">
+                  <span id="statusDropdownLabel">Tất cả</span>
+                  <i id="statusDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="statusDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl custom-filter-menu">
+                  <div class="p-1.5 space-y-0.5">
+                    <div class="custom-dropdown-option selected" data-value="" onclick="selectDropdownOption('status', '', 'Tất cả')">Tất cả</div>
+                    <div class="custom-dropdown-option" data-value="ongoing" onclick="selectDropdownOption('status', 'ongoing', 'Đang tiến hành')">Đang tiến hành</div>
+                    <div class="custom-dropdown-option" data-value="completed" onclick="selectDropdownOption('status', 'completed', 'Hoàn thành')">Hoàn thành</div>
+                    <div class="custom-dropdown-option" data-value="stopped" onclick="selectDropdownOption('status', 'stopped', 'Tạm ngưng')">Tạm ngưng</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-600 mb-1 block">Độ dài</label>
+              <div class="relative" id="lengthDropdownWrapper">
+                <button type="button" id="lengthDropdownBtn" onclick="toggleCustomDropdown('length')"
+                  class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none custom-filter-btn">
+                  <span id="lengthDropdownLabel">Tất cả</span>
+                  <i id="lengthDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="lengthDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl custom-filter-menu">
+                  <div class="p-1.5 space-y-0.5">
+                    <div class="custom-dropdown-option selected" data-value="" onclick="selectDropdownOption('length', '', 'Tất cả')">Tất cả</div>
+                    <div class="custom-dropdown-option" data-value="short" onclick="selectDropdownOption('length', 'short', 'Ngắn (&lt;50 chương)')">Ngắn (&lt;50 chương)</div>
+                    <div class="custom-dropdown-option" data-value="medium" onclick="selectDropdownOption('length', 'medium', 'Vừa (50–200 chương)')">Vừa (50–200 chương)</div>
+                    <div class="custom-dropdown-option" data-value="long" onclick="selectDropdownOption('length', 'long', 'Dài (&gt;200 chương)')">Dài (&gt;200 chương)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-600 mb-1 block">Sắp xếp</label>
+              <div class="relative" id="sortDropdownWrapper">
+                <button type="button" id="sortDropdownBtn" onclick="toggleCustomDropdown('sort')"
+                  class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none custom-filter-btn">
+                  <span id="sortDropdownLabel">Mới nhất</span>
+                  <i id="sortDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="sortDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl custom-filter-menu">
+                  <div class="p-1.5 space-y-0.5">
+                    <div class="custom-dropdown-option selected" data-value="newest" onclick="selectDropdownOption('sort', 'newest', 'Mới nhất')">Mới nhất</div>
+                    <div class="custom-dropdown-option" data-value="views" onclick="selectDropdownOption('sort', 'views', 'Lượt đọc nhiều nhất')">Lượt đọc nhiều nhất</div>
+                    <div class="custom-dropdown-option" data-value="rating" onclick="selectDropdownOption('sort', 'rating', 'Đánh giá cao nhất')">Đánh giá cao nhất</div>
+                    <div class="custom-dropdown-option" data-value="az" onclick="selectDropdownOption('sort', 'az', 'Tên A–Z')">Tên A–Z</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button onclick="resetFilters()"
+              class="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition">
+              <i class="fa-solid fa-rotate-left text-xs"></i> Xóa bộ lọc
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="story-list" class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"></div>
 
     <div id="pagination" class="flex justify-center items-center mt-8 gap-2"></div>
@@ -153,30 +306,214 @@
 
   <script>
     window.HEADER_CALLBACKS = {
-      onSearch: (q) => loadStories(1, q),
+      onSearch: (q) => { filters.search = q; loadStories(1); },
+      onGenre:  (g) => {
+        if (!filters.genres.includes(g)) filters.genres.push(g);
+        applyFiltersToUI(); if (!filterOpen) toggleFilterPanel(); loadStories(1);
+      },
+      onSort:   (type) => {
+        const map = { rating: "rating", newest: "newest" };
+        if (map[type]) { filters.sort = map[type]; applyFiltersToUI(); loadStories(1); }
+      },
     };
   </script>
+  <script src="/components/alertModal.js"></script>
   <script src="/assets/js/header.js"></script>
   <script>
+    /* ===========================
+       FILTER STATE
+    =========================== */
+    const filters = { search: "", genres: [], status: "", sort: "newest", length: "" };
+    let filterOpen = false;
+    let debounceTimer = null;
     let currentPage = 1;
     const limit = 12;
-    const params = new URLSearchParams(window.location.search);
-    const currentGenre = params.get("genre");
-    const currentSort = params.get("sort"); // 'rating' | 'newest'
+
+    function toggleFilterPanel() {
+      filterOpen = !filterOpen;
+      if (!filterOpen && genreDropdownOpen) closeGenreDropdown();
+      document.getElementById("filterContent").classList.toggle("open", filterOpen);
+      document.getElementById("filterChevron").style.transform = filterOpen ? "rotate(180deg)" : "";
+    }
+
+    function onFilterChange() {
+      updateFilterBadge();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadStories(1), 400);
+    }
+
+    // Custom single-select dropdowns (status, length, sort)
+    const FILTER_LABELS = {
+      status: { "": "Tất cả", "ongoing": "Đang tiến hành", "completed": "Hoàn thành", "stopped": "Tạm ngưng" },
+      length: { "": "Tất cả", "short": "Ngắn (<50 chương)", "medium": "Vừa (50–200 chương)", "long": "Dài (>200 chương)" },
+      sort:   { "newest": "Mới nhất", "views": "Lượt đọc nhiều nhất", "rating": "Đánh giá cao nhất", "az": "Tên A–Z" }
+    };
+    const customDropdownOpen = { status: false, length: false, sort: false };
+    const customDropdownScrollFn = {
+      status: () => closeCustomDropdown("status"),
+      length: () => closeCustomDropdown("length"),
+      sort:   () => closeCustomDropdown("sort"),
+    };
+
+    function closeCustomDropdown(key) {
+      customDropdownOpen[key] = false;
+      document.getElementById(key + "DropdownMenu").classList.add("hidden");
+      document.getElementById(key + "DropdownChevron").style.transform = "";
+      document.getElementById(key + "DropdownBtn").classList.remove("active");
+      window.removeEventListener("scroll", customDropdownScrollFn[key]);
+    }
+
+    function toggleCustomDropdown(key) {
+      ["status", "length", "sort"].forEach(k => { if (k !== key && customDropdownOpen[k]) closeCustomDropdown(k); });
+      customDropdownOpen[key] = !customDropdownOpen[key];
+      if (customDropdownOpen[key]) {
+        document.getElementById(key + "DropdownMenu").classList.remove("hidden");
+        document.getElementById(key + "DropdownChevron").style.transform = "rotate(180deg)";
+        document.getElementById(key + "DropdownBtn").classList.add("active");
+        window.addEventListener("scroll", customDropdownScrollFn[key]);
+      } else {
+        closeCustomDropdown(key);
+      }
+    }
+
+    function selectDropdownOption(key, value, label) {
+      filters[key] = value;
+      document.getElementById(key + "DropdownLabel").textContent = label;
+      document.querySelectorAll("#" + key + "DropdownMenu .custom-dropdown-option").forEach(el => {
+        el.classList.toggle("selected", el.dataset.value === value);
+      });
+      closeCustomDropdown(key);
+      updateFilterBadge();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadStories(1), 400);
+    }
+
+    let genreDropdownOpen = false;
+
+    function closeGenreDropdown() {
+      genreDropdownOpen = false;
+      document.getElementById("genreDropdownMenu").classList.add("hidden");
+      document.getElementById("genreDropdownChevron").style.transform = "";
+      document.getElementById("genreDropdownBtn").classList.remove("active");
+      window.removeEventListener("scroll", closeGenreDropdown);
+    }
+
+    function toggleGenreDropdown() {
+      genreDropdownOpen = !genreDropdownOpen;
+      const menu = document.getElementById("genreDropdownMenu");
+      const btn  = document.getElementById("genreDropdownBtn");
+      if (genreDropdownOpen) {
+        menu.classList.remove("hidden");
+        document.getElementById("genreDropdownChevron").style.transform = "rotate(180deg)";
+        btn.classList.add("active");
+        window.addEventListener("scroll", closeGenreDropdown);
+      } else {
+        closeGenreDropdown();
+      }
+    }
+
+    function onGenreCheck(checkbox) {
+      const genre = checkbox.value;
+      if (checkbox.checked) { if (!filters.genres.includes(genre)) filters.genres.push(genre); }
+      else filters.genres = filters.genres.filter(g => g !== genre);
+      updateGenreChips(); updateFilterBadge();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadStories(1), 400);
+    }
+
+    function clearGenres() {
+      filters.genres = [];
+      updateGenreChips(); updateFilterBadge();
+      loadStories(1);
+    }
+
+    function applyFiltersToUI() {
+      ["status", "length", "sort"].forEach(key => {
+        document.getElementById(key + "DropdownLabel").textContent = FILTER_LABELS[key][filters[key]] ?? Object.values(FILTER_LABELS[key])[0];
+        document.querySelectorAll("#" + key + "DropdownMenu .custom-dropdown-option").forEach(el => {
+          el.classList.toggle("selected", el.dataset.value === filters[key]);
+        });
+      });
+      updateGenreChips();
+      updateFilterBadge();
+    }
+
+    function updateGenreChips() {
+      document.querySelectorAll(".genre-check").forEach(cb => { cb.checked = filters.genres.includes(cb.value); });
+      const label    = document.getElementById("genreDropdownLabel");
+      const countEl  = document.getElementById("genreSelectedCount");
+      if (!label) return;
+      if (filters.genres.length === 0) {
+        label.textContent = "Tất cả thể loại";
+        if (countEl) countEl.textContent = "Chưa chọn";
+      } else if (filters.genres.length === 1) {
+        label.textContent = filters.genres[0];
+        if (countEl) countEl.textContent = "Đã chọn 1 thể loại";
+      } else {
+        label.textContent = `${filters.genres.length} thể loại đã chọn`;
+        if (countEl) countEl.textContent = `Đã chọn ${filters.genres.length} thể loại`;
+      }
+    }
+
+    function updateFilterBadge() {
+      let n = filters.genres.length;
+      if (filters.status) n++;
+      if (filters.sort !== "newest") n++;
+      if (filters.length) n++;
+      const badge = document.getElementById("filterBadge");
+      badge.textContent = n;
+      badge.classList.toggle("hidden", n === 0);
+      badge.classList.toggle("inline-flex", n > 0);
+
+      // Cập nhật summary chips (khi panel đóng)
+      const summary = document.getElementById("filterSummary");
+      const chips = [];
+      if (filters.genres.length) chips.push(...filters.genres.map(g =>
+        `<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full">${g}</span>`));
+      const statusLabel = { ongoing:"Đang tiến hành", completed:"Hoàn thành", stopped:"Tạm ngưng" };
+      if (filters.status) chips.push(`<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">${statusLabel[filters.status]}</span>`);
+      const sortLabel = { views:"Lượt đọc", rating:"Đánh giá", az:"A–Z" };
+      if (filters.sort !== "newest") chips.push(`<span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">${sortLabel[filters.sort]}</span>`);
+      const lenLabel = { short:"Ngắn", medium:"Vừa", long:"Dài" };
+      if (filters.length) chips.push(`<span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">${lenLabel[filters.length]}</span>`);
+      summary.innerHTML = chips.join("");
+    }
+
+    function resetFilters() {
+      filters.genres = []; filters.status = ""; filters.sort = "newest"; filters.length = "";
+      filters.search = "";
+      applyFiltersToUI();
+      loadStories(1);
+    }
+
+    async function loadGenreChips() {
+      try {
+        const res = await fetch("/api/stories/genres");
+        const genres = await res.json();
+        document.getElementById("genreCheckList").innerHTML = genres.map(g => `
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-indigo-50 cursor-pointer transition">
+            <input type="checkbox" class="genre-check w-4 h-4 accent-indigo-500"
+                   value="${g.replace(/"/g,'&quot;')}" onchange="onGenreCheck(this)">
+            <span class="text-sm text-gray-700">${g}</span>
+          </label>
+        `).join("");
+        updateGenreChips();
+      } catch (err) {
+        console.error("[index] Lỗi tải thể loại:", err);
+      }
+    }
 
     /* ===========================
        SKELETON LOADING
     =========================== */
     function showSkeletons(count = 12) {
-      const container = document.getElementById("story-list");
-      container.innerHTML = Array.from({ length: count }, () => `
+      document.getElementById("story-list").innerHTML = Array.from({ length: count }, () => `
         <div class="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
           <div class="w-full h-56 bg-gray-200"></div>
           <div class="p-4 space-y-3">
             <div class="h-4 bg-gray-200 rounded w-3/4"></div>
             <div class="h-3 bg-gray-200 rounded w-1/2"></div>
             <div class="h-3 bg-gray-200 rounded w-full"></div>
-            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
             <div class="h-4 bg-gray-200 rounded w-1/3 mt-2"></div>
           </div>
         </div>
@@ -187,12 +524,7 @@
        INTERSECTION OBSERVER
     =========================== */
     const cardObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-          cardObserver.unobserve(entry.target);
-        }
-      });
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); cardObserver.unobserve(e.target); } });
     }, { threshold: 0.08 });
 
     function observeCards() {
@@ -205,55 +537,49 @@
     /* ===========================
        LOAD STORIES
     =========================== */
-    async function loadStories(page = 1, search = "") {
+    async function loadStories(page = 1) {
       try {
         currentPage = page;
 
-        // Sync số trang vào URL để history.back() khôi phục đúng trang
-        const _p = new URLSearchParams(window.location.search);
-        if (page > 1) _p.set("page", page); else _p.delete("page");
-        history.replaceState(null, "", _p.toString() ? "?" + _p.toString() : window.location.pathname);
+        const apiP = new URLSearchParams({ page, limit });
+        if (filters.search)         apiP.set("search",  filters.search);
+        if (filters.genres.length)  apiP.set("genres",  filters.genres.join(","));
+        if (filters.status)         apiP.set("status",  filters.status);
+        if (filters.sort !== "newest") apiP.set("sort", filters.sort);
+        if (filters.length)         apiP.set("length",  filters.length);
+
+        // Sync URL
+        const urlP = new URLSearchParams();
+        if (page > 1) urlP.set("page", page);
+        if (filters.genres.length)     urlP.set("genres",  filters.genres.join(","));
+        if (filters.status)            urlP.set("status",  filters.status);
+        if (filters.sort !== "newest") urlP.set("sort",    filters.sort);
+        if (filters.length)            urlP.set("length",  filters.length);
+        history.replaceState(null, "", urlP.toString() ? `?${urlP}` : window.location.pathname);
 
         showSkeletons();
 
-        let url = `/api/stories?page=${page}&limit=${limit}`;
-        if (search) url += `&q=${encodeURIComponent(search)}`;
-        if (currentGenre) {
-          url = `/api/stories/by-genre?genre=${encodeURIComponent(currentGenre)}&page=${page}&limit=${limit}`;
-        } else if (currentSort === "rating") {
-          url = `/api/stories/top-rated?page=${page}&limit=${limit}`;
-        } else if (currentSort === "newest") {
-          url = `/api/stories/newest?page=${page}&limit=${limit}`;
-        }
-
-        const res = await fetch(url);
-        const raw = await res.json();
+        const res  = await fetch(`/api/stories?${apiP}`);
+        const raw  = await res.json();
         const data = Array.isArray(raw) ? { stories: raw, page: 1, totalPages: 1 } : raw;
 
-        const container = document.getElementById("story-list");
-        const title = document.getElementById("listTitle");
+        // Tiêu đề danh sách
+        const title    = document.getElementById("listTitle");
         const resetBtn = document.getElementById("resetGenreBtn");
-
-        if (currentGenre) {
-          title.textContent = `📚 Thể loại: ${currentGenre}`;
-          resetBtn.classList.remove("hidden");
-        } else if (currentSort === "rating") {
-          title.textContent = "⭐ Xếp hạng cao nhất";
-          resetBtn.classList.remove("hidden");
-        } else if (currentSort === "newest") {
-          title.textContent = "🆕 Truyện mới nhất";
-          resetBtn.classList.remove("hidden");
-        } else {
-          title.textContent = "Danh sách truyện";
-          resetBtn.classList.add("hidden");
-        }
+        const hasFilter = filters.genres.length || filters.status || filters.sort !== "newest" || filters.length;
+        if (filters.genres.length === 1) title.textContent = `📚 Thể loại: ${filters.genres[0]}`;
+        else if (filters.genres.length > 1) title.textContent = `📚 ${filters.genres.length} thể loại`;
+        else if (filters.sort === "rating") title.textContent = "⭐ Xếp hạng cao nhất";
+        else if (filters.sort === "views")  title.textContent = "🔥 Nhiều lượt đọc nhất";
+        else if (filters.sort === "az")     title.textContent = "🔤 Tên A–Z";
+        else title.textContent = "Danh sách truyện";
+        resetBtn.classList.toggle("hidden", !hasFilter);
 
         const cards = await Promise.all(
-          data.stories.map(async (story) => {
-            const rRes = await fetch(`/api/rating?story_id=${story.id}`);
+          (data.stories || []).map(async (story) => {
+            const rRes   = await fetch(`/api/rating?story_id=${story.id}`);
             const rating = await rRes.json();
-            const isHot = story.view_count >= 100;
-
+            const isHot  = story.view_count >= 100;
             return `
 <div class="story-card bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
   ${isHot ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">🔥 HOT</span>` : ""}
@@ -273,7 +599,7 @@
           })
         );
 
-        container.innerHTML = cards.join("");
+        document.getElementById("story-list").innerHTML = cards.join("");
         observeCards();
         renderPagination(data.page, data.totalPages);
       } catch (err) {
@@ -281,170 +607,98 @@
       }
     }
 
-    function resetGenre() {
-      history.replaceState(null, "", "/index.html");
-      window.location.reload();
-    }
-
-    function toggleDescription(button) {
-      const desc = button.previousElementSibling;
-      if (desc.classList.contains('collapsed')) {
-        desc.classList.remove('collapsed');
-        button.textContent = "Thu gọn";
-      } else {
-        desc.classList.add('collapsed');
-        button.textContent = "Xem thêm";
-      }
-    }
+    function resetGenre() { resetFilters(); }
 
     function renderPagination(current, total) {
       const pagination = document.getElementById("pagination");
-      let html = "";
+      let html = `<button ${current===1?"disabled":`onclick="loadStories(${current-1})"`}
+        class="px-3 py-1 text-sm rounded-lg ${current===1?'bg-gray-100 text-gray-400 cursor-not-allowed':'bg-white text-indigo-600 hover:bg-indigo-100'}">« Trước</button>`;
 
-      html += `<button ${current === 1 ? "disabled" : `onclick="loadStories(${current - 1})"`}
-        class="px-3 py-1 text-sm rounded-lg ${current === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">« Trước</button>`;
+      const maxB = 5, half = Math.floor(maxB/2);
+      let start = Math.max(1, current-half), end = Math.min(total, current+half);
+      if (end-start < maxB-1) { if (start===1) end=Math.min(total,start+maxB-1); else if (end===total) start=Math.max(1,total-maxB+1); }
 
-      const maxButtons = 5;
-      const half = Math.floor(maxButtons / 2);
-      let start = Math.max(1, current - half);
-      let end = Math.min(total, current + half);
-      if (end - start < maxButtons - 1) {
-        if (start === 1) end = Math.min(total, start + maxButtons - 1);
-        else if (end === total) start = Math.max(1, total - maxButtons + 1);
-      }
+      if (start>1) { html+=`<button onclick="loadStories(1)" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">1</button>`; if(start>2) html+=`<span class="px-2 text-gray-500">…</span>`; }
+      for (let i=start;i<=end;i++) html+=`<button onclick="loadStories(${i})" class="px-3 py-1 text-sm rounded-lg ${i===current?'bg-indigo-600 text-white':'bg-white text-indigo-600 hover:bg-indigo-100'}">${i}</button>`;
+      if (end<total) { if(end<total-1) html+=`<span class="px-2 text-gray-500">…</span>`; html+=`<button onclick="loadStories(${total})" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">${total}</button>`; }
 
-      if (start > 1) {
-        html += `<button onclick="loadStories(1)" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">1</button>`;
-        if (start > 2) html += `<span class="px-2 text-gray-500">…</span>`;
-      }
-
-      for (let i = start; i <= end; i++) {
-        html += `<button onclick="loadStories(${i})"
-          class="px-3 py-1 text-sm rounded-lg ${i === current ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">${i}</button>`;
-      }
-
-      if (end < total) {
-        if (end < total - 1) html += `<span class="px-2 text-gray-500">…</span>`;
-        html += `<button onclick="loadStories(${total})" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">${total}</button>`;
-      }
-
-      html += `<button ${current === total ? "disabled" : `onclick="loadStories(${current + 1})"`}
-        class="px-3 py-1 text-sm rounded-lg ${current === total ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">Sau »</button>`;
-
+      html+=`<button ${current===total?"disabled":`onclick="loadStories(${current+1})"`}
+        class="px-3 py-1 text-sm rounded-lg ${current===total?'bg-gray-100 text-gray-400 cursor-not-allowed':'bg-white text-indigo-600 hover:bg-indigo-100'}">Sau »</button>`;
       pagination.innerHTML = `<div class="flex flex-wrap justify-center items-center gap-1 sm:gap-2">${html}</div>`;
     }
 
     /* ===========================
        HERO BANNER
     =========================== */
-    let heroStories = [];
-    let heroIndex = 0;
-    let heroTimer = null;
+    let heroStories = [], heroIndex = 0, heroTimer = null;
 
     function renderHeroSlide(index) {
-      const story = heroStories[index];
-      if (!story) return;
-
+      const story = heroStories[index]; if (!story) return;
       document.getElementById("heroTitle").textContent = story.title;
       document.getElementById("heroAuthor").textContent = "Tác giả: " + (story.author || "Không rõ");
-      document.getElementById("heroViewCount").textContent =
-        `🔥 ${story.view_count} lượt đọc tuần này`;
+      document.getElementById("heroViewCount").textContent = `🔥 ${story.view_count} lượt đọc tuần này`;
       document.getElementById("heroLink").href = `/read.html?id=${story.id}`;
-
-      // Cập nhật ảnh bìa nét bên phải
       const coverImg = document.getElementById("heroCoverImg");
-      if (coverImg) {
-        coverImg.src = story.cover_url || "/assets/images/Logo.png";
-        coverImg.alt = story.title;
-      }
-
-      // Chuyển slide background (blurred)
-      document.querySelectorAll(".hero-slide").forEach((el, i) => {
-        el.classList.toggle("active", i === index);
-      });
-
-      // Cập nhật dots
-      document.querySelectorAll(".hero-dot").forEach((dot, i) => {
-        dot.classList.toggle("active", i === index);
-      });
+      if (coverImg) { coverImg.src = story.cover_url || "/assets/images/Logo.png"; coverImg.alt = story.title; }
+      document.querySelectorAll(".hero-slide").forEach((el,i) => el.classList.toggle("active", i===index));
+      document.querySelectorAll(".hero-dot").forEach((dot,i) => dot.classList.toggle("active", i===index));
     }
-
-    function heroGoto(index) {
-      heroIndex = (index + heroStories.length) % heroStories.length;
-      renderHeroSlide(heroIndex);
-    }
+    function heroGoto(index) { heroIndex=(index+heroStories.length)%heroStories.length; renderHeroSlide(heroIndex); }
 
     async function loadHeroBanner() {
       try {
         const res = await fetch("/api/stat/popular-week");
         const stories = await res.json();
-        if (!Array.isArray(stories) || stories.length === 0) return;
-
+        if (!Array.isArray(stories) || !stories.length) return;
         heroStories = stories;
-        const banner = document.getElementById("heroBanner");
-        const slidesEl = document.getElementById("heroSlides");
-        const dotsEl = document.getElementById("heroDots");
-
-        // Tạo slide backgrounds
-        slidesEl.innerHTML = stories.map((s, i) => `
-          <div class="hero-slide ${i === 0 ? "active" : ""}"
-               style="background: url('${s.cover_url || "/assets/images/Logo.png"}') center/cover no-repeat;">
-          </div>
-        `).join("");
-
-        // Tạo dots
-        dotsEl.innerHTML = stories.map((_, i) => `
-          <div class="hero-dot ${i === 0 ? "active" : ""}" onclick="heroGoto(${i})"></div>
-        `).join("");
-
-        renderHeroSlide(0);
-        banner.classList.remove("hidden");
-
-        // Nút điều hướng
-        document.getElementById("heroPrev").addEventListener("click", () => {
-          clearInterval(heroTimer);
-          heroGoto(heroIndex - 1);
-          startHeroTimer();
-        });
-        document.getElementById("heroNext").addEventListener("click", () => {
-          clearInterval(heroTimer);
-          heroGoto(heroIndex + 1);
-          startHeroTimer();
-        });
-
+        const banner=document.getElementById("heroBanner"), slidesEl=document.getElementById("heroSlides"), dotsEl=document.getElementById("heroDots");
+        slidesEl.innerHTML = stories.map((s,i)=>`<div class="hero-slide ${i===0?"active":""}" style="background:url('${s.cover_url||"/assets/images/Logo.png"}') center/cover no-repeat;"></div>`).join("");
+        dotsEl.innerHTML   = stories.map((_,i)=>`<div class="hero-dot ${i===0?"active":""}" onclick="heroGoto(${i})"></div>`).join("");
+        renderHeroSlide(0); banner.classList.remove("hidden");
+        document.getElementById("heroPrev").addEventListener("click",()=>{clearInterval(heroTimer);heroGoto(heroIndex-1);startHeroTimer();});
+        document.getElementById("heroNext").addEventListener("click",()=>{clearInterval(heroTimer);heroGoto(heroIndex+1);startHeroTimer();});
         startHeroTimer();
-      } catch (err) {
-        console.error("[index] Lỗi tải hero banner:", err);
-      }
+      } catch (err) { console.error("[index] Lỗi tải hero banner:", err); }
     }
-
-    function startHeroTimer() {
-      heroTimer = setInterval(() => heroGoto(heroIndex + 1), 4000);
-    }
+    function startHeroTimer() { heroTimer = setInterval(() => heroGoto(heroIndex+1), 4000); }
 
     /* ===========================
        INIT
     =========================== */
-    loadHeroBanner();
-    loadStories(parseInt(params.get("page")) || 1);
+    document.addEventListener("click", (e) => {
+      const wrapper = document.getElementById("filterGenreDropdownWrapper");
+      if (wrapper && !wrapper.contains(e.target) && genreDropdownOpen) closeGenreDropdown();
+      ["status", "length", "sort"].forEach(key => {
+        if (customDropdownOpen[key]) {
+          const w = document.getElementById(key + "DropdownWrapper");
+          if (w && !w.contains(e.target)) closeCustomDropdown(key);
+        }
+      });
+    });
 
-    // Highlight active sort/genre button sau khi header.js render xong
-    setTimeout(() => {
-      if (currentGenre) {
-        const btn = document.getElementById("genreBtn");
-        btn?.classList.replace("bg-indigo-50", "bg-indigo-200");
-        btn?.classList.replace("text-indigo-700", "text-indigo-900");
-      } else if (currentSort === "rating") {
-        const r = document.getElementById("btnRating");
-        r?.classList.replace("bg-yellow-50", "bg-yellow-200");
-        r?.classList.replace("text-yellow-700", "text-yellow-900");
-      } else if (currentSort === "newest") {
-        const n = document.getElementById("btnNewest");
-        n?.classList.replace("bg-green-50", "bg-green-200");
-        n?.classList.replace("text-green-700", "text-green-900");
-      }
-    }, 300);
+    (() => {
+      const up = new URLSearchParams(window.location.search);
+      const legacyGenre = up.get("genre");
+      filters.genres = legacyGenre ? [legacyGenre]
+        : (up.get("genres") ? up.get("genres").split(",").filter(Boolean) : []);
+      filters.status = up.get("status") || "";
+      const s = up.get("sort") || "newest";
+      filters.sort   = ["newest","views","rating","az"].includes(s) ? s : "newest";
+      filters.length = up.get("length") || "";
+
+      applyFiltersToUI();
+      loadGenreChips();
+      loadHeroBanner();
+
+      const hasFilter = filters.genres.length || filters.status || filters.sort !== "newest" || filters.length;
+      if (hasFilter && !filterOpen) toggleFilterPanel();
+
+      loadStories(parseInt(up.get("page")) || 1);
+    })();
   </script>
+
+  <script src="/assets/js/chat.js"></script>
+  <script>initChatWidget();</script>
 </body>
 
 </html>

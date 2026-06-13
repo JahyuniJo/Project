@@ -43,13 +43,21 @@ function updateNav() {
   });
 }
 
-function fillSelect(el, chapters, currentId) {
-  el.innerHTML = chapters.map(c =>
-    `<option value="${c.id}"${c.id === currentId ? ' selected' : ''}>` +
-    `Chương ${c.chapter_num}${c.title ? ` — ${c.title}` : ''}` +
-    `</option>`
-  ).join('');
-  el.onchange = () => goToChapter(parseInt(el.value));
+function fillSelect(wrapperId, chapters, currentId) {
+  const w = document.getElementById(wrapperId);
+  if (!w) return;
+  const input = w.querySelector('input[type="hidden"]');
+  const lbl = w.querySelector('.dd-label');
+  const list = w.querySelector('.dd-list');
+  if (input) input.value = currentId || '';
+  const current = chapters.find(c => c.id === currentId);
+  if (lbl) lbl.textContent = current ? `Chương ${current.chapter_num}${current.title ? ` — ${current.title}` : ''}` : 'Chọn chương';
+  if (list) {
+    list.innerHTML = chapters.map(c => {
+      const optLabel = `Chương ${c.chapter_num}${c.title ? ` — ${c.title}` : ''}`;
+      return `<div class="custom-dropdown-option${c.id === currentId ? ' selected' : ''}" data-value="${c.id}" onclick="closeAllDD(); goToChapter(${c.id})">${optLabel}</div>`;
+    }).join('');
+  }
 }
 
 async function loadChapterList(storyId) {
@@ -57,8 +65,8 @@ async function loadChapterList(storyId) {
     const res = await fetch(`/api/stories/${storyId}/chapters`);
     if (!res.ok) return;
     allChapters = await res.json();
-    fillSelect(document.getElementById('chapterSelect'), allChapters, currentChapterId);
-    fillSelect(document.getElementById('chapterSelectBottom'), allChapters, currentChapterId);
+    fillSelect('chapterSelect-wrapper', allChapters, currentChapterId);
+    fillSelect('chapterSelectBottom-wrapper', allChapters, currentChapterId);
     updateNav();
   } catch (err) {
     console.error('[chapter] tải danh sách chương:', err);
@@ -118,7 +126,7 @@ async function loadChapter() {
     await loadChapterList(chapter.story_id);
 
     if (typeof window.initChatWidget === 'function') {
-      window.initChatWidget({ storyId: chapter.story_id });
+      window.initChatWidget({ storyId: chapter.story_id, chapterNum: chapter.chapter_num });
     }
   } catch (err) {
     console.error('[chapter] tải chương:', err);
@@ -139,6 +147,12 @@ window.addEventListener('scroll', () => {
   if (!searchBox) return;
   let typingTimer;
 
+  function escSuggest(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
   async function fetchSuggestions(q) {
     if (!q.trim()) { suggestionBox.classList.add('hidden'); return; }
     try {
@@ -150,15 +164,20 @@ window.addEventListener('scroll', () => {
         return;
       }
       const page = getStoryPage();
-      suggestionBox.innerHTML = data.map(item => `
-        <div onclick="window.location.href='${page}?id=${item.id}'"
-             class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
-          <img src="${item.cover_url || '/assets/images/Logo.png'}" class="w-10 h-14 object-cover rounded mr-3">
-          <div>
-            <p class="font-medium text-indigo-700">${item.title}</p>
-            <p class="text-xs text-gray-500">${item.author || 'Không rõ tác giả'}</p>
-          </div>
-        </div>`).join('');
+      suggestionBox.innerHTML = data.map(item => {
+        const id = parseInt(item.id) || 0;
+        const cover = escSuggest(item.cover_url || '/assets/images/Logo.png');
+        return `
+          <div onclick="window.location.href='${page}?id=${id}'"
+               class="flex items-center p-2 hover:bg-indigo-50 cursor-pointer">
+            <img src="${cover}" class="w-10 h-14 object-cover rounded mr-3"
+                 onerror="this.src='/assets/images/Logo.png'">
+            <div>
+              <p class="font-medium text-indigo-700">${escSuggest(item.title)}</p>
+              <p class="text-xs text-gray-500">${escSuggest(item.author) || 'Không rõ tác giả'}</p>
+            </div>
+          </div>`;
+      }).join('');
       suggestionBox.classList.remove('hidden');
     } catch (err) {
       console.error('[chapter] tìm kiếm gợi ý:', err);

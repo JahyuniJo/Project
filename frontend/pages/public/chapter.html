@@ -26,6 +26,24 @@
       pointer-events: auto;
       transform: translateY(0);
     }
+    .custom-dropdown-btn {
+      background: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
+    }
+    .custom-dropdown-btn:hover { border-color: #a5b4fc; background-color: #f0f3ff; }
+    .custom-dropdown-btn.open { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background-color: #f0f3ff; }
+    .custom-dropdown-menu {
+      position: absolute; z-index: 200;
+      background: #fff; border: 1px solid #e0e7ff; border-radius: 0.75rem;
+      box-shadow: 0 8px 28px -4px rgba(99,102,241,0.18), 0 4px 10px -4px rgba(0,0,0,0.1);
+    }
+    .custom-dropdown-option {
+      padding: 0.45rem 0.75rem; border-radius: 0.5rem;
+      font-size: 0.875rem; color: #374151;
+      cursor: pointer; transition: background-color 0.12s, color 0.12s;
+    }
+    .custom-dropdown-option:hover { background-color: #eef2ff; color: #4338ca; }
+    .custom-dropdown-option.selected { background-color: #eef2ff; color: #4338ca; font-weight: 500; }
   </style>
 </head>
 
@@ -55,10 +73,17 @@
         <span class="hidden sm:inline">Trước</span>
       </button>
 
-      <select id="chapterSelect"
-        class="flex-1 max-w-sm mx-auto bg-white text-gray-700 text-sm px-3 py-2 rounded-full border border-gray-200 focus:outline-none focus:border-indigo-400 cursor-pointer">
-        <option>Chọn chương</option>
-      </select>
+      <div class="relative dd-wrapper flex-1 max-w-sm mx-auto" id="chapterSelect-wrapper">
+        <input type="hidden" id="chapterSelect" value="">
+        <button type="button" class="custom-dropdown-btn w-full flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                onclick="toggleDD('chapterSelect-wrapper')">
+          <span class="dd-label truncate">Chọn chương</span>
+          <i class="fa-solid fa-chevron-down text-xs text-gray-400 shrink-0 ml-1 transition-transform duration-200"></i>
+        </button>
+        <div class="hidden custom-dropdown-menu left-0 right-0 max-h-64 overflow-y-auto">
+          <div class="p-1.5 space-y-0.5 dd-list"></div>
+        </div>
+      </div>
 
       <button id="nextBtn" disabled
         class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium transition opacity-40 hover:bg-indigo-100">
@@ -108,10 +133,17 @@
         <span class="hidden sm:inline">Trước</span>
       </button>
 
-      <select id="chapterSelectBottom"
-        class="flex-1 max-w-sm mx-auto bg-white text-gray-700 text-sm px-3 py-2 rounded-full border border-gray-200 focus:outline-none focus:border-indigo-400 cursor-pointer">
-        <option>Chọn chương</option>
-      </select>
+      <div class="relative dd-wrapper flex-1 max-w-sm mx-auto" id="chapterSelectBottom-wrapper">
+        <input type="hidden" id="chapterSelectBottom" value="">
+        <button type="button" class="custom-dropdown-btn w-full flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                onclick="toggleDD('chapterSelectBottom-wrapper')">
+          <span class="dd-label truncate">Chọn chương</span>
+          <i class="fa-solid fa-chevron-down text-xs text-gray-400 shrink-0 ml-1 transition-transform duration-200"></i>
+        </button>
+        <div class="hidden custom-dropdown-menu left-0 right-0 max-h-64 overflow-y-auto">
+          <div class="p-1.5 space-y-0.5 dd-list"></div>
+        </div>
+      </div>
 
       <button id="nextBtnBottom" disabled
         class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium transition opacity-40 hover:bg-indigo-100">
@@ -169,7 +201,21 @@
     </div>
   </div>
 
+  <script src="/components/alertModal.js"></script>
   <script src="/assets/js/header.js"></script>
+  <script>
+    function closeAllDD() {
+      document.querySelectorAll('.custom-dropdown-menu').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('.custom-dropdown-btn').forEach(b => { b.classList.remove('open'); b.querySelector('i')?.classList.remove('rotate-180'); });
+    }
+    function toggleDD(id) {
+      const w = document.getElementById(id); if (!w) return;
+      const isOpen = !w.querySelector('.custom-dropdown-menu').classList.contains('hidden');
+      closeAllDD();
+      if (!isOpen) { w.querySelector('.custom-dropdown-menu').classList.remove('hidden'); const btn = w.querySelector('.custom-dropdown-btn'); btn.classList.add('open'); btn.querySelector('i')?.classList.add('rotate-180'); }
+    }
+    document.addEventListener('click', e => { if (!e.target.closest('.dd-wrapper')) closeAllDD(); });
+  </script>
   <script src="/assets/js/chapter.js"></script>
   <script src="/assets/js/chat.js"></script>
 </body>

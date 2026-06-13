@@ -7,6 +7,8 @@ require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET;
+const PORT = process.env.PORT || 3001;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || `http://localhost:${PORT}`;
 const FRONTEND_DIR = path.join(__dirname, "../frontend");
 const PUBLIC_PAGES_DIR = path.join(FRONTEND_DIR, "pages/public");
 const PRIVATE_PAGES_DIR = path.join(FRONTEND_DIR, "pages/private");
@@ -20,7 +22,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: CORS_ORIGIN,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   }
@@ -31,7 +33,7 @@ const userSockets = {};
 
 // ========== MIDDLEWARE CƠ BẢN ==========
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: CORS_ORIGIN,
   credentials: true
 }));
 
@@ -114,6 +116,9 @@ app.get('/error-report.html', authenticateHTML(['user']), (req, res) => {
 app.get('/admin-report.html', authenticateHTML(['admin']), (req, res) => {
   res.sendFile(path.join(PRIVATE_PAGES_DIR, 'admin-report.html'));
 });
+app.get('/admin-chat.html', authenticateHTML(['admin']), (req, res) => {
+  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'admin-chat.html'));
+});
 // stat.html (Chỉ dành cho admin)
 app.get('/stat.html', authenticateHTML(['admin']), (req, res) => {
   res.sendFile(path.join(PRIVATE_PAGES_DIR, 'stat.html'));
@@ -125,9 +130,10 @@ app.get('/', (req, res) => {
 
 
 // ========== API ROUTES ==========
-const { router: chatRouter, initChat } = require("./routes/chatRoutes");
+const { router: chatRouter, adminRouter: adminChatRouter, initChat } = require("./routes/chatRoutes");
 initChat(io);
 app.use("/api/chat", chatRouter);
+app.use("/api/admin/chat", adminChatRouter);
 
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/stories", require("./routes/storyRoutes"));
@@ -149,7 +155,6 @@ app.use("/components", express.static(COMPONENTS_DIR));
 app.use("/uploads", express.static(path.join(__dirname, "../backend/uploads")));
 
 // ========== START ==========
-const PORT = process.env.PORT || 3000;
 server.listen(PORT, () =>
   console.log(`Server chạy tại http://localhost:${PORT}`)
 );

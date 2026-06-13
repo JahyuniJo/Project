@@ -22,15 +22,16 @@ function validateContent(content) {
     return null;
 }
 
-async function sendNotification(io, targetEmail, message) {
+async function sendNotification(io, targetEmail, message, link = null) {
     await pool.query(
-        `INSERT INTO notifications (user_email, message, is_read, created_at)
-         VALUES ($1, $2, false, NOW())`,
-        [targetEmail, message]
+        `INSERT INTO notifications (user_email, message, link, is_read, created_at)
+         VALUES ($1, $2, $3, false, NOW())`,
+        [targetEmail, message, link]
     );
 
     io.to(targetEmail).emit("newNotification", {
         message,
+        link,
         time: Date.now()
     });
 }
@@ -172,7 +173,9 @@ module.exports = function (io) {
             if (parentOwner && parentOwner.user_id !== req.user.userId && parentOwner.email) {
                 try {
                     const username = req.user.username || "Ai đó";
-                    await sendNotification(io, parentOwner.email, `${username} đã trả lời bình luận của bạn`);
+                    const newCommentId = result.rows[0].id;
+                    const link = `/read2.html?id=${storyId}#comment-${newCommentId}`;
+                    await sendNotification(io, parentOwner.email, `${username} đã trả lời bình luận của bạn`, link);
                 } catch (notifyErr) {
                     console.error("Notification error create comment:", notifyErr);
                 }
@@ -352,7 +355,7 @@ module.exports = function (io) {
             await client.query("BEGIN");
 
             const commentResult = await client.query(
-                `SELECT c.id, c.user_id, u.email
+                `SELECT c.id, c.story_id, c.user_id, u.email
                  FROM comments c
                  JOIN users u ON u.id = c.user_id
                  WHERE c.id = $1
@@ -407,7 +410,8 @@ module.exports = function (io) {
             if (liked && owner.user_id !== req.user.userId && owner.email) {
                 try {
                     const username = req.user.username || "Ai đó";
-                    await sendNotification(io, owner.email, `${username} đã thích bình luận của bạn`);
+                    const link = `/read2.html?id=${owner.story_id}#comment-${commentId}`;
+                    await sendNotification(io, owner.email, `${username} đã thích bình luận của bạn`, link);
                 } catch (notifyErr) {
                     console.error("Notification error like comment:", notifyErr);
                 }

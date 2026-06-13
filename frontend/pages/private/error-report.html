@@ -8,6 +8,26 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    .custom-dropdown-btn {
+      background: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
+    }
+    .custom-dropdown-btn:hover { border-color: #a5b4fc; background-color: #f0f3ff; }
+    .custom-dropdown-btn.open { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background-color: #f0f3ff; }
+    .custom-dropdown-menu {
+      position: absolute; z-index: 200;
+      background: #fff; border: 1px solid #e0e7ff; border-radius: 0.75rem;
+      box-shadow: 0 8px 28px -4px rgba(99,102,241,0.18), 0 4px 10px -4px rgba(0,0,0,0.1);
+    }
+    .custom-dropdown-option {
+      padding: 0.45rem 0.75rem; border-radius: 0.5rem;
+      font-size: 0.875rem; color: #374151;
+      cursor: pointer; transition: background-color 0.12s, color 0.12s;
+    }
+    .custom-dropdown-option:hover { background-color: #eef2ff; color: #4338ca; }
+    .custom-dropdown-option.selected { background-color: #eef2ff; color: #4338ca; font-weight: 500; }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col font-sans">
 
@@ -30,17 +50,24 @@
           <!-- Loại lỗi -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Loại lỗi <span class="text-red-500">*</span></label>
-            <select id="errorType"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white text-gray-700"
-                    required>
-              <option value="">-- Chọn loại lỗi --</option>
-              <option value="display">Lỗi hiển thị / giao diện</option>
-              <option value="chapter">Thiếu hoặc sai chapter</option>
-              <option value="content">Nội dung sai / không đúng</option>
-              <option value="image">Ảnh bìa / hình ảnh lỗi</option>
-              <option value="crash">Trang bị crash / không load</option>
-              <option value="other">Khác</option>
-            </select>
+            <div class="relative dd-wrapper" id="errorType-wrapper">
+              <input type="hidden" id="errorType" value="">
+              <button type="button" class="custom-dropdown-btn w-full flex items-center justify-between border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-400"
+                      onclick="toggleDD('errorType-wrapper')">
+                <span class="dd-label">-- Chọn loại lỗi --</span>
+                <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+              </button>
+              <div class="hidden custom-dropdown-menu left-0 right-0">
+                <div class="p-1.5 space-y-0.5">
+                  <div class="custom-dropdown-option" data-value="display" onclick="pickErrorType('display','Lỗi hiển thị / giao diện')">Lỗi hiển thị / giao diện</div>
+                  <div class="custom-dropdown-option" data-value="chapter" onclick="pickErrorType('chapter','Thiếu hoặc sai chapter')">Thiếu hoặc sai chapter</div>
+                  <div class="custom-dropdown-option" data-value="content" onclick="pickErrorType('content','Nội dung sai / không đúng')">Nội dung sai / không đúng</div>
+                  <div class="custom-dropdown-option" data-value="image" onclick="pickErrorType('image','Ảnh bìa / hình ảnh lỗi')">Ảnh bìa / hình ảnh lỗi</div>
+                  <div class="custom-dropdown-option" data-value="crash" onclick="pickErrorType('crash','Trang bị crash / không load')">Trang bị crash / không load</div>
+                  <div class="custom-dropdown-option" data-value="other" onclick="pickErrorType('other','Khác')">Khác</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Tên truyện -->
@@ -157,6 +184,31 @@
   </script>
   <script src="/assets/js/header.js"></script>
   <script>
+    function closeAllDD() {
+      document.querySelectorAll('.custom-dropdown-menu').forEach(m => m.classList.add('hidden'));
+      document.querySelectorAll('.custom-dropdown-btn').forEach(b => { b.classList.remove('open'); b.querySelector('i')?.classList.remove('rotate-180'); });
+    }
+    function toggleDD(id) {
+      const w = document.getElementById(id); if (!w) return;
+      const isOpen = !w.querySelector('.custom-dropdown-menu').classList.contains('hidden');
+      closeAllDD();
+      if (!isOpen) { w.querySelector('.custom-dropdown-menu').classList.remove('hidden'); const btn = w.querySelector('.custom-dropdown-btn'); btn.classList.add('open'); btn.querySelector('i')?.classList.add('rotate-180'); }
+    }
+    function pickDD(wrapperId, value, label) {
+      const w = document.getElementById(wrapperId); if (!w) return;
+      const input = w.querySelector('input[type="hidden"]');
+      if (input) { input.value = value; input.dispatchEvent(new Event('change', {bubbles: true})); }
+      const lbl = w.querySelector('.dd-label'); if (lbl) lbl.textContent = label;
+      closeAllDD();
+      w.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.toggle('selected', o.dataset.value === value));
+    }
+    function pickErrorType(value, label) {
+      pickDD('errorType-wrapper', value, label);
+      const btn = document.querySelector('#errorType-wrapper .custom-dropdown-btn');
+      if (btn) { btn.classList.add('text-gray-700'); btn.classList.remove('text-gray-400'); }
+    }
+    document.addEventListener('click', e => { if (!e.target.closest('.dd-wrapper')) closeAllDD(); });
+
     // Điền email và load reports sau khi header xác thực xong
     (async () => {
       try {
@@ -235,7 +287,7 @@
         formData.append("title",    `[${errorType}] ${title}`);
         formData.append("story",    document.getElementById("story").value.trim());
         formData.append("message",  message);
-        formData.append("email",    userEmail);
+        formData.append("email",    document.getElementById("email").value.trim());
 
         const screenshot = screenshotInput.files[0];
         if (screenshot) formData.append("screenshot", screenshot);

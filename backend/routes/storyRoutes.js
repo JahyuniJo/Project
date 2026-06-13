@@ -84,15 +84,45 @@ router.get("/by-genre", async (req, res) => {
 });
 
 router.get("/", async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 12;
-  const search = req.query.search?.trim();
+  const page   = parseInt(req.query.page, 10) || 1;
+  const limit  = parseInt(req.query.limit, 10) || 12;
+  const search = (req.query.search || req.query.q)?.trim() || null;
+  const status = req.query.status?.trim() || null;
+
+  const VALID_SORTS   = ["newest", "views", "rating", "az"];
+  const VALID_LENGTHS = ["short", "medium", "long"];
+  const sort   = VALID_SORTS.includes(req.query.sort)   ? req.query.sort   : "newest";
+  const length = VALID_LENGTHS.includes(req.query.length) ? req.query.length : null;
+
+  const genresRaw = req.query.genres?.trim() || null;
+  const genres = genresRaw
+    ? genresRaw.split(",").map(s => s.trim()).filter(Boolean)
+    : null;
 
   try {
-    const result = await searchStoriesWithSqlFallback({ search, page, limit });
+    const result = await searchStoriesWithSqlFallback({ search, page, limit, status, genres, sort, length });
     res.json(result);
   } catch (err) {
     console.error("[storyRoutes] list:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  }
+});
+
+// GET /api/stories/status-counts — đếm số truyện theo trạng thái
+router.get("/status-counts", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT status, COUNT(*) AS count FROM stories GROUP BY status"
+    );
+    const counts = { ongoing: 0, completed: 0, stopped: 0, total: 0 };
+    result.rows.forEach((r) => {
+      const s = r.status;
+      if (s in counts) counts[s] = Number(r.count);
+      counts.total += Number(r.count);
+    });
+    res.json(counts);
+  } catch (err) {
+    console.error("[storyRoutes] status-counts:", err);
     res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
   }
 });
@@ -328,9 +358,9 @@ router.post("/:id/view", authMiddleware, async (req, res) => {
 function normalizeStoryStatus(status) {
   const raw = removeVietnameseTones(String(status || "").trim()).toLowerCase();
   if (!raw) return "ongoing";
-  if (["ongoing", "completed", "stopped", "dropped"].includes(raw)) return raw;
+  if (["ongoing", "completed", "stopped"].includes(raw)) return raw;
   if (raw.includes("hoan") || raw.includes("complete")) return "completed";
-  if (raw.includes("tam ngung") || raw.includes("ngung")) return "stopped";
+  if (raw.includes("tam ngung") || raw.includes("ngung") || raw === "dropped") return "stopped";
   return "ongoing";
 }
 

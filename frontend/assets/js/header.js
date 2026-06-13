@@ -383,10 +383,25 @@
 
       notifications.forEach(n => {
         const li = document.createElement('li');
-        li.className = 'px-4 py-3 hover:bg-indigo-50 transition';
-        li.innerHTML = `
-          <p class="text-sm text-gray-700">${n.message}</p>
-          <p class="text-xs text-gray-400 mt-1">${new Date(n.created_at).toLocaleString()}</p>`;
+        li.className = 'px-4 py-3 hover:bg-indigo-50 transition' + (n.link ? ' cursor-pointer' : '');
+
+        const pMsg = document.createElement('p');
+        pMsg.className = 'text-sm text-gray-700';
+        pMsg.textContent = n.message;
+
+        const pTime = document.createElement('p');
+        pTime.className = 'text-xs text-gray-400 mt-1';
+        pTime.textContent = new Date(n.created_at).toLocaleString();
+
+        li.appendChild(pMsg);
+        li.appendChild(pTime);
+
+        if (n.link) {
+          li.addEventListener('click', () => {
+            boxEl.classList.add('hidden');
+            window.location.href = n.link;
+          });
+        }
         listEl.appendChild(li);
         if (!n.is_read) { unreadCount++; unreadIds.push(n.id); }
       });
@@ -397,13 +412,11 @@
 
     bell.addEventListener('click', async () => {
       boxEl.classList.toggle('hidden');
-      if (!boxEl.classList.contains('hidden')) {
+      if (!boxEl.classList.contains('hidden') && unreadIds.length > 0) {
         unreadCount = 0;
         countEl.classList.add('hidden');
         try {
-          for (const id of unreadIds) {
-            await fetch(`/api/notifications/${id}/read`, { method: 'PUT', credentials: 'include' });
-          }
+          await fetch('/api/notifications/read-all', { method: 'PUT', credentials: 'include' });
           unreadIds = [];
         } catch {}
       }
@@ -428,11 +441,27 @@
       unreadCount++;
       countEl.textContent = unreadCount;
       countEl.classList.remove('hidden');
+
       const li = document.createElement('li');
-      li.className = 'px-4 py-3 hover:bg-indigo-50 transition';
-      li.innerHTML = `
-        <p class="text-sm text-gray-700">${data.message}</p>
-        <p class="text-xs text-gray-400 mt-1">${new Date().toLocaleString()}</p>`;
+      li.className = 'px-4 py-3 hover:bg-indigo-50 transition' + (data.link ? ' cursor-pointer' : '');
+
+      const pMsg = document.createElement('p');
+      pMsg.className = 'text-sm text-gray-700';
+      pMsg.textContent = data.message;
+
+      const pTime = document.createElement('p');
+      pTime.className = 'text-xs text-gray-400 mt-1';
+      pTime.textContent = new Date().toLocaleString();
+
+      li.appendChild(pMsg);
+      li.appendChild(pTime);
+
+      if (data.link) {
+        li.addEventListener('click', () => {
+          boxEl.classList.add('hidden');
+          window.location.href = data.link;
+        });
+      }
       listEl.prepend(li);
       showToast(data.message);
     });
@@ -452,7 +481,7 @@
     return new Promise((resolve, reject) => {
       if (window.io) { resolve(); return; }
       const s  = document.createElement('script');
-      s.src    = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+      s.src    = '/socket.io/socket.io.js';
       s.onload = resolve;
       s.onerror = reject;
       document.head.appendChild(s);

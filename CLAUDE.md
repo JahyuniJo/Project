@@ -145,7 +145,7 @@ Dự án dùng **hai module riêng biệt**:
 | `config/db.js` | Sequelize ORM (model định nghĩa) | `require('../config/db')` |
 
 **Không bao giờ** dùng `config/db` để query trực tiếp. Không bao giờ hardcode credentials.
-
+**Tất cả** các confirm đều có popup cảnh báo, xác nhận không bao giờ để localhost3001:says
 ---
 
 ## API Routes
@@ -423,3 +423,7 @@ Mọi tính năng và thay đổi phải được viết theo hướng có thể
 - [x] Chatbot realtime — widget floating trên read2 + chapter, Socket.io streaming, lịch sử lưu DB
 - [x] Trang đọc truyện theo chương — `GET /api/chapters/:id/content`, lazy crawl + cache vào `chapter_contents`
 - [x] Crawl trang JavaScript-rendered bằng Puppeteer — `crawlChapterList.js` (Axios + Cheerio ưu tiên, Puppeteer fallback)
+
+---
+
+@docs/thesis-writing.md

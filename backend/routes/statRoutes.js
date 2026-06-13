@@ -12,6 +12,7 @@ router.get("/", authMiddleware, requireAdmin, async (req, res) => {
       chapterCount, storiesWithChapters,
       commentCount, pendingReports,
       storyStatusBreakdown, weeklyViews,
+      chatMessages, storiesWithSummary,
     ] = await Promise.all([
       pool.query("SELECT COUNT(*) AS total FROM users"),
       pool.query("SELECT COUNT(*) AS total FROM stories"),
@@ -29,6 +30,8 @@ router.get("/", authMiddleware, requireAdmin, async (req, res) => {
         GROUP BY DATE(viewed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')
         ORDER BY DATE(viewed_at AT TIME ZONE 'Asia/Ho_Chi_Minh') ASC
       `),
+      pool.query("SELECT COUNT(*) AS total FROM chat_messages"),
+      pool.query("SELECT COUNT(*) AS total FROM stories WHERE ai_summary IS NOT NULL AND ai_summary <> ''"),
     ]);
 
     res.json({
@@ -41,6 +44,8 @@ router.get("/", authMiddleware, requireAdmin, async (req, res) => {
       pendingReports:      parseInt(pendingReports.rows[0].total),
       storyStatusBreakdown: storyStatusBreakdown.rows,
       weeklyViews:          weeklyViews.rows,
+      totalChatMessages:   parseInt(chatMessages.rows[0].total),
+      storiesWithSummary:  parseInt(storiesWithSummary.rows[0].total),
     });
   } catch (err) {
     console.error("[statRoutes] overview:", err);

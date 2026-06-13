@@ -5,7 +5,12 @@ const pool = require("../config/pool");
 const authMiddleware = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
 
-const upload = multer({ dest: path.join(__dirname, "../uploads") });
+const ALLOWED_SCREENSHOT_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const upload = multer({
+  dest: path.join(__dirname, "../uploads"),
+  fileFilter: (_req, file, cb) => cb(null, ALLOWED_SCREENSHOT_MIME.includes(file.mimetype)),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 module.exports = (io) => {
   const router = express.Router();
@@ -111,7 +116,11 @@ module.exports = (io) => {
   router.get("/notifications", authMiddleware, async (req, res) => {
     try {
       const result = await pool.query(
-        "SELECT * FROM notifications WHERE user_email=$1 ORDER BY created_at DESC",
+        `SELECT id, user_email, message, link, is_read, created_at
+         FROM notifications
+         WHERE user_email = $1
+         ORDER BY created_at DESC
+         LIMIT 50`,
         [req.user.email]
       );
       res.json(result.rows);
@@ -136,9 +145,9 @@ module.exports = (io) => {
     }
   });
 
-  // 5. Đánh dấu thông báo đã đọc
+  // 5. Đánh dấu một thông báo đã đọc
   router.put("/notifications/:id/read", authMiddleware, async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     if (!id || id <= 0) {
       return res.status(400).json({ message: "ID thông báo không hợp lệ" });
     }
@@ -156,6 +165,20 @@ module.exports = (io) => {
       res.json({ message: "Đã đánh dấu đã đọc" });
     } catch (err) {
       console.error("[report] mark read:", err);
+      res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+    }
+  });
+
+  // 5b. Đánh dấu tất cả thông báo đã đọc
+  router.put("/notifications/read-all", authMiddleware, async (req, res) => {
+    try {
+      await pool.query(
+        "UPDATE notifications SET is_read=TRUE WHERE user_email=$1 AND is_read=FALSE",
+        [req.user.email]
+      );
+      res.json({ message: "Đã đánh dấu tất cả đã đọc" });
+    } catch (err) {
+      console.error("[report] mark all read:", err);
       res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
     }
   });

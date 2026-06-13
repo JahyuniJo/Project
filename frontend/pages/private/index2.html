@@ -76,6 +76,52 @@
       width: 24px;
       border-radius: 4px;
     }
+
+    /* Filter panel */
+    #filterContent {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    #filterContent.open { max-height: 800px; opacity: 1; overflow: visible; }
+
+    /* Filter dropdown buttons — thể loại, trạng thái, độ dài, sắp xếp */
+    #genreDropdownBtn, .custom-filter-btn {
+      background-color: #fafbff;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
+    }
+    #genreDropdownBtn:hover, .custom-filter-btn:hover { border-color: #a5b4fc; background-color: #f0f3ff; }
+    #genreDropdownBtn.active, .custom-filter-btn.active { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background-color: #f0f3ff; }
+
+    /* Filter dropdown menus */
+    #genreDropdownMenu, .custom-filter-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 200;
+      box-shadow: 0 8px 28px -4px rgba(99,102,241,0.18), 0 4px 10px -4px rgba(0,0,0,0.1);
+      border-color: #e0e7ff;
+    }
+
+    /* Dropdown option items */
+    .custom-dropdown-option {
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      color: #374151;
+      cursor: pointer;
+      transition: background-color 0.12s, color 0.12s;
+    }
+    .custom-dropdown-option:hover { background-color: #eef2ff; color: #4338ca; }
+    .custom-dropdown-option.selected { background-color: #eef2ff; color: #4338ca; font-weight: 500; }
+
+    /* Custom scrollbar trong danh sách thể loại */
+    #genreCheckList::-webkit-scrollbar { width: 4px; }
+    #genreCheckList::-webkit-scrollbar-track { background: transparent; }
+    #genreCheckList::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 9999px; }
+    #genreCheckList::-webkit-scrollbar-thumb:hover { background: #818cf8; }
   </style>
 </head>
 
@@ -143,11 +189,113 @@
       <div class="h-2 bg-gradient-to-r from-transparent via-gray-300 to-transparent rounded-full"></div>
     </div>
 
-    <div id="genreHeader" class="hidden mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <h2 id="genreTitle" class="text-2xl font-bold text-gray-800"></h2>
-      <button onclick="resetHome()" class="text-sm px-4 py-2 rounded-lg border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition">
-        ← Xem tất cả truyện
-      </button>
+    <!-- Filter Panel -->
+    <div id="filterPanel" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <button onclick="toggleFilterPanel()"
+          class="flex items-center gap-2 text-base font-semibold text-gray-700 hover:text-indigo-600 transition select-none">
+          <i class="fa-solid fa-sliders text-indigo-500"></i>
+          Tìm kiếm nâng cao
+          <span id="filterBadge"
+            class="hidden bg-indigo-500 text-white text-xs rounded-full w-5 h-5 items-center justify-center font-bold"></span>
+          <i id="filterChevron" class="fa-solid fa-chevron-down text-sm text-gray-400 transition-transform duration-300"></i>
+        </button>
+        <div class="flex items-center gap-3">
+          <div id="filterSummary" class="flex flex-wrap gap-1.5"></div>
+          <button id="resetFilterBtn" onclick="resetFilters()"
+            class="hidden text-sm px-3 py-1.5 rounded-lg border border-indigo-400 text-indigo-600 hover:bg-indigo-50 transition">
+            ← Tất cả truyện
+          </button>
+        </div>
+      </div>
+
+      <div id="filterContent">
+        <div class="border-t border-gray-100 mt-4 pt-4 space-y-4">
+          <!-- Thể loại -->
+          <div>
+            <label class="text-sm font-medium text-gray-600 mb-1.5 block">Thể loại</label>
+            <div class="relative" id="filterGenreDropdownWrapper">
+              <button type="button" id="genreDropdownBtn" onclick="toggleGenreDropdown()"
+                class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-700 hover:border-indigo-400 focus:outline-none transition">
+                <span id="genreDropdownLabel">Tất cả thể loại</span>
+                <i id="genreDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+              </button>
+              <div id="genreDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl">
+                <div id="genreCheckList" class="max-h-52 overflow-y-auto p-2 space-y-0.5">
+                  <p class="text-sm text-gray-400 italic px-2 py-1">Đang tải...</p>
+                </div>
+                <div class="border-t border-gray-100 px-3 py-2 flex justify-between items-center bg-gray-50 rounded-b-xl">
+                  <span id="genreSelectedCount" class="text-xs text-gray-500">Chưa chọn</span>
+                  <button onclick="clearGenres()" class="text-xs text-red-400 hover:text-red-600 transition">Xóa chọn</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Trạng thái / Độ dài / Sắp xếp -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="text-sm font-medium text-gray-600 mb-1 block">Trạng thái</label>
+              <div class="relative" id="statusDropdownWrapper">
+                <button type="button" id="statusDropdownBtn" onclick="toggleCustomDropdown('status')"
+                  class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none custom-filter-btn">
+                  <span id="statusDropdownLabel">Tất cả</span>
+                  <i id="statusDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="statusDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl custom-filter-menu">
+                  <div class="p-1.5 space-y-0.5">
+                    <div class="custom-dropdown-option selected" data-value="" onclick="selectDropdownOption('status', '', 'Tất cả')">Tất cả</div>
+                    <div class="custom-dropdown-option" data-value="ongoing" onclick="selectDropdownOption('status', 'ongoing', 'Đang tiến hành')">Đang tiến hành</div>
+                    <div class="custom-dropdown-option" data-value="completed" onclick="selectDropdownOption('status', 'completed', 'Hoàn thành')">Hoàn thành</div>
+                    <div class="custom-dropdown-option" data-value="stopped" onclick="selectDropdownOption('status', 'stopped', 'Tạm ngưng')">Tạm ngưng</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-600 mb-1 block">Độ dài</label>
+              <div class="relative" id="lengthDropdownWrapper">
+                <button type="button" id="lengthDropdownBtn" onclick="toggleCustomDropdown('length')"
+                  class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none custom-filter-btn">
+                  <span id="lengthDropdownLabel">Tất cả</span>
+                  <i id="lengthDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="lengthDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl custom-filter-menu">
+                  <div class="p-1.5 space-y-0.5">
+                    <div class="custom-dropdown-option selected" data-value="" onclick="selectDropdownOption('length', '', 'Tất cả')">Tất cả</div>
+                    <div class="custom-dropdown-option" data-value="short" onclick="selectDropdownOption('length', 'short', 'Ngắn (&lt;50 chương)')">Ngắn (&lt;50 chương)</div>
+                    <div class="custom-dropdown-option" data-value="medium" onclick="selectDropdownOption('length', 'medium', 'Vừa (50–200 chương)')">Vừa (50–200 chương)</div>
+                    <div class="custom-dropdown-option" data-value="long" onclick="selectDropdownOption('length', 'long', 'Dài (&gt;200 chương)')">Dài (&gt;200 chương)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-600 mb-1 block">Sắp xếp</label>
+              <div class="relative" id="sortDropdownWrapper">
+                <button type="button" id="sortDropdownBtn" onclick="toggleCustomDropdown('sort')"
+                  class="w-full flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none custom-filter-btn">
+                  <span id="sortDropdownLabel">Mới nhất</span>
+                  <i id="sortDropdownChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="sortDropdownMenu" class="hidden bg-white border border-gray-200 rounded-xl custom-filter-menu">
+                  <div class="p-1.5 space-y-0.5">
+                    <div class="custom-dropdown-option selected" data-value="newest" onclick="selectDropdownOption('sort', 'newest', 'Mới nhất')">Mới nhất</div>
+                    <div class="custom-dropdown-option" data-value="views" onclick="selectDropdownOption('sort', 'views', 'Lượt đọc nhiều nhất')">Lượt đọc nhiều nhất</div>
+                    <div class="custom-dropdown-option" data-value="rating" onclick="selectDropdownOption('sort', 'rating', 'Đánh giá cao nhất')">Đánh giá cao nhất</div>
+                    <div class="custom-dropdown-option" data-value="az" onclick="selectDropdownOption('sort', 'az', 'Tên A–Z')">Tên A–Z</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button onclick="resetFilters()"
+              class="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition">
+              <i class="fa-solid fa-rotate-left text-xs"></i> Xóa bộ lọc
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="story-list" class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"></div>
@@ -195,20 +343,219 @@
   <script src="/components/alertModal.js"></script>
   <script>
     window.HEADER_CALLBACKS = {
-      onSort:   (type)  => filterBySort(type),
-      onGenre:  (genre) => filterByGenre(genre),
-      onSearch: (q)     => loadStories(1, q),
+      onSearch: (q) => { filters.search = q; loadStories(1); },
+      onGenre:  (g) => {
+        if (!filters.genres.includes(g)) filters.genres.push(g);
+        applyFiltersToUI();
+        document.getElementById("recommendSection")?.classList.add("hidden");
+        if (!filterOpen) toggleFilterPanel();
+        loadStories(1);
+      },
+      onSort: (type) => {
+        const map = { rating: "rating", newest: "newest" };
+        if (map[type]) {
+          filters.sort = map[type];
+          applyFiltersToUI();
+          document.getElementById("recommendSection")?.classList.add("hidden");
+          loadStories(1);
+        }
+      },
     };
   </script>
   <script src="/assets/js/header.js"></script>
   <script>
     /* ===========================
+       FILTER STATE
+    =========================== */
+    const filters = { search: "", genres: [], status: "", sort: "newest", length: "" };
+    let filterOpen = false;
+    let debounceTimer = null;
+    let currentPage = 1;
+    const limit = 12;
+
+    function toggleFilterPanel() {
+      filterOpen = !filterOpen;
+      if (!filterOpen && genreDropdownOpen) closeGenreDropdown();
+      document.getElementById("filterContent").classList.toggle("open", filterOpen);
+      document.getElementById("filterChevron").style.transform = filterOpen ? "rotate(180deg)" : "";
+    }
+
+    function onFilterChange() {
+      updateFilterBadge();
+      const hasFilter = filters.genres.length || filters.status || filters.sort !== "newest" || filters.length;
+      document.getElementById("recommendSection")?.classList.toggle("hidden", !!hasFilter);
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadStories(1), 400);
+    }
+
+    // Custom single-select dropdowns (status, length, sort)
+    const FILTER_LABELS = {
+      status: { "": "Tất cả", "ongoing": "Đang tiến hành", "completed": "Hoàn thành", "stopped": "Tạm ngưng" },
+      length: { "": "Tất cả", "short": "Ngắn (<50 chương)", "medium": "Vừa (50–200 chương)", "long": "Dài (>200 chương)" },
+      sort:   { "newest": "Mới nhất", "views": "Lượt đọc nhiều nhất", "rating": "Đánh giá cao nhất", "az": "Tên A–Z" }
+    };
+    const customDropdownOpen = { status: false, length: false, sort: false };
+    const customDropdownScrollFn = {
+      status: () => closeCustomDropdown("status"),
+      length: () => closeCustomDropdown("length"),
+      sort:   () => closeCustomDropdown("sort"),
+    };
+
+    function closeCustomDropdown(key) {
+      customDropdownOpen[key] = false;
+      document.getElementById(key + "DropdownMenu").classList.add("hidden");
+      document.getElementById(key + "DropdownChevron").style.transform = "";
+      document.getElementById(key + "DropdownBtn").classList.remove("active");
+      window.removeEventListener("scroll", customDropdownScrollFn[key]);
+    }
+
+    function toggleCustomDropdown(key) {
+      ["status", "length", "sort"].forEach(k => { if (k !== key && customDropdownOpen[k]) closeCustomDropdown(k); });
+      customDropdownOpen[key] = !customDropdownOpen[key];
+      if (customDropdownOpen[key]) {
+        document.getElementById(key + "DropdownMenu").classList.remove("hidden");
+        document.getElementById(key + "DropdownChevron").style.transform = "rotate(180deg)";
+        document.getElementById(key + "DropdownBtn").classList.add("active");
+        window.addEventListener("scroll", customDropdownScrollFn[key]);
+      } else {
+        closeCustomDropdown(key);
+      }
+    }
+
+    function selectDropdownOption(key, value, label) {
+      filters[key] = value;
+      document.getElementById(key + "DropdownLabel").textContent = label;
+      document.querySelectorAll("#" + key + "DropdownMenu .custom-dropdown-option").forEach(el => {
+        el.classList.toggle("selected", el.dataset.value === value);
+      });
+      closeCustomDropdown(key);
+      updateFilterBadge();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadStories(1), 400);
+    }
+
+    let genreDropdownOpen = false;
+
+    function closeGenreDropdown() {
+      genreDropdownOpen = false;
+      document.getElementById("genreDropdownMenu").classList.add("hidden");
+      document.getElementById("genreDropdownChevron").style.transform = "";
+      document.getElementById("genreDropdownBtn").classList.remove("active");
+      window.removeEventListener("scroll", closeGenreDropdown);
+    }
+
+    function toggleGenreDropdown() {
+      genreDropdownOpen = !genreDropdownOpen;
+      const menu = document.getElementById("genreDropdownMenu");
+      const btn  = document.getElementById("genreDropdownBtn");
+      if (genreDropdownOpen) {
+        menu.classList.remove("hidden");
+        document.getElementById("genreDropdownChevron").style.transform = "rotate(180deg)";
+        btn.classList.add("active");
+        window.addEventListener("scroll", closeGenreDropdown);
+      } else {
+        closeGenreDropdown();
+      }
+    }
+
+    function onGenreCheck(checkbox) {
+      const genre = checkbox.value;
+      if (checkbox.checked) { if (!filters.genres.includes(genre)) filters.genres.push(genre); }
+      else filters.genres = filters.genres.filter(g => g !== genre);
+      updateGenreChips(); updateFilterBadge();
+      document.getElementById("recommendSection")?.classList.toggle("hidden", !!filters.genres.length);
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadStories(1), 400);
+    }
+
+    function clearGenres() {
+      filters.genres = [];
+      updateGenreChips(); updateFilterBadge();
+      loadStories(1);
+    }
+
+    function applyFiltersToUI() {
+      ["status", "length", "sort"].forEach(key => {
+        document.getElementById(key + "DropdownLabel").textContent = FILTER_LABELS[key][filters[key]] ?? Object.values(FILTER_LABELS[key])[0];
+        document.querySelectorAll("#" + key + "DropdownMenu .custom-dropdown-option").forEach(el => {
+          el.classList.toggle("selected", el.dataset.value === filters[key]);
+        });
+      });
+      updateGenreChips(); updateFilterBadge();
+    }
+
+    function updateGenreChips() {
+      document.querySelectorAll(".genre-check").forEach(cb => { cb.checked = filters.genres.includes(cb.value); });
+      const label   = document.getElementById("genreDropdownLabel");
+      const countEl = document.getElementById("genreSelectedCount");
+      if (!label) return;
+      if (filters.genres.length === 0) {
+        label.textContent = "Tất cả thể loại";
+        if (countEl) countEl.textContent = "Chưa chọn";
+      } else if (filters.genres.length === 1) {
+        label.textContent = filters.genres[0];
+        if (countEl) countEl.textContent = "Đã chọn 1 thể loại";
+      } else {
+        label.textContent = `${filters.genres.length} thể loại đã chọn`;
+        if (countEl) countEl.textContent = `Đã chọn ${filters.genres.length} thể loại`;
+      }
+    }
+
+    function updateFilterBadge() {
+      let n = filters.genres.length;
+      if (filters.status) n++;
+      if (filters.sort !== "newest") n++;
+      if (filters.length) n++;
+      const badge = document.getElementById("filterBadge");
+      badge.textContent = n;
+      badge.classList.toggle("hidden", n === 0);
+      badge.classList.toggle("inline-flex", n > 0);
+
+      const resetBtn = document.getElementById("resetFilterBtn");
+      resetBtn?.classList.toggle("hidden", n === 0);
+
+      const summary = document.getElementById("filterSummary");
+      const chips = [];
+      if (filters.genres.length) chips.push(...filters.genres.map(g =>
+        `<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full">${g}</span>`));
+      const statusLabel = { ongoing:"Đang tiến hành", completed:"Hoàn thành", stopped:"Tạm ngưng" };
+      if (filters.status) chips.push(`<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">${statusLabel[filters.status]}</span>`);
+      const sortLabel = { views:"Lượt đọc", rating:"Đánh giá", az:"A–Z" };
+      if (filters.sort !== "newest") chips.push(`<span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">${sortLabel[filters.sort]}</span>`);
+      const lenLabel = { short:"Ngắn", medium:"Vừa", long:"Dài" };
+      if (filters.length) chips.push(`<span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">${lenLabel[filters.length]}</span>`);
+      summary.innerHTML = chips.join("");
+    }
+
+    function resetFilters() {
+      filters.genres = []; filters.status = ""; filters.sort = "newest"; filters.length = ""; filters.search = "";
+      applyFiltersToUI();
+      document.getElementById("recommendSection")?.classList.remove("hidden");
+      loadRecommend(); loadPopularWeek(); loadStories(1);
+    }
+    function resetHome() { resetFilters(); }
+
+    async function loadGenreChips() {
+      try {
+        const res = await fetch("/api/stories/genres");
+        const genres = await res.json();
+        document.getElementById("genreCheckList").innerHTML = genres.map(g => `
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-indigo-50 cursor-pointer transition">
+            <input type="checkbox" class="genre-check w-4 h-4 accent-indigo-500"
+                   value="${g.replace(/"/g,'&quot;')}" onchange="onGenreCheck(this)">
+            <span class="text-sm text-gray-700">${g}</span>
+          </label>
+        `).join("");
+        updateGenreChips();
+      } catch (err) { console.error("[index2] Lỗi tải thể loại:", err); }
+    }
+
+    /* ===========================
        SKELETON LOADING
     =========================== */
     function showSkeletons(containerId = "story-list", count = 12) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-      container.innerHTML = Array.from({ length: count }, () => `
+      const el = document.getElementById(containerId); if (!el) return;
+      el.innerHTML = Array.from({ length: count }, () => `
         <div class="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
           <div class="w-full h-48 bg-gray-200"></div>
           <div class="p-3 space-y-2">
@@ -225,12 +572,7 @@
        INTERSECTION OBSERVER
     =========================== */
     const cardObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-          cardObserver.unobserve(entry.target);
-        }
-      });
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); cardObserver.unobserve(e.target); } });
     }, { threshold: 0.08 });
 
     function observeCards(selector = ".story-card") {
@@ -243,81 +585,37 @@
     /* ===========================
        HERO BANNER
     =========================== */
-    let heroStories = [];
-    let heroIndex = 0;
-    let heroTimer = null;
+    let heroStories = [], heroIndex = 0, heroTimer = null;
 
     function renderHeroSlide(index) {
-      const story = heroStories[index];
-      if (!story) return;
-
+      const story = heroStories[index]; if (!story) return;
       document.getElementById("heroTitle").textContent = story.title;
       document.getElementById("heroAuthor").textContent = "Tác giả: " + (story.author || "Không rõ");
       document.getElementById("heroViewCount").textContent = `🔥 ${story.view_count} lượt đọc tuần này`;
       document.getElementById("heroLink").href = `/read2.html?id=${story.id}`;
-
       const coverImg = document.getElementById("heroCoverImg");
-      if (coverImg) {
-        coverImg.src = story.cover_url || "/assets/images/Logo.png";
-        coverImg.alt = story.title;
-      }
-
-      document.querySelectorAll(".hero-slide").forEach((el, i) => {
-        el.classList.toggle("active", i === index);
-      });
-      document.querySelectorAll(".hero-dot").forEach((dot, i) => {
-        dot.classList.toggle("active", i === index);
-      });
+      if (coverImg) { coverImg.src = story.cover_url || "/assets/images/Logo.png"; coverImg.alt = story.title; }
+      document.querySelectorAll(".hero-slide").forEach((el,i) => el.classList.toggle("active", i===index));
+      document.querySelectorAll(".hero-dot").forEach((dot,i) => dot.classList.toggle("active", i===index));
     }
-
-    function heroGoto(index) {
-      heroIndex = (index + heroStories.length) % heroStories.length;
-      renderHeroSlide(heroIndex);
-    }
+    function heroGoto(index) { heroIndex=(index+heroStories.length)%heroStories.length; renderHeroSlide(heroIndex); }
 
     async function loadHeroBanner() {
       try {
         const res = await fetch("/api/stat/popular-week");
         const stories = await res.json();
-        if (!Array.isArray(stories) || stories.length === 0) return;
-
+        if (!Array.isArray(stories) || !stories.length) return;
         heroStories = stories;
-        const slidesEl = document.getElementById("heroSlides");
-        const dotsEl = document.getElementById("heroDots");
-
-        slidesEl.innerHTML = stories.map((s, i) => `
-          <div class="hero-slide ${i === 0 ? "active" : ""}"
-               style="background-image: url('${s.cover_url || "/assets/images/Logo.png"}');">
-          </div>
-        `).join("");
-
-        dotsEl.innerHTML = stories.map((_, i) => `
-          <div class="hero-dot ${i === 0 ? "active" : ""}" onclick="heroGoto(${i})"></div>
-        `).join("");
-
-        renderHeroSlide(0);
-        document.getElementById("heroBanner").classList.remove("hidden");
-
-        document.getElementById("heroPrev").addEventListener("click", () => {
-          clearInterval(heroTimer);
-          heroGoto(heroIndex - 1);
-          startHeroTimer();
-        });
-        document.getElementById("heroNext").addEventListener("click", () => {
-          clearInterval(heroTimer);
-          heroGoto(heroIndex + 1);
-          startHeroTimer();
-        });
-
+        const slidesEl=document.getElementById("heroSlides"), dotsEl=document.getElementById("heroDots");
+        slidesEl.innerHTML = stories.map((s,i)=>`<div class="hero-slide ${i===0?"active":""}" style="background-image:url('${s.cover_url||"/assets/images/Logo.png"}');"></div>`).join("");
+        dotsEl.innerHTML   = stories.map((_,i)=>`<div class="hero-dot ${i===0?"active":""}" onclick="heroGoto(${i})"></div>`).join("");
+        renderHeroSlide(0); document.getElementById("heroBanner").classList.remove("hidden");
+        document.getElementById("heroPrev").addEventListener("click",()=>{clearInterval(heroTimer);heroGoto(heroIndex-1);startHeroTimer();});
+        document.getElementById("heroNext").addEventListener("click",()=>{clearInterval(heroTimer);heroGoto(heroIndex+1);startHeroTimer();});
         startHeroTimer();
-      } catch (err) {
-        console.error("[index2] Lỗi tải hero banner:", err);
-      }
+      } catch (err) { console.error("[index2] Lỗi tải hero banner:", err); }
     }
-
-    function startHeroTimer() {
-      heroTimer = setInterval(() => heroGoto(heroIndex + 1), 4000);
-    }
+    function startHeroTimer() { heroTimer=setInterval(()=>heroGoto(heroIndex+1),4000); }
 
     /* ===========================
        RECOMMEND + POPULAR
@@ -326,26 +624,20 @@
       try {
         const res = await fetch("/api/recommend", { credentials: "include" });
         const data = await res.json();
-        const box = document.getElementById("recommendBox");
-        box.innerHTML = data.map(story => `
-          <a href="/read2.html?id=${story.id}"
-             class="story-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <img src="${story.cover_url || '/assets/images/Logo.png'}"
-                 class="w-full h-48 object-cover hover:scale-105 transition-transform duration-500">
+        document.getElementById("recommendBox").innerHTML = data.map(story => `
+          <a href="/read2.html?id=${story.id}" class="story-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <img src="${story.cover_url||'/assets/images/Logo.png'}" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-500">
             <div class="p-3">
               <h3 class="font-semibold text-indigo-700 truncate">${story.title}</h3>
-              <p class="text-xs text-gray-500 mt-1 truncate">${story.genres || "Chưa rõ thể loại"}</p>
+              <p class="text-xs text-gray-500 mt-1 truncate">${story.genres||"Chưa rõ thể loại"}</p>
               <div class="flex justify-between items-center mt-2 text-xs">
                 <span class="text-gray-500"><i class="fa-solid fa-eye"></i> ${story.view_count}</span>
-                <span class="text-yellow-600 font-semibold">⭐ ${story.avg_rating ? story.avg_rating.toFixed(1) : "0.0"}</span>
+                <span class="text-yellow-600 font-semibold">⭐ ${story.avg_rating?story.avg_rating.toFixed(1):"0.0"}</span>
               </div>
             </div>
-          </a>
-        `).join("");
+          </a>`).join("");
         observeCards();
-      } catch (err) {
-        console.error("[index2] Lỗi loadRecommend:", err);
-      }
+      } catch (err) { console.error("[index2] Lỗi loadRecommend:", err); }
     }
 
     async function loadPopularWeek() {
@@ -353,17 +645,10 @@
         const res = await fetch("/api/stat/popular-week");
         const data = await res.json();
         const box = document.getElementById("recommendPopular");
-
-        if (!data.length) {
-          box.innerHTML = `<p class="col-span-2 text-sm text-gray-500 italic">Chưa có dữ liệu tuần này</p>`;
-          return;
-        }
-
+        if (!data.length) { box.innerHTML=`<p class="col-span-2 text-sm text-gray-500 italic">Chưa có dữ liệu tuần này</p>`; return; }
         box.innerHTML = data.map(story => `
-          <a href="/read2.html?id=${story.id}"
-             class="story-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <img src="${story.cover_url || '/assets/images/Logo.png'}"
-                 class="w-full h-48 object-cover hover:scale-105 transition-transform duration-500">
+          <a href="/read2.html?id=${story.id}" class="story-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <img src="${story.cover_url||'/assets/images/Logo.png'}" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-500">
             <div class="p-3">
               <h3 class="font-semibold text-red-600 truncate">${story.title}</h3>
               <p class="text-xs text-gray-500 mt-1 truncate">Đọc nhiều nhất tuần</p>
@@ -372,79 +657,60 @@
                 <span class="text-red-600 font-semibold">🔥 HOT</span>
               </div>
             </div>
-          </a>
-        `).join("");
+          </a>`).join("");
         observeCards();
-      } catch (err) {
-        console.error("[index2] Lỗi loadPopularWeek:", err);
-      }
+      } catch (err) { console.error("[index2] Lỗi loadPopularWeek:", err); }
     }
 
     /* ===========================
-       LOAD STORIES (với skeleton)
+       LOAD STORIES
     =========================== */
-    let pageMode = "home"; // "home" | "genre" | "rating" | "newest"
-    let currentPage = 1;
-    const limit = 12;
-
-    async function loadStories(page = 1, search = "") {
-      if (pageMode === "genre") return;
+    async function loadStories(page = 1) {
       try {
         currentPage = page;
 
-        // Sync page + mode vào URL để history.back() khôi phục đúng trang
-        const _p = new URLSearchParams();
-        if (pageMode === "rating") _p.set("sort", "rating");
-        else if (pageMode === "newest") _p.set("sort", "newest");
-        if (page > 1) _p.set("page", page);
-        history.replaceState(null, "", _p.toString() ? "?" + _p.toString() : "/index2.html");
+        const apiP = new URLSearchParams({ page, limit });
+        if (filters.search)         apiP.set("search",  filters.search);
+        if (filters.genres.length)  apiP.set("genres",  filters.genres.join(","));
+        if (filters.status)         apiP.set("status",  filters.status);
+        if (filters.sort !== "newest") apiP.set("sort", filters.sort);
+        if (filters.length)         apiP.set("length",  filters.length);
+
+        const urlP = new URLSearchParams();
+        if (page > 1) urlP.set("page", page);
+        if (filters.genres.length)     urlP.set("genres",  filters.genres.join(","));
+        if (filters.status)            urlP.set("status",  filters.status);
+        if (filters.sort !== "newest") urlP.set("sort",    filters.sort);
+        if (filters.length)            urlP.set("length",  filters.length);
+        history.replaceState(null, "", urlP.toString() ? `?${urlP}` : "/index2.html");
 
         showSkeletons("story-list");
 
-        let url;
-        if (pageMode === "rating") {
-          url = `/api/stories/top-rated?page=${page}&limit=${limit}`;
-        } else if (pageMode === "newest") {
-          url = `/api/stories/newest?page=${page}&limit=${limit}`;
-        } else {
-          const query = search ? `&q=${encodeURIComponent(search)}` : "";
-          url = `/api/stories?page=${page}&limit=${limit}${query}`;
-        }
-
-        const res = await fetch(url);
+        const res  = await fetch(`/api/stories?${apiP}`);
         const data = await res.json();
 
-        if (pageMode === "home") {
-          const me = await fetch("/api/import/me", { credentials: "include" });
-          if (me.ok) loadRecommend();
-        }
-
-        const container = document.getElementById("story-list");
         const cards = await Promise.all(
-          data.stories.map(async (story) => {
+          (data.stories || []).map(async (story) => {
             const rRes = await fetch(`/api/rating?story_id=${story.id}`);
             const rating = await rRes.json();
             const isHot = story.view_count >= 100;
-
             return `
 <div class="story-card bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
-  ${isHot ? `<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">🔥 HOT</span>` : ""}
+  ${isHot?`<span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10">🔥 HOT</span>`:""}
   <a href="read2.html?id=${story.id}">
-    <img src="${story.cover_url || '/assets/images/Logo.png'}" alt="${story.title}"
-         class="w-full h-44 object-cover hover:scale-105 transition-transform duration-500">
+    <img src="${story.cover_url||'/assets/images/Logo.png'}" alt="${story.title}" class="w-full h-44 object-cover hover:scale-105 transition-transform duration-500">
   </a>
   <div class="p-3">
     <a href="read2.html?id=${story.id}">
       <h3 class="text-sm font-semibold text-indigo-700 mb-1 truncate hover:underline">${story.title}</h3>
     </a>
-    <p class="text-xs text-gray-600 mb-1">Tác giả: ${story.author || "Không rõ"}</p>
-    <p class="text-xs text-gray-500 mb-1">Thể loại: ${story.genres || "Chưa rõ"}</p>
+    <p class="text-xs text-gray-600 mb-1">Tác giả: ${story.author||"Không rõ"}</p>
+    <p class="text-xs text-gray-500 mb-1">Thể loại: ${(story.genres||[]).join(", ")||"Chưa rõ"}</p>
     <div class="flex items-center justify-between mt-1">
-      <button onclick="openFavModal(${story.id})"
-              class="px-2 py-0.5 text-xs bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200">
+      <button onclick="openFavModal(${story.id})" class="px-2 py-0.5 text-xs bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200">
         <i class="fa-solid fa-heart mr-1"></i>Yêu thích
       </button>
-      <p class="text-yellow-600 text-xs font-semibold">⭐ ${rating.avg?.toFixed(1) || 0}</p>
+      <p class="text-yellow-600 text-xs font-semibold">⭐ ${rating.avg?.toFixed(1)||0}</p>
     </div>
     <p class="mt-1 text-xs text-gray-500"><i class="fa-solid fa-eye"></i> ${story.view_count} lượt đọc</p>
   </div>
@@ -452,109 +718,25 @@
           })
         );
 
-        container.innerHTML = cards.join("");
+        document.getElementById("story-list").innerHTML = cards.join("");
         observeCards();
         renderPagination(data.page, data.totalPages);
-      } catch (err) {
-        console.error("[index2] Lỗi tải truyện:", err);
-      }
-    }
-
-    async function filterByGenre(genre) {
-      try {
-        pageMode = "genre";
-        currentPage = 1;
-        document.getElementById("recommendSection")?.classList.add("hidden");
-
-        const header = document.getElementById("genreHeader");
-        header.classList.remove("hidden");
-        document.getElementById("genreTitle").textContent = `📚 Thể loại: ${genre}`;
-        setActiveNavBtn("genreBtn");
-
-        const list = document.getElementById("story-list");
-        showSkeletons("story-list", 8);
-
-        const res = await fetch(`/api/stories/by-genre?genre=${encodeURIComponent(genre)}`);
-        const stories = await res.json();
-
-        if (!stories.length) {
-          list.innerHTML = `<p class="text-gray-500 italic col-span-full">Không có truyện thuộc thể loại "${genre}"</p>`;
-          return;
-        }
-
-        list.innerHTML = stories.map(story => `
-          <a href="/read2.html?id=${story.id}"
-             class="story-card bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <img src="${story.cover_url || '/assets/images/Logo.png'}"
-                 class="w-full h-48 object-cover hover:scale-105 transition-transform duration-500">
-            <div class="p-3">
-              <h3 class="font-semibold text-indigo-700 truncate">${story.title}</h3>
-              <p class="text-xs text-gray-500 mt-1 truncate">${(story.genres || []).join(", ")}</p>
-            </div>
-          </a>
-        `).join("");
-        observeCards();
-      } catch (err) {
-        console.error("[index2] filterByGenre error:", err);
-      }
-    }
-
-    function resetHome() {
-      pageMode = "home";
-      currentPage = 1;
-      document.getElementById("recommendSection")?.classList.remove("hidden");
-      document.getElementById("genreHeader")?.classList.add("hidden");
-      history.replaceState(null, "", "/index2.html");
-      setActiveNavBtn(null);
-      loadRecommend();
-      loadPopularWeek();
-      loadStories();
-    }
-
-    function toggleDescription(button) {
-      const desc = button.previousElementSibling;
-      if (desc.classList.contains('collapsed')) {
-        desc.classList.remove('collapsed');
-        button.textContent = "Thu gọn";
-      } else {
-        desc.classList.add('collapsed');
-        button.textContent = "Xem thêm";
-      }
+      } catch (err) { console.error("[index2] Lỗi tải truyện:", err); }
     }
 
     function renderPagination(current, total) {
       const pagination = document.getElementById("pagination");
-      let html = "";
-
-      html += `<button ${current === 1 ? "disabled" : `onclick="loadStories(${current - 1})"`}
-        class="px-3 py-1 text-sm rounded-lg ${current === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">« Trước</button>`;
-
-      const maxButtons = 5;
-      const half = Math.floor(maxButtons / 2);
-      let start = Math.max(1, current - half);
-      let end = Math.min(total, current + half);
-      if (end - start < maxButtons - 1) {
-        if (start === 1) end = Math.min(total, start + maxButtons - 1);
-        else if (end === total) start = Math.max(1, total - maxButtons + 1);
-      }
-
-      if (start > 1) {
-        html += `<button onclick="loadStories(1)" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">1</button>`;
-        if (start > 2) html += `<span class="px-2 text-gray-500">…</span>`;
-      }
-      for (let i = start; i <= end; i++) {
-        html += `<button onclick="loadStories(${i})"
-          class="px-3 py-1 text-sm rounded-lg ${i === current ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">${i}</button>`;
-      }
-      if (end < total) {
-        if (end < total - 1) html += `<span class="px-2 text-gray-500">…</span>`;
-        html += `<button onclick="loadStories(${total})" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">${total}</button>`;
-      }
-
-      html += `<button ${current === total ? "disabled" : `onclick="loadStories(${current + 1})"`}
-        class="px-3 py-1 text-sm rounded-lg ${current === total ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-100'}">Sau »</button>`;
-
-      pagination.innerHTML = `<div class="flex flex-wrap justify-center items-center gap-1 sm:gap-2">${html}</div>`;
+      let html = `<button ${current===1?"disabled":`onclick="loadStories(${current-1})"`}
+        class="px-3 py-1 text-sm rounded-lg ${current===1?'bg-gray-100 text-gray-400 cursor-not-allowed':'bg-white text-indigo-600 hover:bg-indigo-100'}">« Trước</button>`;
+      const maxB=5,half=Math.floor(maxB/2);
+      let start=Math.max(1,current-half),end=Math.min(total,current+half);
+      if(end-start<maxB-1){if(start===1)end=Math.min(total,start+maxB-1);else if(end===total)start=Math.max(1,total-maxB+1);}
+      if(start>1){html+=`<button onclick="loadStories(1)" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">1</button>`;if(start>2)html+=`<span class="px-2 text-gray-500">…</span>`;}
+      for(let i=start;i<=end;i++)html+=`<button onclick="loadStories(${i})" class="px-3 py-1 text-sm rounded-lg ${i===current?'bg-indigo-600 text-white':'bg-white text-indigo-600 hover:bg-indigo-100'}">${i}</button>`;
+      if(end<total){if(end<total-1)html+=`<span class="px-2 text-gray-500">…</span>`;html+=`<button onclick="loadStories(${total})" class="px-3 py-1 text-sm rounded-lg bg-white hover:bg-indigo-100">${total}</button>`;}
+      html+=`<button ${current===total?"disabled":`onclick="loadStories(${current+1})"`}
+        class="px-3 py-1 text-sm rounded-lg ${current===total?'bg-gray-100 text-gray-400 cursor-not-allowed':'bg-white text-indigo-600 hover:bg-indigo-100'}">Sau »</button>`;
+      pagination.innerHTML=`<div class="flex flex-wrap justify-center items-center gap-1 sm:gap-2">${html}</div>`;
     }
 
     /* ===========================
@@ -567,11 +749,9 @@
       document.getElementById("favModal").classList.remove("hidden");
       const favListContainer = document.getElementById("favListContainer");
       favListContainer.innerHTML = `<p class="text-gray-500 italic">Đang tải danh sách...</p>`;
-
       try {
         const res = await fetch("/api/favlists", { credentials: "include" });
         const favLists = res.ok ? await res.json() : [];
-
         if (!favLists.length) {
           favListContainer.innerHTML = `<p class="text-gray-500 text-sm">Bạn chưa có danh sách nào. Hãy tạo trong <a href="/fav.html" class="text-indigo-600 hover:underline">Yêu thích</a>.</p>`;
         } else {
@@ -579,118 +759,82 @@
             <button onclick="addStoryToList(${list.id}, '${list.name.replace(/'/g, "\\'")}')"
               class="w-full text-left px-4 py-2 border border-gray-200 rounded hover:bg-indigo-50">
               <i class="fa-solid fa-heart mr-2 text-pink-500"></i>${list.name}
-            </button>
-          `).join("");
+            </button>`).join("");
         }
-      } catch (err) {
-        console.error("[index2] Lỗi lấy danh sách yêu thích:", err);
-      }
+      } catch (err) { console.error("[index2] Lỗi lấy danh sách yêu thích:", err); }
     }
 
     document.getElementById("closeFavModal").addEventListener("click", () => {
-      document.getElementById("favModal").classList.add("hidden");
-      selectedStoryId = null;
+      document.getElementById("favModal").classList.add("hidden"); selectedStoryId = null;
     });
 
     document.getElementById("createListBtn").addEventListener("click", async () => {
       const name = document.getElementById("newListName").value.trim();
       if (!name) return showAlert("warning", "Vui lòng nhập tên danh sách!", "Cảnh báo");
       try {
-        const res = await fetch("/api/favlists", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ name }),
-        });
+        const res = await fetch("/api/favlists", { method:"POST", headers:{"Content-Type":"application/json"}, credentials:"include", body:JSON.stringify({name}) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Không thể tạo danh sách");
         document.getElementById("newListName").value = "";
         showAlert("success", `Đã tạo danh sách "${name}"!`, "Thành công");
         openFavModal(selectedStoryId);
-      } catch (err) {
-        alert("❌ " + err.message);
-      }
+      } catch (err) { showAlert("error", err.message, "Lỗi"); }
     });
 
     async function addStoryToList(listId, listName) {
       if (!selectedStoryId) return showAlert("error", "Không có truyện nào được chọn!", "Lỗi");
       try {
-        const res = await fetch(`/api/favlists/${listId}/stories`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ storyId: selectedStoryId }),
-        });
+        const res = await fetch(`/api/favlists/${listId}/stories`, { method:"POST", headers:{"Content-Type":"application/json"}, credentials:"include", body:JSON.stringify({storyId:selectedStoryId}) });
         const data = await res.json();
-        if (res.ok) {
-          showAlert("success", `Đã thêm truyện vào danh sách "${listName}"!`, "Thành công");
-          document.getElementById("favModal").classList.add("hidden");
-          selectedStoryId = null;
-        } else {
-          showAlert("info", data.message || "Truyện đã có trong danh sách!", "Thông báo");
-        }
-      } catch (err) {
-        console.error("[index2] Lỗi thêm truyện:", err);
-        alert("Lỗi kết nối đến server!");
-      }
-    }
-
-    async function filterBySort(sort, initialPage = 1) {
-      try {
-        pageMode = sort;
-        currentPage = 1;
-        document.getElementById("recommendSection")?.classList.add("hidden");
-        const header = document.getElementById("genreHeader");
-        header.classList.remove("hidden");
-        document.getElementById("genreTitle").textContent =
-          sort === "rating" ? "⭐ Xếp hạng cao nhất" : "🆕 Truyện mới nhất";
-        setActiveNavBtn(sort === "rating" ? "btnRating" : "btnNewest");
-        await loadStories(initialPage);
-      } catch (err) {
-        console.error("[index2] filterBySort error:", err);
-      }
-    }
-
-    function setActiveNavBtn(activeId) {
-      const map = {
-        btnRating:  ["bg-yellow-50", "text-yellow-700", "bg-yellow-200", "text-yellow-900"],
-        btnNewest:  ["bg-green-50",  "text-green-700",  "bg-green-200",  "text-green-900"],
-        genreBtn:   ["bg-indigo-50", "text-indigo-700", "bg-indigo-200", "text-indigo-900"],
-      };
-      Object.entries(map).forEach(([id, [defBg, defText, actBg, actText]]) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (id === activeId) {
-          el.classList.replace(defBg, actBg);
-          el.classList.replace(defText, actText);
-        } else {
-          el.classList.replace(actBg, defBg);
-          el.classList.replace(actText, defText);
-        }
-      });
+        if (res.ok) { showAlert("success",`Đã thêm truyện vào danh sách "${listName}"!`,"Thành công"); document.getElementById("favModal").classList.add("hidden"); selectedStoryId=null; }
+        else showAlert("info", data.message||"Truyện đã có trong danh sách!", "Thông báo");
+      } catch (err) { console.error("[index2] Lỗi thêm truyện:",err); showAlert("error","Lỗi kết nối đến server!","Lỗi"); }
     }
 
     /* ===========================
        INIT
     =========================== */
+    document.addEventListener("click", (e) => {
+      const wrapper = document.getElementById("filterGenreDropdownWrapper");
+      if (wrapper && !wrapper.contains(e.target) && genreDropdownOpen) closeGenreDropdown();
+      ["status", "length", "sort"].forEach(key => {
+        if (customDropdownOpen[key]) {
+          const w = document.getElementById(key + "DropdownWrapper");
+          if (w && !w.contains(e.target)) closeCustomDropdown(key);
+        }
+      });
+    });
+
     document.addEventListener("DOMContentLoaded", () => {
       loadHeroBanner();
-      const urlParams = new URLSearchParams(window.location.search);
-      const genre = urlParams.get("genre");
-      const sort = urlParams.get("sort");
-      const page = parseInt(urlParams.get("page")) || 1;
-      if (genre) {
-        filterByGenre(genre);
-      } else if (sort === "rating" || sort === "newest") {
-        filterBySort(sort, page);
+      loadGenreChips();
+
+      const up = new URLSearchParams(window.location.search);
+      const legacyGenre = up.get("genre");
+      filters.genres = legacyGenre ? [legacyGenre] : (up.get("genres") ? up.get("genres").split(",").filter(Boolean) : []);
+      filters.status = up.get("status") || "";
+      const s = up.get("sort") || "newest";
+      filters.sort   = ["newest","views","rating","az"].includes(s) ? s : "newest";
+      filters.length = up.get("length") || "";
+
+      applyFiltersToUI();
+      const page = parseInt(up.get("page")) || 1;
+      const hasFilter = filters.genres.length || filters.status || filters.sort !== "newest" || filters.length;
+
+      if (hasFilter) {
+        document.getElementById("recommendSection")?.classList.add("hidden");
+        if (!filterOpen) toggleFilterPanel();
+        loadStories(page);
       } else {
-        pageMode = "home";
         loadRecommend();
         loadPopularWeek();
         loadStories(page);
       }
     });
   </script>
+
+  <script src="/assets/js/chat.js"></script>
+  <script>initChatWidget();</script>
 </body>
 
 </html>
