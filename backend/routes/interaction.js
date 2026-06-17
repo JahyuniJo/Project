@@ -23,11 +23,16 @@ router.get("/", authMiddleware, async (req, res) => {
 });
 
 // Tạo danh sách mới
+const MAX_LIST_NAME_LENGTH = 100;
+
 router.post("/", authMiddleware, async (req, res) => {
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
 
   if (!name) {
     return res.status(400).json({ message: "Tên danh sách không được để trống" });
+  }
+  if (name.length > MAX_LIST_NAME_LENGTH) {
+    return res.status(400).json({ message: `Tên danh sách tối đa ${MAX_LIST_NAME_LENGTH} ký tự` });
   }
 
   try {
@@ -61,6 +66,9 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
   if (!name) {
     return res.status(400).json({ message: "Tên danh sách không được để trống" });
+  }
+  if (name.length > MAX_LIST_NAME_LENGTH) {
+    return res.status(400).json({ message: `Tên danh sách tối đa ${MAX_LIST_NAME_LENGTH} ký tự` });
   }
 
   try {
@@ -191,21 +199,20 @@ router.delete("/:listId/stories/:storyId", authMiddleware, async (req, res) => {
   }
 
   try {
-    const check = await pool.query(
-      "SELECT id FROM favorite_lists WHERE id = $1 AND iduser = $2",
-      [listId, req.user.userId]
-    );
-    if (check.rows.length === 0) {
-      return res.status(403).json({ message: "Bạn không có quyền sửa danh sách này" });
-    }
-
+    // Kiểm tra quyền sở hữu và xóa trong một query — tránh race condition
     const result = await pool.query(
-      "DELETE FROM favorite_stories WHERE list_id = $1 AND story_id = $2 RETURNING id",
-      [listId, storyId]
+      `DELETE FROM favorite_stories fs
+       USING favorite_lists fl
+       WHERE fs.list_id = fl.id
+         AND fl.iduser = $1
+         AND fs.list_id = $2
+         AND fs.story_id = $3
+       RETURNING fs.id`,
+      [req.user.userId, listId, storyId]
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Truyện không tồn tại trong danh sách" });
+      return res.status(404).json({ message: "Truyện không tồn tại trong danh sách hoặc bạn không có quyền" });
     }
 
     res.json({ message: "Đã xóa truyện khỏi danh sách" });

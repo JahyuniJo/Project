@@ -8,12 +8,12 @@ Website đọc truyện trực tuyến tích hợp AI và tìm kiếm toàn văn
 
 ## Kiến trúc hệ thống
 
-**Monorepo**: Backend Express phục vụ luôn các file HTML tĩnh của frontend.
+**Monorepo**: Backend Express phục vụ SPA React build sẵn và làm API server.
 
 ```
 Project/
 ├── backend/
-│   ├── app.js                  # Entry point: HTTP, Socket.io, routes, static serving
+│   ├── app.js                  # Entry point: HTTP, Socket.io, routes, serve SPA dist
 │   ├── config/
 │   │   ├── pool.js             # pg Pool — dùng cho tất cả query trực tiếp
 │   │   ├── db.js               # Sequelize — chỉ dùng cho model ORM
@@ -55,13 +55,21 @@ Project/
 │       ├── validators.js       # Hằng số validate dùng chung (EMAIL_REGEX, MIN_PASSWORD_LENGTH)
 │       └── createChatTables.js # Migration script: bảng chat_messages + index
 ├── frontend/
-│   ├── pages/
-│   │   ├── public/             # index, login, register, read, forgot/reset-password
-│   │   └── private/            # index2, admin, info, stories, user, read2, fav, stat, reports
-│   ├── assets/
-│   │   ├── images/             # Logo, favicon
-│   │   └── js/                 # comments.js, chat.js và các file JS theo trang
-│   └── components/             # alertModal.html, alertModal.js
+│   ├── app/                    # React SPA (Vite + Tailwind v4)
+│   │   ├── src/
+│   │   │   ├── main.jsx        # Mount + BrowserRouter + QueryClient + AuthProvider
+│   │   │   ├── App.jsx         # Khai báo toàn bộ <Routes>
+│   │   │   ├── api/            # client.js + stories.js + auth.js + admin.js + ...
+│   │   │   ├── context/        # AuthContext.jsx, AlertContext.jsx
+│   │   │   ├── components/     # Layout, Header, AdminLayout, ChatWidget, CommentTree, ...
+│   │   │   └── pages/
+│   │   │       ├── public/     # Home, Login, Register, Read, Chapter, ForgotPassword, ResetPassword
+│   │   │       ├── private/    # Home2, Info, Read2, Fav, ErrorReport
+│   │   │       └── admin/      # Dashboard, Users, Stat, Stories, Reports, Chat
+│   │   ├── dist/               # Build output — Express serve từ đây (production)
+│   │   └── vite.config.js      # Proxy /api /socket.io /uploads /assets → :3001 (dev)
+│   └── assets/
+│       └── images/             # Logo, favicon (Express serve tại /assets)
 ├── .env.example                # Template biến môi trường
 ├── nodemon.json                # Dev watcher
 └── package.json
@@ -79,7 +87,10 @@ Project/
 | AI | **Groq API** — model `llama-3.1-8b-instant` |
 | Realtime | Socket.io |
 | Crawler | Axios + Cheerio + Puppeteer (fallback cho trang yêu cầu JS) |
-| Frontend | **Vanilla HTML + CSS + JavaScript** |
+| Frontend | **React 18 + Vite + Tailwind CSS v4** (`frontend/app/`) |
+| Routing | React Router v6 — `BrowserRouter`, `ProtectedRoute`, `AdminLayout` |
+| Server state | TanStack Query (React Query) — cache, loading/error tự động |
+| HTTP client | Axios — instance `withCredentials: true`, interceptor 401 → `/login` |
 | Auth | JWT trong HTTP-only cookie (`authToken`) |
 | ORM | `pg` Pool (queries) + Sequelize (model schema) |
 
@@ -88,8 +99,16 @@ Project/
 ## Cách chạy dự án
 
 ```bash
-# Server (từ thư mục gốc)
-npm start          # nodemon → node backend/app.js — http://localhost:3000
+# Backend (từ thư mục gốc)
+npm start          # nodemon → node backend/app.js — http://localhost:3001
+
+# Frontend dev (từ frontend/app/)
+cd frontend/app
+npm run dev        # Vite dev server :5173, proxy /api + /socket.io → :3001
+
+# Frontend build (production)
+cd frontend/app
+npm run build      # Output → frontend/app/dist/ (Express serve từ đây)
 
 # Elasticsearch (từ backend/)
 cd backend
@@ -98,6 +117,8 @@ npm run es:sync           # Sync dữ liệu PostgreSQL → Elasticsearch
 ```
 
 **Yêu cầu:** PostgreSQL tại `localhost:5432`, Elasticsearch tại `localhost:9200`.
+
+**Lưu ý dev:** Chạy backend (:3001) và `npm run dev` frontend (:5173) song song. Vite proxy đảm bảo cookie JWT hoạt động đúng (cùng origin).
 
 ---
 
@@ -203,24 +224,32 @@ Dự án dùng **hai module riêng biệt**:
 
 ---
 
-## HTML Pages & Bảo vệ route
+## React Routes & Bảo vệ route
 
-| URL | File | Quyền |
+Frontend là SPA React — bảo vệ route thật vẫn ở API (JWT middleware). Client-side `<ProtectedRoute>` chỉ là UX (redirect khi chưa đăng nhập / sai role).
+
+| Route React | Component | Guard |
 |---|---|---|
-| `/` | `public/index.html` | Tất cả |
-| `/login.html` | `public/login.html` | Tất cả |
-| `/register.html` | `public/register.html` | Tất cả |
-| `/read.html` | `public/read.html` | Tất cả |
-| `/index2.html` | `private/index2.html` | Đăng nhập |
-| `/info.html` | `private/info.html` | Đăng nhập |
-| `/read2.html` | `private/read2.html` | Role: `user` hoặc `admin` |
-| `/fav.html` | `private/fav.html` | Role: `user` |
-| `/error-report.html` | `private/error-report.html` | Role: `user` |
-| `/admin.html` | `private/admin.html` | Role: `admin` |
-| `/stories.html` | `private/stories.html` | Role: `admin` |
-| `/user.html` | `private/user.html` | Role: `admin` |
-| `/stat.html` | `private/stat.html` | Role: `admin` |
-| `/admin-report.html` | `private/admin-report.html` | Role: `admin` |
+| `/` | `pages/public/Home` | Tất cả |
+| `/login` | `pages/public/Login` | Tất cả |
+| `/register` | `pages/public/Register` | Tất cả |
+| `/forgot` | `pages/public/ForgotPassword` | Tất cả |
+| `/reset-password` | `pages/public/ResetPassword` | Tất cả |
+| `/read` | `pages/public/Read` | Tất cả |
+| `/chapter/:id` | `pages/public/Chapter` | Tất cả |
+| `/home` | `pages/private/Home2` | Đăng nhập |
+| `/info` | `pages/private/Info` | Đăng nhập |
+| `/read2` | `pages/private/Read2` | Đăng nhập |
+| `/fav` | `pages/private/Fav` | Role: `user` |
+| `/error-report` | `pages/private/ErrorReport` | Role: `user` |
+| `/admin` | `pages/admin/Dashboard` | Role: `admin` |
+| `/admin/stories` | `pages/admin/Stories` | Role: `admin` |
+| `/admin/users` | `pages/admin/Users` | Role: `admin` |
+| `/admin/stat` | `pages/admin/Stat` | Role: `admin` |
+| `/admin/reports` | `pages/admin/Reports` | Role: `admin` |
+| `/admin/chat` | `pages/admin/Chat` | Role: `admin` |
+
+Admin routes dùng `<AdminLayout>` (fixed sidebar + header riêng), tách biệt khỏi `<Layout>` công cộng.
 
 ---
 
@@ -258,29 +287,234 @@ Dự án dùng **hai module riêng biệt**:
 
 ---
 
-## Database Schema (PostgreSQL)
+## Database table (PostgreSQL)
 
-- `stories` — id, title, author, description, url, cover_url, genres(text[]), status, view_count, ai_summary, created_at
-- `chapters` — id, story_id (FK→stories CASCADE), chapter_num(float8), title, source_url, created_at. UNIQUE(story_id, chapter_num)
-- `chapter_contents` — chapter_id (PK, FK→chapters CASCADE), images(jsonb), crawled_at. 1-1 với chapters, lưu danh sách URL ảnh của chương
-- `users` — id, email(UNIQUE), username, password, role, avatar_url, otp, otp_expires
-- `comments` — id, story_id, user_id, parent_id, content, likes, created_at, updated_at
-- `comment_likes` — id, user_id, comment_id. UNIQUE(user_id, comment_id)
-- `ratings` — id, story_id, user_id, rating. UNIQUE(story_id, user_id)
-- `user_story_views` — id, user_id, story_id, viewed_at
-- `notifications` — id, user_email, message, is_read, created_at
-- `favorite_lists` — id, iduser, name, created_at
-- `favorite_stories` — id, list_id, story_id, added_at. UNIQUE(list_id, story_id)
-- `reports` — id, title, story_url, message, screenshot_path, user_email, status(pending/fixing/done/ignored), response, created_at, updated_at
-- `chat_messages` — id, user_id (FK→users CASCADE), story_id (FK→stories CASCADE), role(user/assistant), content, created_at
+-- This script was generated by the ERD tool in pgAdmin 4.
+-- Please log an issue at https://github.com/pgadmin-org/pgadmin4/issues/new/choose if you find any bugs, including reproduction steps.
+BEGIN;
+
+
+CREATE TABLE IF NOT EXISTS public.chapter_contents
+(
+    chapter_id integer NOT NULL,
+    images jsonb NOT NULL,
+    crawled_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT chapter_contents_pkey PRIMARY KEY (chapter_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.chapters
+(
+    id serial NOT NULL,
+    story_id integer NOT NULL,
+    chapter_num double precision NOT NULL,
+    title text COLLATE pg_catalog."default",
+    source_url text COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT chapters_pkey PRIMARY KEY (id),
+    CONSTRAINT chapters_story_id_chapter_num_key UNIQUE (story_id, chapter_num)
+);
+
+CREATE TABLE IF NOT EXISTS public.chat_messages
+(
+    id serial NOT NULL,
+    user_id integer NOT NULL,
+    story_id integer,
+    role character varying(10) COLLATE pg_catalog."default" NOT NULL,
+    content text COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    metadata jsonb,
+    CONSTRAINT chat_messages_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.comment_likes
+(
+    id serial NOT NULL,
+    user_id integer,
+    comment_id integer,
+    CONSTRAINT comment_likes_pkey PRIMARY KEY (id),
+    CONSTRAINT comment_likes_user_id_comment_id_key UNIQUE (user_id, comment_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.comments
+(
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+    story_id integer NOT NULL,
+    user_id integer NOT NULL,
+    parent_id integer,
+    content text COLLATE pg_catalog."default" NOT NULL,
+    likes integer DEFAULT 0,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT comments_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.favorite_lists
+(
+    id serial NOT NULL,
+    iduser integer,
+    name text COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT favorite_lists_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.favorite_stories
+(
+    id serial NOT NULL,
+    list_id integer,
+    story_id integer,
+    added_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT favorite_stories_pkey PRIMARY KEY (id),
+    CONSTRAINT favorite_stories_list_id_story_id_key UNIQUE (list_id, story_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.notifications
+(
+    id serial NOT NULL,
+    user_email text COLLATE pg_catalog."default" NOT NULL,
+    message text COLLATE pg_catalog."default" NOT NULL,
+    is_read boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT now(),
+    link text COLLATE pg_catalog."default",
+    CONSTRAINT notifications_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.ratings
+(
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+    story_id integer NOT NULL,
+    user_id integer NOT NULL,
+    rating integer NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ratings_pkey PRIMARY KEY (id),
+    CONSTRAINT unique_rating UNIQUE (story_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.reports
+(
+    id serial NOT NULL,
+    title character varying(255) COLLATE pg_catalog."default",
+    story_url text COLLATE pg_catalog."default",
+    message text COLLATE pg_catalog."default" NOT NULL,
+    screenshot_path text COLLATE pg_catalog."default",
+    status character varying(20) COLLATE pg_catalog."default" DEFAULT 'pending'::character varying,
+    user_email character varying(255) COLLATE pg_catalog."default",
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    response text COLLATE pg_catalog."default",
+    updated_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT reports_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.stories
+(
+    id serial NOT NULL,
+    title character varying(300) COLLATE pg_catalog."default" NOT NULL,
+    author character varying(100) COLLATE pg_catalog."default",
+    description text COLLATE pg_catalog."default",
+    cover_url text COLLATE pg_catalog."default",
+    status character varying(20) COLLATE pg_catalog."default",
+    created_at timestamp without time zone DEFAULT now(),
+    genres text[] COLLATE pg_catalog."default",
+    url text COLLATE pg_catalog."default",
+    view_count integer DEFAULT 0,
+    ai_summary text COLLATE pg_catalog."default",
+    CONSTRAINT stories_pkey PRIMARY KEY (id),
+    CONSTRAINT unique_story_title UNIQUE (title)
+);
+
+CREATE TABLE IF NOT EXISTS public.user_story_views
+(
+    id serial NOT NULL,
+    user_id integer NOT NULL,
+    story_id integer NOT NULL,
+    viewed_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT user_story_views_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.users
+(
+    id serial NOT NULL,
+    username character varying(100) COLLATE pg_catalog."default",
+    email character varying(100) COLLATE pg_catalog."default",
+    password character varying(200) COLLATE pg_catalog."default",
+    role character varying(10) COLLATE pg_catalog."default" DEFAULT 'user'::character varying,
+    avatar_url text COLLATE pg_catalog."default" DEFAULT '/images/default-avatar.png'::text,
+    otp character varying(6) COLLATE pg_catalog."default",
+    otp_expires timestamp without time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    locked_until timestamp with time zone,
+    CONSTRAINT users_pkey PRIMARY KEY (id),
+    CONSTRAINT users_email_key UNIQUE (email)
+);
+
+ALTER TABLE IF EXISTS public.chapter_contents
+    ADD CONSTRAINT chapter_contents_chapter_id_fkey FOREIGN KEY (chapter_id)
+    REFERENCES public.chapters (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS chapter_contents_pkey
+    ON public.chapter_contents(chapter_id);
+
+
+ALTER TABLE IF EXISTS public.chapters
+    ADD CONSTRAINT chapters_story_id_fkey FOREIGN KEY (story_id)
+    REFERENCES public.stories (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.chat_messages
+    ADD CONSTRAINT chat_messages_story_id_fkey FOREIGN KEY (story_id)
+    REFERENCES public.stories (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.chat_messages
+    ADD CONSTRAINT chat_messages_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES public.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.comment_likes
+    ADD CONSTRAINT comment_likes_comment_id_fkey FOREIGN KEY (comment_id)
+    REFERENCES public.comments (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.comment_likes
+    ADD CONSTRAINT comment_likes_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES public.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.favorite_lists
+    ADD CONSTRAINT favorite_lists_iduser_fkey FOREIGN KEY (iduser)
+    REFERENCES public.users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_favorite_lists_iduser
+    ON public.favorite_lists(iduser);
+
+
+ALTER TABLE IF EXISTS public.favorite_stories
+    ADD CONSTRAINT favorite_stories_list_id_fkey FOREIGN KEY (list_id)
+    REFERENCES public.favorite_lists (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public.favorite_stories
+    ADD CONSTRAINT favorite_stories_story_id_fkey FOREIGN KEY (story_id)
+    REFERENCES public.stories (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+END;
 
 ### Quan hệ chapters
-
-```
-stories (1) ──< chapters (N) ──── chapter_contents (1)
-               story_id FK          chapter_id PK+FK
-               CASCADE DELETE       CASCADE DELETE
-```
 
 - Mỗi `chapter_contents` chứa `images: ["url1", "url2", ...]` — danh sách ảnh của chương đó (truyện tranh)
 - Crawl chương: lưu metadata vào `chapters`, lưu ảnh vào `chapter_contents`

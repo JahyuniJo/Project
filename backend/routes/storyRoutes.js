@@ -71,12 +71,21 @@ router.get("/by-genre", async (req, res) => {
     return res.status(400).json({ message: "Thiếu thể loại" });
   }
 
+  const page   = parseInt(req.query.page, 10) || 1;
+  const limit  = parseInt(req.query.limit, 10) || 12;
+  const offset = (page - 1) * limit;
+
   try {
-    const result = await pool.query(
-      "SELECT * FROM stories WHERE $1 = ANY(genres) ORDER BY created_at DESC",
-      [genre]
-    );
-    res.json(result.rows);
+    const [totalRes, result] = await Promise.all([
+      pool.query("SELECT COUNT(*) FROM stories WHERE $1 = ANY(genres)", [genre]),
+      pool.query(
+        "SELECT * FROM stories WHERE $1 = ANY(genres) ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+        [genre, limit, offset]
+      ),
+    ]);
+
+    const total = Number(totalRes.rows[0].count);
+    res.json({ page, total, totalPages: Math.ceil(total / limit), stories: result.rows });
   } catch (err) {
     console.error("[storyRoutes] by-genre:", err);
     res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
@@ -263,10 +272,12 @@ router.get("/:id", optionalAuth, async (req, res) => {
   }
 
   try {
-    await pool.query("UPDATE stories SET view_count = view_count + 1 WHERE id = $1", [id]);
-    const result = await pool.query("SELECT * FROM stories WHERE id = $1", [id]);
+    const result = await pool.query(
+      "UPDATE stories SET view_count = view_count + 1 WHERE id = $1 RETURNING *",
+      [id]
+    );
 
-    if (result.rows.length === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: "Không tìm thấy truyện" });
     }
 
@@ -287,17 +298,20 @@ router.put("/:id", authMiddleware, async (req, res) => {
     return res.status(400).json({ message: "ID truyện không hợp lệ" });
   }
 
-  const { title, author, cover_url, url } = req.body;
+  const { title, author, cover_url, url, description } = req.body;
   if (!title || !url) {
     return res.status(400).json({ message: "Tiêu đề và URL không được để trống" });
   }
 
   const status = normalizeStoryStatus(req.body.status);
+  const genres = Array.isArray(req.body.genres)
+    ? req.body.genres.filter(Boolean)
+    : req.body.genres?.split(",").map((g) => g.trim()).filter(Boolean) || null;
 
   try {
     const result = await pool.query(
-      "UPDATE stories SET title=$1, author=$2, cover_url=$3, status=$4, url=$5 WHERE id=$6 RETURNING *",
-      [title, author, cover_url, status, url, id]
+      "UPDATE stories SET title=$1, author=$2, cover_url=$3, status=$4, url=$5, description=$6, genres=$7 WHERE id=$8 RETURNING *",
+      [title, author, cover_url, status, url, description || null, genres, id]
     );
 
     if (result.rowCount === 0) {

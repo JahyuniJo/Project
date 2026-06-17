@@ -5,7 +5,7 @@ const { suggestStories, syncStoriesFromSql } = require("../services/searchServic
 const syncStories = (req, res) => {
   const crawlerPath = path.join(__dirname, "../crawlers/crawlALL.js");
 
-  execFile(process.execPath, [crawlerPath], async (error, stdout, stderr) => {
+  execFile(process.execPath, [crawlerPath], { timeout: 5 * 60 * 1000 }, async (error, stdout, stderr) => {
     if (error) {
       console.error("[storyController] crawl error:", error.message);
       return res.status(500).json({ message: "Crawl thất bại, vui lòng thử lại" });

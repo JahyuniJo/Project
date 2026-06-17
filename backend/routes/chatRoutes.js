@@ -12,7 +12,8 @@ const HISTORY_LIMIT = 20;
 const MAX_HISTORY_TOKENS = 4000; // ~12k ký tự tiếng Việt — giữ context vừa đủ
 const HISTORY_DISPLAY_LIMIT = 50;
 const CHAT_COOLDOWN_MS = 2000;
-const CHAPTER_CONTEXT_LIMIT = 15;
+const CHAPTER_CONTEXT_LIMIT = 20;
+const CHAPTER_LAST_LIMIT = 5;
 const RECOMMEND_RESULT_LIMIT = 5;
 
 // Rate limiting per user (không phải per socket — ngăn multi-tab bypass)
@@ -96,16 +97,21 @@ function buildLibrarySystemPrompt(ctx, userGenres = []) {
 
 ## Nhiệm vụ
 1. Giúp người dùng tìm truyện phù hợp — luôn dùng tiếng Việt
-2. Khi người dùng mô tả loại truyện họ muốn, hãy dùng công cụ search_stories để tìm
-3. Giới thiệu truyện ngắn gọn, hấp dẫn; nêu bật thể loại và điểm nổi bật
-4. Khi hệ thống cung cấp danh sách truyện — hãy giới thiệu từng truyện một cách tự nhiên
-5. Kết thúc bằng câu mời ("Bạn muốn tìm thể loại nào khác không?", v.v.)
-6. Không bịa đặt thông tin về truyện ngoài những gì được cung cấp`;
+2. Nếu tin nhắn người dùng bắt đầu bằng [KẾT QUẢ TỪ THƯ VIỆN], đó là kết quả tìm kiếm đã được thực hiện sẵn — hãy giới thiệu từng truyện một cách tự nhiên, hấp dẫn dựa trên dữ liệu đó
+3. Giới thiệu truyện ngắn gọn; nêu bật thể loại và điểm nổi bật
+4. Kết thúc bằng câu mời ("Bạn muốn tìm thể loại nào khác không?", v.v.)
+5. Không bịa đặt thông tin về truyện ngoài những gì được cung cấp
+6. Nếu [KẾT QUẢ TỪ THƯ VIỆN — 0 truyện], giải thích không tìm thấy và gợi ý người dùng thử mô tả khác
+7. TUYỆT ĐỐI không tự đề xuất tên truyện cụ thể nào từ kiến thức của bạn — chỉ giới thiệu truyện khi có [KẾT QUẢ TỪ THƯ VIỆN]`;
 }
 
-function buildSystemPrompt(story, chapterNum, chapters, totalChaps, userGenres = []) {
+function buildSystemPrompt(story, chapterNum, chapters, lastChapters, totalChaps, userGenres = []) {
   const genres = Array.isArray(story.genres) ? story.genres.join(", ") : story.genres || "";
   const summaryLine = story.ai_summary ? `\n- Tóm tắt AI: ${story.ai_summary}` : "";
+
+  const latestChapNum = lastChapters?.length
+    ? Math.max(...lastChapters.map((c) => c.chapter_num))
+    : null;
 
   let progressLine = "";
   if (chapterNum) {
@@ -128,6 +134,14 @@ function buildSystemPrompt(story, chapterNum, chapters, totalChaps, userGenres =
     chapterListText = `\n\n## Danh sách chương (${chapters.length} chương đầu)\n${list}`;
   }
 
+  const factsLines = [
+    `- Tổng số chương: ${totalChaps ?? "Chưa rõ"}`,
+    latestChapNum != null ? `- Chương mới nhất: Chương ${latestChapNum}` : null,
+    chapterNum ? `- Người dùng đang ở: Chương ${chapterNum}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   return `Bạn là trợ lý AI của DH.Story — nền tảng đọc truyện tranh trực tuyến.
 
 ## Truyện đang hỗ trợ
@@ -136,18 +150,22 @@ function buildSystemPrompt(story, chapterNum, chapters, totalChaps, userGenres =
 - Thể loại: ${genres || "Không rõ"}
 - Mô tả: ${story.description || "Không có mô tả"}${summaryLine}${progressLine}${chapterListText}${prefLine}
 
+## Dữ liệu chính xác — trả lời trực tiếp từ đây, không suy đoán
+${factsLines}
+
 ## Nguyên tắc trả lời
 1. Luôn dùng tiếng Việt, thân thiện, ngắn gọn (không quá 4 đoạn)
-2. Dựa vào thông tin được cung cấp — không bịa đặt nội dung chương
-3. Tôn trọng tiến độ đọc: không tiết lộ nội dung chương người dùng chưa đọc
-4. Nếu không biết chắc, hãy nói thật thay vì đoán mò
-5. Khi người dùng muốn tìm truyện tương tự hoặc gợi ý, hãy dùng công cụ search_similar_stories
-6. Khi hệ thống cung cấp danh sách truyện gợi ý — hãy giới thiệu từng truyện ngắn gọn, hấp dẫn`;
+2. Câu hỏi về số chương, chương mới nhất → trả lời thẳng từ "Dữ liệu chính xác" ở trên
+3. Dựa vào thông tin được cung cấp — không bịa đặt nội dung chương
+4. Tôn trọng tiến độ đọc: không tiết lộ nội dung chương người dùng chưa đọc
+5. Nếu không biết chắc, hãy nói thật thay vì đoán mò
+6. Nếu tin nhắn người dùng bắt đầu bằng [KẾT QUẢ TỪ THƯ VIỆN], đó là danh sách truyện gợi ý đã được tìm sẵn — hãy giới thiệu từng truyện ngắn gọn, hấp dẫn dựa trên dữ liệu đó
+7. TUYỆT ĐỐI không tự đề xuất tên truyện cụ thể nào từ kiến thức của bạn — chỉ giới thiệu truyện khi có [KẾT QUẢ TỪ THƯ VIỆN]`;
 }
 
 function buildRecommendContext(stories) {
   if (!stories.length) {
-    return "Hệ thống không tìm thấy truyện phù hợp. Hãy thông báo và gợi ý người dùng thử mô tả khác.";
+    return "[KẾT QUẢ TỪ THƯ VIỆN — 0 truyện]\n\nThư viện DH.Story không tìm thấy truyện phù hợp. Hãy thông báo điều này và gợi ý người dùng mô tả lại (ví dụ: thể loại cụ thể, đặc điểm nhân vật, bối cảnh).";
   }
   const list = stories
     .map((s, i) => {
@@ -203,21 +221,30 @@ async function runSearch(query, excludeId) {
 }
 
 // Phát hiện intent tìm kiếm & trích xuất query — dùng model nhỏ, nhanh, reliable
-async function getSearchIntent(userMessage) {
-  try {
-    const result = await callAIRaw(
-      [
-        {
-          role: "user",
-          content: `Tin nhắn người dùng: "${userMessage}"
+// mode='story': chỉ trigger khi user rõ ràng muốn tìm truyện KHÁC (không phải hỏi về truyện đang đọc)
+// mode='library': trigger rộng hơn — hầu hết câu hỏi đều liên quan đến việc tìm truyện
+async function getSearchIntent(userMessage, mode = "library") {
+  const prompt =
+    mode === "story"
+      ? `Người dùng đang đọc một truyện và gửi tin nhắn: "${userMessage}"
+
+Nhiệm vụ: Xác định người dùng có muốn TÌM TRUYỆN KHÁC hoặc GỢI Ý TRUYỆN MỚI không.
+- Chỉ trả về từ khóa nếu user nói rõ muốn: "gợi ý truyện tương tự", "tìm truyện khác", "truyện nào hay như vậy", "recommend truyện", v.v.
+- Nếu user hỏi về nội dung, nhân vật, cốt truyện, chương của truyện đang đọc → chỉ trả về: NONE
+- Nếu KHÔNG chắc → trả về: NONE
+
+Chỉ trả về từ khóa tìm kiếm hoặc NONE, không giải thích.`
+      : `Tin nhắn người dùng: "${userMessage}"
 
 Nhiệm vụ: Xác định người dùng có muốn tìm/được gợi ý truyện không.
 - Nếu CÓ → trả về từ khóa tìm kiếm ngắn gọn (thể loại, chủ đề, đặc điểm, v.v.)
 - Nếu KHÔNG → chỉ trả về: NONE
 
-Chỉ trả về từ khóa hoặc NONE, không giải thích.`,
-        },
-      ],
+Chỉ trả về từ khóa hoặc NONE, không giải thích.`;
+
+  try {
+    const result = await callAIRaw(
+      [{ role: "user", content: prompt }],
       { temperature: 0, maxTokens: 25 }
     );
     const q = (result || "").trim();
@@ -227,14 +254,38 @@ Chỉ trả về từ khóa hoặc NONE, không giải thích.`,
   }
 }
 
+// Keyword pre-filter cho story mode — chỉ trigger search khi user nói rõ muốn tìm truyện khác.
+// Dùng keyword thay vì gọi AI để tránh false positive và loại bỏ latency thừa.
+const STORY_SEARCH_TRIGGERS = [
+  'tìm truyện', 'gợi ý truyện', 'recommend truyện', 'đề xuất truyện',
+  'truyện tương tự', 'truyện giống', 'truyện khác', 'truyện như vậy',
+  'truyện nào hay', 'truyện nên đọc', 'có truyện nào',
+  'tương tự', 'nội dung tương tự', 'thể loại tương tự',
+  'truyện isekai', 'truyện fantasy', 'truyện action', 'truyện romance',
+  'gợi ý', 'recommend', 'đề xuất',
+];
+
+function storyModeWantsSearch(message) {
+  const lower = message.toLowerCase();
+  return STORY_SEARCH_TRIGGERS.some((kw) => lower.includes(kw));
+}
+
 // ── Handler chung cho cả 2 mode ───────────────────────────────────────────────
-async function runAgenticChat({ socket, messages: inMessages, thinkingStatus, excludeId }) {
+async function runAgenticChat({ socket, messages: inMessages, thinkingStatus, excludeId, mode = "library" }) {
   const messages = [...inMessages];
   const userMessage = messages[messages.length - 1]?.content || "";
   let recommendedStories = [];
 
   try {
-    const searchQuery = await getSearchIntent(userMessage);
+    // Story mode: keyword pre-filter đã xác nhận intent — dùng "library" prompt để extract query
+    // (broad, không có "return NONE if unsure") thay vì story prompt vốn rất conservative.
+    // Fallback về userMessage nếu AI extraction vẫn không trả về gì.
+    const shouldSearch = mode === "story" ? storyModeWantsSearch(userMessage) : true;
+    let searchQuery = null;
+    if (shouldSearch) {
+      searchQuery = await getSearchIntent(userMessage, mode === "story" ? "library" : mode);
+      if (!searchQuery && mode === "story") searchQuery = userMessage;
+    }
     if (searchQuery) {
       socket.emit("chatThinking", { status: thinkingStatus });
       const { stories, context } = await runSearch(searchQuery, excludeId);
@@ -288,7 +339,7 @@ function initChat(io) {
         client = await pool.connect();
 
         // Load tất cả dữ liệu song song
-        const [storyRow, chapResult, historyRows, totalChapsRow, userGenres] = await Promise.all([
+        const [storyRow, chapResult, lastChapResult, historyRows, totalChapsRow, userGenres] = await Promise.all([
           client.query(
             "SELECT id, title, author, genres, description, ai_summary FROM stories WHERE id = $1",
             [sid]
@@ -296,6 +347,10 @@ function initChat(io) {
           client.query(
             "SELECT chapter_num, title FROM chapters WHERE story_id = $1 ORDER BY chapter_num ASC LIMIT $2",
             [sid, CHAPTER_CONTEXT_LIMIT]
+          ),
+          client.query(
+            "SELECT chapter_num FROM chapters WHERE story_id = $1 ORDER BY chapter_num DESC LIMIT $2",
+            [sid, CHAPTER_LAST_LIMIT]
           ),
           client.query(
             `SELECT role, content FROM chat_messages
@@ -313,7 +368,7 @@ function initChat(io) {
 
         const story = storyRow.rows[0];
         const totalChaps = parseInt(totalChapsRow.rows[0]?.total) || 0;
-        const history = trimHistoryToFit(historyRows.rows.reverse());
+        const history = trimHistoryToFit([...historyRows.rows].reverse());
 
         const insertResult = await client.query(
           "INSERT INTO chat_messages (user_id, story_id, role, content) VALUES ($1, $2, 'user', $3) RETURNING id",
@@ -322,7 +377,7 @@ function initChat(io) {
         userMsgId = insertResult.rows[0].id;
 
         const messages = [
-          { role: "system", content: buildSystemPrompt(story, validChapNum, chapResult.rows, totalChaps, userGenres) },
+          { role: "system", content: buildSystemPrompt(story, validChapNum, chapResult.rows, lastChapResult.rows, totalChaps, userGenres) },
           ...history.map((r) => ({ role: r.role, content: r.content })),
           { role: "user", content: msg },
         ];
@@ -332,6 +387,7 @@ function initChat(io) {
           messages,
           excludeId: sid,
           thinkingStatus: "Đang tìm truyện phù hợp...",
+          mode: "story",
         });
 
         if (!fullReply) throw new Error("AI trả về nội dung rỗng");
@@ -391,7 +447,7 @@ function initChat(io) {
           getUserTopGenres(client, userId),
         ]);
 
-        const history = trimHistoryToFit(historyRows.rows.reverse());
+        const history = trimHistoryToFit([...historyRows.rows].reverse());
 
         const insertResult = await client.query(
           "INSERT INTO chat_messages (user_id, story_id, role, content) VALUES ($1, NULL, 'user', $2) RETURNING id",
@@ -454,14 +510,14 @@ router.get("/history", authMiddleware, async (req, res) => {
         `SELECT id, role, content, metadata, created_at FROM chat_messages
          WHERE user_id = $1 AND story_id = $2
          ORDER BY created_at ASC LIMIT $3`,
-        [req.user.id, storyId, HISTORY_DISPLAY_LIMIT]
+        [req.user.userId, storyId, HISTORY_DISPLAY_LIMIT]
       );
     } else {
       result = await pool.query(
         `SELECT id, role, content, metadata, created_at FROM chat_messages
          WHERE user_id = $1 AND story_id IS NULL
          ORDER BY created_at ASC LIMIT $2`,
-        [req.user.id, HISTORY_DISPLAY_LIMIT]
+        [req.user.userId, HISTORY_DISPLAY_LIMIT]
       );
     }
 
@@ -508,12 +564,12 @@ router.delete("/history", authMiddleware, async (req, res) => {
     if (storyId) {
       await pool.query(
         "DELETE FROM chat_messages WHERE user_id = $1 AND story_id = $2",
-        [req.user.id, storyId]
+        [req.user.userId, storyId]
       );
     } else {
       await pool.query(
         "DELETE FROM chat_messages WHERE user_id = $1 AND story_id IS NULL",
-        [req.user.id]
+        [req.user.userId]
       );
     }
     res.json({ message: "Đã xóa lịch sử chat" });

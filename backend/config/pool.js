@@ -13,4 +13,9 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
+// Ngăn crash process khi idle client gặp lỗi bất ngờ (DB restart, network drop)
+pool.on("error", (err) => {
+  console.error("[pool] Lỗi idle client:", err.message);
+});
+
 module.exports = pool;

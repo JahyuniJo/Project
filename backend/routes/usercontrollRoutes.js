@@ -138,7 +138,7 @@ router.patch("/:id/lock", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "ID người dùng không hợp lệ" });
   }
 
-  if (id === req.user.id) {
+  if (id === req.user.userId) {
     return res.status(400).json({ message: "Bạn không thể khóa tài khoản của chính mình" });
   }
 
@@ -184,7 +184,7 @@ router.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(400).json({ message: "ID người dùng không hợp lệ" });
   }
 
-  if (id === req.user.id) {
+  if (id === req.user.userId) {
     return res.status(400).json({ message: "Bạn không thể tự xóa tài khoản của chính mình" });
   }
 

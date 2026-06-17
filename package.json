@@ -34,7 +34,9 @@
     "es:sync-embeddings": "node backend/utils/syncEmbeddings.js",
     "db:chapters": "node backend/utils/createChapterTables.js",
     "db:chat": "node backend/utils/createChatTables.js",
-    "build:css": "npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch"
+    "build:css": "npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
+    "dev:web": "npm --prefix frontend/app run dev",
+    "build:web": "npm --prefix frontend/app run build"
   },
   "keywords": [],
   "author": "",

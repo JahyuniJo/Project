@@ -6,9 +6,16 @@ const authMiddleware = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
 
 const ALLOWED_SCREENSHOT_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const screenshotStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, path.join(__dirname, "../uploads")),
+  filename: (_req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
+});
 const upload = multer({
-  dest: path.join(__dirname, "../uploads"),
-  fileFilter: (_req, file, cb) => cb(null, ALLOWED_SCREENSHOT_MIME.includes(file.mimetype)),
+  storage: screenshotStorage,
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_SCREENSHOT_MIME.includes(file.mimetype)) return cb(null, true);
+    cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+  },
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
@@ -16,7 +23,20 @@ module.exports = (io) => {
   const router = express.Router();
 
   // 1. User gửi báo lỗi
-  router.post("/report", authMiddleware, upload.single("screenshot"), async (req, res) => {
+  router.post("/report", authMiddleware, (req, res, next) => {
+    upload.single("screenshot")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ message: "File ảnh không được vượt quá 5MB" });
+        }
+        if (err.code === "LIMIT_UNEXPECTED_FILE") {
+          return res.status(400).json({ message: "Chỉ chấp nhận ảnh (jpg, png, webp, gif)" });
+        }
+      }
+      if (err) return res.status(400).json({ message: "Lỗi tải file" });
+      next();
+    });
+  }, async (req, res) => {
     const { title, story, message } = req.body;
     const email = req.user.email;
 
@@ -52,15 +72,36 @@ module.exports = (io) => {
     }
   });
 
-  // 2. Admin lấy danh sách báo lỗi
+  // 2. Admin lấy danh sách báo lỗi (phân trang)
   router.get("/admin/reports", authMiddleware, requireAdmin, async (req, res) => {
+    const page   = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+    const status = req.query.status || null;
+
+    const conditions = status ? "WHERE status = $1" : "";
+    const params     = status ? [status] : [];
+
     try {
-      const result = await pool.query(
-        `SELECT id, title, story_url, message, screenshot_path, user_email,
-                status, response, created_at, updated_at
-         FROM reports ORDER BY created_at DESC`
-      );
-      res.json({ data: result.rows });
+      const [countRes, dataRes] = await Promise.all([
+        pool.query(`SELECT COUNT(*) FROM reports ${conditions}`, params),
+        pool.query(
+          `SELECT id, title, story_url, message, screenshot_path, user_email,
+                  status, response, created_at, updated_at
+           FROM reports ${conditions}
+           ORDER BY created_at DESC
+           LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+          [...params, limit, offset]
+        ),
+      ]);
+
+      const total = parseInt(countRes.rows[0].count, 10);
+      res.json({
+        data: dataRes.rows,
+        total,
+        page,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      });
     } catch (err) {
       console.error("[report] admin list:", err);
       res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });

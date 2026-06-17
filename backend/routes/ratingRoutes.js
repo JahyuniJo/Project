@@ -46,7 +46,7 @@ router.post("/", authMiddleware, async (req, res) => {
       `INSERT INTO ratings (story_id, user_id, rating)
        VALUES ($1, $2, $3)
        ON CONFLICT (story_id, user_id) DO UPDATE SET rating = EXCLUDED.rating`,
-      [story_id, req.user.id, rating]
+      [story_id, req.user.userId, rating]
     );
 
     res.json({ message: "Đánh giá thành công" });

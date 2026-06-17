@@ -111,20 +111,33 @@ async function callAIStream(messages, onChunk, temperature = 0.7, timeoutMs = 45
   return fullContent;
 }
 
-async function callAIRaw(messages, { temperature = 0.2, maxTokens = 120 } = {}) {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: SUMMARY_MODEL,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
-    }),
-  });
+async function callAIRaw(messages, { temperature = 0.2, maxTokens = 120, timeoutMs = 8000 } = {}) {
+  const { default: fetchNode } = await import("node-fetch");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetchNode("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: SUMMARY_MODEL,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") throw new Error("callAIRaw timeout");
+    throw err;
+  }
+  clearTimeout(timer);
 
   if (!res.ok) {
     const raw = await res.text();

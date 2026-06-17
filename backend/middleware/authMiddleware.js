@@ -32,7 +32,7 @@ module.exports = async function authMiddleware(req, res, next) {
       return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
-    req.user = { ...decoded, id: user.id, role: user.role };
+    req.user = { ...decoded, role: user.role };
     next();
   } catch (err) {
     console.error("[authMiddleware]:", err);

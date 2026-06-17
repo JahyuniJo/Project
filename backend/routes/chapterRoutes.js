@@ -51,7 +51,7 @@ router.get("/:id/content", async (req, res) => {
     }
 
     await pool.query(
-      "INSERT INTO chapter_contents (chapter_id, images) VALUES ($1, $2::jsonb)",
+      "INSERT INTO chapter_contents (chapter_id, images) VALUES ($1, $2::jsonb) ON CONFLICT (chapter_id) DO NOTHING",
       [chapterId, JSON.stringify(images)]
     );
 

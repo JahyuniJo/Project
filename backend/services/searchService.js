@@ -41,6 +41,15 @@ const STORIES_INDEX_BODY = {
 // null = chưa kiểm tra, true = ES đang lên, false = ES đang xuống
 let esAvailable = null;
 const ES_RETRY_INTERVAL_MS = 30_000;
+let _esRetryTimer = null;
+
+function scheduleEsRetry() {
+  if (_esRetryTimer) return;
+  _esRetryTimer = setTimeout(() => {
+    _esRetryTimer = null;
+    checkElasticsearch();
+  }, ES_RETRY_INTERVAL_MS);
+}
 
 async function checkElasticsearch() {
   try {
@@ -51,7 +60,7 @@ async function checkElasticsearch() {
       console.warn("[Elasticsearch] Không kết nối được — sẽ dùng SQL fallback");
     }
     esAvailable = false;
-    setTimeout(checkElasticsearch, ES_RETRY_INTERVAL_MS);
+    scheduleEsRetry();
   }
 }
 
@@ -90,13 +99,22 @@ async function syncStoriesFromSql() {
   const { rows: stories } = await pool.query("SELECT * FROM stories;");
   if (!stories.length) return { indexed: 0, errors: false };
 
-  const operations = stories.flatMap((story) => [
-    { index: { _index: indexName, _id: String(story.id) } },
-    story,
+  // Generate embedding tuần tự + delay 300ms để không vượt rate limit OpenAI
+  const docs = [];
+  for (let i = 0; i < stories.length; i++) {
+    const vector = await createStoryEmbedding(stories[i]);
+    docs.push(vector ? { ...stories[i], embedding: vector } : stories[i]);
+    if (i < stories.length - 1) await new Promise((r) => setTimeout(r, 300));
+  }
+
+  const operations = docs.flatMap((doc) => [
+    { index: { _index: indexName, _id: String(doc.id) } },
+    doc,
   ]);
 
   const result = await client.bulk({ refresh: true, operations });
-  return { indexed: stories.length, errors: Boolean(result.errors) };
+  const withEmbedding = docs.filter((d) => d.embedding).length;
+  return { indexed: stories.length, withEmbedding, errors: Boolean(result.errors) };
 }
 
 // ========== Search ==========
@@ -110,7 +128,7 @@ async function searchStoriesWithSqlFallback({ search, page = 1, limit = 12, stat
     } catch (err) {
       console.warn("[Elasticsearch] search error:", err.message || err.name);
       esAvailable = false;
-      setTimeout(checkElasticsearch, ES_RETRY_INTERVAL_MS);
+      scheduleEsRetry();
     }
   }
 
@@ -148,41 +166,36 @@ async function searchStoriesWithElasticsearch({ search, page, limit, status = nu
   }
 
   // Bước 2 — Hybrid search nếu có OPENAI_KEY, không thì multi_match + fuzzy
+  //
+  // minimum_should_match "2<75%":
+  //   ≤ 2 từ → tất cả phải khớp (tránh "tu" match lung tung)
+  //   > 2 từ → 75% phải khớp (floor: 3 từ→2, 4 từ→3)
+  // Điều này lọc kết quả chỉ khớp 1 từ chung chung như "truyen"
+  //
+  // Boost: keyword 0.7, KNN 0.3 — keyword relevance là yếu tố chính,
+  // KNN chỉ dùng để nâng hạng khi điểm keyword bằng nhau
   if (process.env.OPENAI_KEY) {
     const vector = await embedText(search);
     if (vector) {
+      // Pure KNN — cosine similarity làm thước đo duy nhất để tránh BM25 scale lấn át
+      const knnFilter = statusFilter.length ? { bool: { filter: statusFilter } } : undefined;
       result = await client.search({
         index: indexName,
-        from: offset,
         size: limit,
         track_total_hits: true,
         knn: {
           field: "embedding",
           query_vector: vector,
-          k: 50,
-          num_candidates: 100,
-          boost: 0.7,
-        },
-        query: {
-          bool: {
-            must: {
-              multi_match: {
-                query: normalizedSearch,
-                fields: ["title^3", "author^2", "genres", "description"],
-                fuzziness: "AUTO",
-                type: "best_fields",
-                boost: 0.3,
-              },
-            },
-            filter: statusFilter,
-          },
+          k: Math.max(limit * 4, 50),
+          num_candidates: Math.max(limit * 8, 100),
+          ...(knnFilter && { filter: knnFilter }),
         },
       });
       const total = getHitTotal(result);
       return {
         page,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: total || result.hits.hits.length,
+        totalPages: Math.ceil((total || result.hits.hits.length) / limit),
         stories: mapHits(result),
         source: "elasticsearch-hybrid",
       };
@@ -200,9 +213,10 @@ async function searchStoriesWithElasticsearch({ search, page, limit, status = nu
         must: {
           multi_match: {
             query: normalizedSearch,
-            fields: ["title^3", "author^2", "genres", "description"],
+            fields: ["title^3", "author^2", "genres^2", "description"],
             fuzziness: "AUTO",
             type: "best_fields",
+            minimum_should_match: "2<75%",
           },
         },
         filter: statusFilter,
@@ -326,20 +340,38 @@ async function searchStoriesFromSql({ search, page, limit, status = null, genres
 }
 
 // ========== Suggest (autocomplete) ==========
+const _suggestCache = new Map();
+const SUGGEST_CACHE_TTL_MS = 5_000;
+
+// Xóa cache entry cũ mỗi phút để tránh memory leak
+setInterval(() => {
+  const cutoff = Date.now() - SUGGEST_CACHE_TTL_MS;
+  for (const [key, entry] of _suggestCache) {
+    if (entry.ts < cutoff) _suggestCache.delete(key);
+  }
+}, 60_000);
+
 async function suggestStories(query) {
   if (!query) return [];
 
+  const cached = _suggestCache.get(query);
+  if (cached && Date.now() - cached.ts < SUGGEST_CACHE_TTL_MS) return cached.data;
+
+  let data;
   if (isEsUp()) {
     try {
-      return await suggestStoriesWithElasticsearch(query);
+      data = await suggestStoriesWithElasticsearch(query);
     } catch (err) {
       console.warn("[Elasticsearch] suggest error:", err.message || err.name);
       esAvailable = false;
-      setTimeout(checkElasticsearch, ES_RETRY_INTERVAL_MS);
+      scheduleEsRetry();
     }
   }
 
-  return suggestStoriesFromSql(query);
+  if (!data) data = await suggestStoriesFromSql(query);
+
+  _suggestCache.set(query, { data, ts: Date.now() });
+  return data;
 }
 
 async function suggestStoriesWithElasticsearch(query) {

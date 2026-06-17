@@ -19,10 +19,16 @@ async function embedText(text) {
     return res.data[0].embedding;
   } catch (err) {
     if (err.status === 429) {
-      _embeddingDisabled = true;
-      console.warn("[embedding] Quota vượt giới hạn — tắt embedding cho phiên này");
+      const code = err.error?.code;
+      if (code === "insufficient_quota") {
+        _embeddingDisabled = true;
+        console.warn("[embedding] Không đủ credit OpenAI — vào platform.openai.com/settings/billing để nạp tiền");
+      } else {
+        // rate_limit_exceeded — tạm thời, không disable vĩnh viễn
+        console.warn("[embedding] OpenAI rate limit, thử lại sau:", err.message);
+      }
     } else {
-      console.error("[embedding] embedText lỗi:", err.message || err.name);
+      console.error("[embedding] embedText lỗi:", err.status, err.message || err.name);
     }
     return null;
   }

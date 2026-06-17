@@ -1,19 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET;
 const PORT = process.env.PORT || 3001;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || `http://localhost:${PORT}`;
 const FRONTEND_DIR = path.join(__dirname, "../frontend");
-const PUBLIC_PAGES_DIR = path.join(FRONTEND_DIR, "pages/public");
-const PRIVATE_PAGES_DIR = path.join(FRONTEND_DIR, "pages/private");
 const ASSETS_DIR = path.join(FRONTEND_DIR, "assets");
-const COMPONENTS_DIR = path.join(FRONTEND_DIR, "components");
+const SPA_DIST = path.join(__dirname, "../frontend/app/dist");
 
 // ========== HTTP + SOCKET ==========
 const http = require("http");
@@ -63,72 +59,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// ========== AUTHENTICATE HTML ==========
-const authenticateHTML = (allowedRoles = []) => (req, res, next) => {
-  const token = req.cookies.authToken;
-  if (!token) return res.redirect("/");
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      res.clearCookie("authToken");
-      return res.redirect("/");
-    }
-
-    req.user = user;
-    if (allowedRoles.length && !allowedRoles.includes(user.role)) {
-      return res.status(403).send("Bạn không có quyền truy cập");
-    }
-    next();
-  });
-};
-
-// ========== HTML ROUTES ==========
-// // Bảo vệ index2.html chỉ đăng nhập mới vào được
-app.get('/index2.html', authenticateHTML(), (req, res) => {
-    res.sendFile(path.join(PRIVATE_PAGES_DIR, 'index2.html'));
-});
-
-// admin.html (Chỉ dành cho admin)
-app.get('/admin.html', authenticateHTML(['admin']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'admin.html'));
-});
-// info.html (Dành cho người dùng đã đăng nhập)
-app.get('/info.html', authenticateHTML(), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'info.html'));
-});
-// stories.html (Chỉ dành cho admin)
-app.get('/stories.html', authenticateHTML(['admin']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'stories.html'));
-});
-// user.html (Chỉ dành cho admin)
-app.get('/user.html', authenticateHTML(['admin']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'user.html'));
-});
-app.get('/read2.html', authenticateHTML(['user', 'admin']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'read2.html'));
-});
-app.get('/fav.html', authenticateHTML(['user']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'fav.html'));
-});
-app.get('/error-report.html', authenticateHTML(['user']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'error-report.html'));
-});
-app.get('/admin-report.html', authenticateHTML(['admin']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'admin-report.html'));
-});
-app.get('/admin-chat.html', authenticateHTML(['admin']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'admin-chat.html'));
-});
-// stat.html (Chỉ dành cho admin)
-app.get('/stat.html', authenticateHTML(['admin']), (req, res) => {
-  res.sendFile(path.join(PRIVATE_PAGES_DIR, 'stat.html'));
-});
-// 🟢 Route chính: hiển thị index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(PUBLIC_PAGES_DIR, 'index.html'));
-});
-
-
 // ========== API ROUTES ==========
 const { router: chatRouter, adminRouter: adminChatRouter, initChat } = require("./routes/chatRoutes");
 initChat(io);
@@ -143,16 +73,18 @@ app.use("/api/favlists", require("./routes/interaction"));
 app.use("/api/auth", require("./controllers/authController"));
 app.use("/api/import", require("./routes/auth"));
 app.use("/api/rating", require("./routes/ratingRoutes"));
-app.use("/api", require("./routes/report")(io, userSockets));
-app.use("/api/comments", require("./routes/commentRoutes")(io, userSockets));
+app.use("/api", require("./routes/report")(io));
+app.use("/api/comments", require("./routes/commentRoutes")(io));
 app.use("/api/ai", require("./routes/aiRoutes"));
 app.use("/api/recommend", require("./routes/recommendRoutes"));
 app.use("/api/chapters", require("./routes/chapterRoutes"));
-// ========== STATIC ==========
-app.use(express.static(PUBLIC_PAGES_DIR));
+// ========== STATIC + SPA ==========
+app.use(express.static(SPA_DIST));
 app.use("/assets", express.static(ASSETS_DIR));
-app.use("/components", express.static(COMPONENTS_DIR));
-app.use("/uploads", express.static(path.join(__dirname, "../backend/uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// SPA catch-all — phục vụ index.html cho mọi route không phải /api
+app.get(/^(?!\/api).*/, (req, res) =>
+  res.sendFile(path.join(SPA_DIST, "index.html")));
 
 // ========== START ==========
 server.listen(PORT, () =>

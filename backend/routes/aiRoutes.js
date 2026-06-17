@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/pool");
 const { callAI } = require("../services/aiService");
+const { indexStory } = require("../services/searchService");
+
+// Ngăn nhiều request đồng thời gọi AI cho cùng 1 story
+const _pendingSummarize = new Set();
 
 router.post("/summarize", async (req, res) => {
   const { story_id } = req.body;
@@ -11,9 +15,13 @@ router.post("/summarize", async (req, res) => {
     return res.status(400).json({ message: "Vui lòng cung cấp story_id hợp lệ" });
   }
 
+  if (_pendingSummarize.has(id)) {
+    return res.status(429).json({ message: "Đang xử lý tóm tắt, vui lòng thử lại sau" });
+  }
+
   try {
     const result = await pool.query(
-      "SELECT title, author, description, ai_summary FROM stories WHERE id = $1",
+      "SELECT id, title, author, description, genres, ai_summary FROM stories WHERE id = $1",
       [id]
     );
 
@@ -31,7 +39,9 @@ router.post("/summarize", async (req, res) => {
       return res.status(400).json({ message: "Truyện chưa có mô tả để tóm tắt" });
     }
 
-    const prompt = `
+    _pendingSummarize.add(id);
+    try {
+      const prompt = `
 Bạn hãy tóm tắt truyện dựa trên thông tin dưới đây.
 
 Tên truyện: ${story.title}
@@ -49,11 +59,20 @@ YÊU CẦU BẮT BUỘC:
 - Chỉ sử dụng thông tin đã cung cấp
 `;
 
-    const summary = await callAI(prompt);
+      const summary = await callAI(prompt);
 
-    await pool.query("UPDATE stories SET ai_summary = $1 WHERE id = $2", [summary, id]);
+      const updated = await pool.query(
+        "UPDATE stories SET ai_summary = $1 WHERE id = $2 RETURNING *",
+        [summary, id]
+      );
 
-    res.json({ summary });
+      // Cập nhật ES để hybrid search có ai_summary mới nhất
+      indexStory(updated.rows[0]).catch(() => {});
+
+      res.json({ summary });
+    } finally {
+      _pendingSummarize.delete(id);
+    }
   } catch (err) {
     console.error("[aiRoutes] summarize:", err);
     res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });

@@ -12,12 +12,12 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, "../uploads")),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
 });
-const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/bmp"];
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    if (ALLOWED_MIME.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Chỉ chấp nhận file ảnh (jpg, png, webp, gif)"));
+    if (ALLOWED_MIME.includes(file.mimetype)) return cb(null, true);
+    return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
   },
   limits: { fileSize: 5 * 1024 * 1024 },
 });
@@ -169,16 +169,24 @@ router.get("/stats", authMiddleware, async (req, res) => {
 // Upload avatar
 router.post("/upload-avatar", authMiddleware, (req, res, next) => {
   upload.single("avatar")(req, res, (err) => {
-    if (err) {
+    if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(400).json({ message: "File ảnh không được vượt quá 5MB" });
       }
+      if (err.code === "LIMIT_UNEXPECTED_FILE") {
+        return res.status(400).json({ message: "Chỉ chấp nhận file ảnh (jpg, png, webp, gif, bmp)" });
+      }
+      return res.status(400).json({ message: err.message || "Lỗi tải file" });
+    }
+    if (err) {
+      console.error("[userRoutes] upload-avatar multer:", err);
       return res.status(400).json({ message: err.message || "Lỗi tải file" });
     }
     next();
   });
 }, async (req, res) => {
   if (!req.file) {
+    console.error("[userRoutes] upload-avatar: req.file undefined, content-type:", req.headers["content-type"]);
     return res.status(400).json({ message: "Vui lòng chọn file ảnh" });
   }
 

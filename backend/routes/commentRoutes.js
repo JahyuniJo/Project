@@ -174,7 +174,7 @@ module.exports = function (io) {
                 try {
                     const username = req.user.username || "Ai đó";
                     const newCommentId = result.rows[0].id;
-                    const link = `/read2.html?id=${storyId}#comment-${newCommentId}`;
+                    const link = `/read2?id=${storyId}#comment-${newCommentId}`;
                     await sendNotification(io, parentOwner.email, `${username} đã trả lời bình luận của bạn`, link);
                 } catch (notifyErr) {
                     console.error("Notification error create comment:", notifyErr);
@@ -410,7 +410,7 @@ module.exports = function (io) {
             if (liked && owner.user_id !== req.user.userId && owner.email) {
                 try {
                     const username = req.user.username || "Ai đó";
-                    const link = `/read2.html?id=${owner.story_id}#comment-${commentId}`;
+                    const link = `/read2?id=${owner.story_id}#comment-${commentId}`;
                     await sendNotification(io, owner.email, `${username} đã thích bình luận của bạn`, link);
                 } catch (notifyErr) {
                     console.error("Notification error like comment:", notifyErr);
