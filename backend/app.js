@@ -88,5 +88,39 @@ app.get(/^(?!\/api).*/, (req, res) =>
 
 // ========== START ==========
 server.listen(PORT, () =>
-  console.log(`Server chạy tại http://localhost:${PORT}`)
+  console.log(`Server chạy tại cổng :${PORT}`)
 );
+
+// ========== GRACEFUL SHUTDOWN ==========
+// Đóng HTTP server + connection pool sạch khi container/orchestrator gửi tín hiệu tắt,
+// tránh cắt ngang request đang xử lý và để pg pool đóng connection đúng cách.
+const pool = require("./config/pool");
+let shuttingDown = false;
+
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[app] Nhận ${signal} — đang tắt server...`);
+
+  // Ép thoát nếu quá trình đóng bị treo (request không kết thúc)
+  const forceExit = setTimeout(() => {
+    console.error("[app] Tắt quá hạn — buộc thoát");
+    process.exit(1);
+  }, 10000);
+  forceExit.unref();
+
+  try {
+    await new Promise((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    );
+    io.close();
+    await pool.end();
+    console.log("[app] Đã đóng server và connection pool");
+    process.exit(0);
+  } catch (err) {
+    console.error("[app] Lỗi khi tắt:", err.message);
+    process.exit(1);
+  }
+}
+
+["SIGTERM", "SIGINT"].forEach((sig) => process.on(sig, () => shutdown(sig)));

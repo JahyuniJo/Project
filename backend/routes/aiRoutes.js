@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/pool");
 const { callAI } = require("../services/aiService");
+const { aggregateIntroSummary } = require("../services/chapterSummaryService");
 const { indexStory } = require("../services/searchService");
 
 // Ngăn nhiều request đồng thời gọi AI cho cùng 1 story
@@ -15,9 +16,12 @@ router.post("/summarize", async (req, res) => {
     return res.status(400).json({ message: "Vui lòng cung cấp story_id hợp lệ" });
   }
 
+  // Đăng ký pending NGAY (đồng bộ) trước mọi await — nếu add sau await thì hai request F5 đồng thời
+  // đều vượt qua check, cùng SELECT và cùng gọi AI, đốt trùng token.
   if (_pendingSummarize.has(id)) {
     return res.status(429).json({ message: "Đang xử lý tóm tắt, vui lòng thử lại sau" });
   }
+  _pendingSummarize.add(id);
 
   try {
     const result = await pool.query(
@@ -35,12 +39,14 @@ router.post("/summarize", async (req, res) => {
       return res.json({ summary: story.ai_summary });
     }
 
-    if (!story.description) {
-      return res.status(400).json({ message: "Truyện chưa có mô tả để tóm tắt" });
-    }
+    // Ưu tiên tóm tắt từ nội dung ảnh chapter thật (vision) — chính xác hơn description crawl được
+    let summary = await aggregateIntroSummary(id);
 
-    _pendingSummarize.add(id);
-    try {
+    if (!summary) {
+      if (!story.description) {
+        return res.status(400).json({ message: "Truyện chưa có mô tả để tóm tắt" });
+      }
+
       const prompt = `
 Bạn hãy tóm tắt truyện dựa trên thông tin dưới đây.
 
@@ -59,23 +65,23 @@ YÊU CẦU BẮT BUỘC:
 - Chỉ sử dụng thông tin đã cung cấp
 `;
 
-      const summary = await callAI(prompt);
-
-      const updated = await pool.query(
-        "UPDATE stories SET ai_summary = $1 WHERE id = $2 RETURNING *",
-        [summary, id]
-      );
-
-      // Cập nhật ES để hybrid search có ai_summary mới nhất
-      indexStory(updated.rows[0]).catch(() => {});
-
-      res.json({ summary });
-    } finally {
-      _pendingSummarize.delete(id);
+      summary = await callAI(prompt);
     }
+
+    const updated = await pool.query(
+      "UPDATE stories SET ai_summary = $1 WHERE id = $2 RETURNING *",
+      [summary, id]
+    );
+
+    // Cập nhật ES để hybrid search có ai_summary mới nhất
+    indexStory(updated.rows[0]).catch(() => {});
+
+    res.json({ summary });
   } catch (err) {
     console.error("[aiRoutes] summarize:", err);
     res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  } finally {
+    _pendingSummarize.delete(id);
   }
 });
 

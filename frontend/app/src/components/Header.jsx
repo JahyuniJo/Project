@@ -50,14 +50,14 @@ export default function Header({ mode = 'full', pageTitle = '', onSort, onGenre,
 
   // Autocomplete search — debounce 350ms, min 2 ký tự
   const handleSearchInput = useCallback((q) => {
-    setSearchQuery(q);
-    clearTimeout(searchTimer.current);
+    setSearchQuery(q);  // Cập nhật giá trị ô input
+    clearTimeout(searchTimer.current); // Hủy timer trước đó
     if (q.trim().length < 2) { setSuggestions([]); setShowSug(false); return; }
-    searchTimer.current = setTimeout(async () => {
+    searchTimer.current = setTimeout(async () => {  // Thực hiện call api sau 350ms
       try {
         const res = await client.get(`/api/stories/search?q=${encodeURIComponent(q)}`);
         setSuggestions(Array.isArray(res.data) ? res.data : []);
-        setShowSug(true);
+        setShowSug(true); // Bật hiển thị dropdown gợi ý
       } catch {}
     }, 350);
   }, []);

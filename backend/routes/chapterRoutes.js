@@ -1,6 +1,7 @@
 const express = require("express");
 const pool = require("../config/pool");
 const { crawlChapterImages } = require("../crawlers/crawlChapterList");
+const { summarizeChapterImages } = require("../services/chapterSummaryService");
 
 const router = express.Router();
 
@@ -53,6 +54,11 @@ router.get("/:id/content", async (req, res) => {
     await pool.query(
       "INSERT INTO chapter_contents (chapter_id, images) VALUES ($1, $2::jsonb) ON CONFLICT (chapter_id) DO NOTHING",
       [chapterId, JSON.stringify(images)]
+    );
+
+    // Tóm tắt bằng vision model — không await, không block response trả ảnh cho người đọc
+    summarizeChapterImages(ch.id, ch.story_id, ch.chapter_num, images).catch((err) =>
+      console.error("[chapterRoutes] summarizeChapterImages:", err)
     );
 
     res.json({

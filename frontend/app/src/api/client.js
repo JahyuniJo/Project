@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const client = axios.create({ withCredentials: true });
+const client = axios.create({ withCredentials: true });  // Gửi cookie cùng request 
 
 client.interceptors.response.use(
   (res) => res,

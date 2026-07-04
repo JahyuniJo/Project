@@ -6,9 +6,11 @@ const optionalAuth = require("../middleware/optionalAuth");
 const { removeVietnameseTones } = require("../utils/normalizeText");
 const { searchStoriesWithSqlFallback, indexStory, deleteStory } = require("../services/searchService");
 const { crawlChapterList } = require("../crawlers/crawlChapterList");
+const { getReadingRecap } = require("../services/chapterSummaryService");
 
 const router = express.Router();
-
+// GET /api/stories cần để trên cùng vì các route khác chứa /:id sẽ bị trùng với /search
+// --> Nên đặt api động vào cuối cùng, ví dụ /api/stories/:id/chapters, /api/stories/:id/recap, /api/stories/:id/crawl-chapters, /api/stories/:id/view
 router.get("/search", getStories);
 router.post("/sync", authMiddleware, syncStories);
 
@@ -219,6 +221,30 @@ router.get("/:id/chapters", async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("[storyRoutes] chapters:", err);
+    res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
+  }
+});
+
+// GET /api/stories/:id/recap?chapter=N — tóm tắt nội dung các chương ĐÃ ĐỌC (1 → N), dùng AI vision cache
+router.get("/:id/recap", async (req, res) => {
+  const storyId = parseInt(req.params.id);
+  if (!storyId || storyId <= 0) {
+    return res.status(400).json({ message: "ID truyện không hợp lệ" });
+  }
+
+  const chapter = parseFloat(req.query.chapter);
+  if (!chapter || chapter <= 0) {
+    return res.status(400).json({ message: "Vui lòng cung cấp chapter hợp lệ" });
+  }
+
+  try {
+    const recap = await getReadingRecap(storyId, chapter);
+    if (!recap) {
+      return res.status(404).json({ message: "Chưa có dữ liệu tóm tắt cho các chương này" });
+    }
+    res.json({ data: { recap } });
+  } catch (err) {
+    console.error("[storyRoutes] recap:", err);
     res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
   }
 });

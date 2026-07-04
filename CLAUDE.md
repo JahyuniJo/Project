@@ -45,7 +45,8 @@ Project/
 │   │   ├── usercontrollRoutes.js # Admin quản lý user
 │   │   └── userRoutes.js       # Register, login, logout, info, upload avatar
 │   ├── services/
-│   │   ├── aiService.js        # callAI() + callAIStream() — Groq API
+│   │   ├── aiService.js        # callAI()/callAIStream()/callAIRaw()/callVisionAI() — Groq API
+│   │   ├── chapterSummaryService.js # Tóm tắt chapter bằng vision + recap theo tiến độ đọc
 │   │   ├── searchService.js    # Elasticsearch + SQL fallback
 │   │   └── embedding.js        # OpenAI embeddings (tuỳ chọn)
 │   └── utils/
@@ -53,7 +54,8 @@ Project/
 │       ├── syncSQL.js          # Script sync PostgreSQL → Elasticsearch
 │       ├── normalizeText.js    # removeVietnameseTones()
 │       ├── validators.js       # Hằng số validate dùng chung (EMAIL_REGEX, MIN_PASSWORD_LENGTH)
-│       └── createChatTables.js # Migration script: bảng chat_messages + index
+│       ├── createChatTables.js # Migration script: bảng chat_messages + index
+│       └── createChapterSummaryTable.js # Migration script: bảng chapter_summaries + index
 ├── frontend/
 │   ├── app/                    # React SPA (Vite + Tailwind v4)
 │   │   ├── src/
@@ -143,6 +145,7 @@ JWT_SECRET=
 
 # Groq AI
 GROQ_API_KEY=
+GROQ_VISION_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
 
 # Email (Gmail App Password — dùng cho OTP)
 EMAIL_USER=
@@ -192,6 +195,7 @@ Dự án dùng **hai module riêng biệt**:
 | POST | `/api/stories/:id/view` | Ghi lịch sử xem | User |
 | POST | `/api/stories/sync` | Crawl + sync ES | User |
 | GET | `/api/chapters/:id/content` | Lấy ảnh chương (lazy crawl + cache DB) | Không |
+| GET | `/api/stories/:id/recap?chapter=N` | Tóm tắt nội dung các chương đã đọc (1→N) bằng vision AI | Không |
 | GET | `/api/chat/history?story_id=N` | Lịch sử chat (50 tin gần nhất) | User |
 | DELETE | `/api/chat/history?story_id=N` | Xóa lịch sử chat theo truyện | User |
 | POST | `/api/ai/summarize` | Tóm tắt bằng Groq AI | Không |
@@ -260,15 +264,28 @@ Admin routes dùng `<AdminLayout>` (fixed sidebar + header riêng), tách biệt
 - Bắt buộc đăng nhập; lịch sử lưu vào bảng `chat_messages` (PostgreSQL)
 - Streaming qua Socket.io: client emit `chatMessage` → server emit từng `chatChunk` → `chatDone`
 - System prompt tự động nhúng context truyện (title, author, genres, description, ai_summary)
+- Khi user đang đọc chương N: nhúng thêm **recap** nội dung chương 1→N từ `chapter_summaries` (xem mục Tóm tắt chương bằng vision) — giúp bot trả lời đúng "tóm tắt lại những gì tôi đã đọc" mà không spoil chương N+1 trở đi
 - Cooldown 2 giây per socket để tránh spam
 - Lịch sử 20 tin gần nhất được đưa vào context mỗi lần gọi AI
-- File: [backend/routes/chatRoutes.js](backend/routes/chatRoutes.js), [frontend/assets/js/chat.js](frontend/assets/js/chat.js)
+- File: [backend/routes/chatRoutes.js](backend/routes/chatRoutes.js), [frontend/app/src/components/ChatWidget.jsx](frontend/app/src/components/ChatWidget.jsx)
+
+### Tóm tắt chương bằng vision (Groq llama-4-scout)
+- Sau khi crawl ảnh chương lần đầu ([backend/routes/chapterRoutes.js](backend/routes/chapterRoutes.js)), gọi `summarizeChapterImages()` **fire-and-forget** (không block response) để Groq vision model đọc trực tiếp ảnh chương và tóm tắt diễn biến
+- Ảnh được gửi theo batch tối đa **5 ảnh/lượt** (giới hạn model `meta-llama/llama-4-scout-17b-16e-instruct`); nhiều batch được cô đặc lại bằng 1 lượt gọi text model thành 1 `summary`/chapter, lưu vào bảng `chapter_summaries`
+- Model vision từ chối ảnh > 33.177.600 px (ảnh scan truyện tranh gốc thường vượt mức này) và ảnh < 2px mỗi chiều — mỗi ảnh được tải về và resize bằng `sharp` (dưới 30.000.000 px, cạnh dài tối đa 768px để giảm token/lượt gọi, cạnh ngắn luôn ≥ 2px, encode JPEG base64) trước khi gửi. Ảnh tải lỗi/rỗng/bị chặn, hoặc dải phân cách/banner mỏng (cạnh ngắn < 16px) bị bỏ qua thay vì làm hỏng cả batch; batch toàn ảnh lỗi cũng bị bỏ
+- Dedup theo `chapter_id` (đăng ký pending **đồng bộ** trước mọi `await`) để hai request mở cùng chương không kích hoạt hai lượt tóm tắt song song đốt trùng quota token
+- Groq tính rate limit theo token/phút (TPM, hiện 30.000/phút cho tier on_demand) trên toàn organization cho model vision — `callVisionAI()` (`aiService.js`) tự ước lượng thời gian chờ trước lượt gọi tiếp theo dựa trên `usage.total_tokens` thật trả về (chỉ tiêu thụ tối đa 85% quota), và mọi lượt gọi vision trong toàn app đi qua 1 mutex để luôn chạy nối tiếp dù nhiều chapter được tóm tắt cùng lúc. Khi vẫn gặp lỗi 429, tự retry tối đa 3 lần, chờ đúng thời gian Groq đề xuất trong message lỗi
+- Hai hàm tổng hợp dùng chung dữ liệu này nhưng mục đích khác nhau:
+  - `aggregateIntroSummary(storyId)` — gộp vài chương đầu, không spoil → dùng cho `stories.ai_summary`
+  - `getReadingRecap(storyId, upToChapterNum)` — gộp chương 1→N đã đọc, cache in-memory 10 phút → dùng cho chatbot context và `GET /api/stories/:id/recap`
+- File: [backend/services/chapterSummaryService.js](backend/services/chapterSummaryService.js), [backend/services/aiService.js](backend/services/aiService.js) (`callVisionAI`)
 
 ### Tóm tắt truyện (Groq API)
 - `POST /api/ai/summarize` với `{ story_id }`
 - Nếu `ai_summary` đã tồn tại trong DB → trả về ngay, không gọi lại AI
-- Model: `llama-3.1-8b-instant`, temperature 0.3
-- File: [backend/services/aiService.js](backend/services/aiService.js)
+- Ưu tiên `aggregateIntroSummary()` (dựa trên nội dung ảnh chapter thật qua vision) — fallback sang tóm tắt từ `description` nếu truyện chưa có `chapter_summaries`
+- Model text: `llama-3.1-8b-instant`, temperature 0.3
+- File: [backend/services/aiService.js](backend/services/aiService.js), [backend/services/chapterSummaryService.js](backend/services/chapterSummaryService.js)
 
 ### Tìm kiếm (Elasticsearch + fallback)
 - Ưu tiên: `match_phrase` → `multi_match + fuzzy` → SQL ILIKE
@@ -519,6 +536,7 @@ END;
 - Mỗi `chapter_contents` chứa `images: ["url1", "url2", ...]` — danh sách ảnh của chương đó (truyện tranh)
 - Crawl chương: lưu metadata vào `chapters`, lưu ảnh vào `chapter_contents`
 - `chapter_num` dùng `float8` để hỗ trợ chương thập phân (vd: 10.5)
+- `chapter_summaries` được tạo **tự động, fire-and-forget** ngay sau lần crawl ảnh đầu tiên của 1 chương (không tạo lại nếu đã tồn tại) — denormalize `story_id`, `chapter_num` để query range nhanh không cần JOIN qua `chapters`
 
 ---
 
@@ -535,6 +553,8 @@ Các index hiện có và lý do tồn tại:
 | `chapters` | `chapters_pkey` | UNIQUE btree(id) | PK |
 | `chapters` | `chapters_story_id_chapter_num_key` | UNIQUE btree(story_id, chapter_num) | Tránh trùng chương, đồng thời index cho `WHERE story_id=?` |
 | `chapter_contents` | `chapter_contents_pkey` | UNIQUE btree(chapter_id) | PK + FK lookup |
+| `chapter_summaries` | `chapter_summaries_pkey` | UNIQUE btree(chapter_id) | PK + FK lookup |
+| `chapter_summaries` | `idx_chapter_summaries_story_chapter` | btree(story_id, chapter_num) | Query range chương đã đọc cho recap, không cần JOIN |
 | `users` | `users_pkey` | UNIQUE btree(id) | PK |
 | `users` | `users_email_key` | UNIQUE btree(email) | Login lookup |
 | `comments` | `comments_pkey` | UNIQUE btree(id) | PK |
@@ -657,6 +677,7 @@ Mọi tính năng và thay đổi phải được viết theo hướng có thể
 - [x] Chatbot realtime — widget floating trên read2 + chapter, Socket.io streaming, lịch sử lưu DB
 - [x] Trang đọc truyện theo chương — `GET /api/chapters/:id/content`, lazy crawl + cache vào `chapter_contents`
 - [x] Crawl trang JavaScript-rendered bằng Puppeteer — `crawlChapterList.js` (Axios + Cheerio ưu tiên, Puppeteer fallback)
+- [x] Tóm tắt chương bằng vision model (Groq llama-4-scout) — cache `chapter_summaries`, dùng cho `ai_summary` giới thiệu + recap chatbot/`GET /api/stories/:id/recap`
 
 ---
 

@@ -27,14 +27,14 @@ const syncStories = (req, res) => {
 };
 
 const getStories = async (req, res) => {
-  const q = req.query.q?.trim();
-  if (!q) return res.json([]);
+  const q = req.query.q?.trim();  // Lấy query từ params, loại bỏ khoảng trắng đầu/cuối
+  if (!q) return res.json([]); // Nếu query rỗng, trả về mảng rỗng ngay lập tức
 
   try {
-    const suggestions = await suggestStories(q);
+    const suggestions = await suggestStories(q);  // Gọi service để lấy gợi ý truyện từ Elasticsearch
     res.json(suggestions);
   } catch (err) {
-    console.error("[storyController] suggest:", err);
+    console.error("[storyController] suggest:", err); // Log lỗi để debug
     res.status(500).json({ message: "Lỗi server, vui lòng thử lại" });
   }
 };

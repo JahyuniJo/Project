@@ -4,6 +4,7 @@ const pool = require("../config/pool");
 const authMiddleware = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
 const { callAIStream, callAIRaw } = require("../services/aiService");
+const { getReadingRecap } = require("../services/chapterSummaryService");
 const { searchByDescription } = require("../services/searchService");
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -44,9 +45,10 @@ function trimHistoryToFit(history, maxTokens = MAX_HISTORY_TOKENS) {
 }
 
 // ── User preferences — top genres từ lịch sử đọc ─────────────────────────────
-async function getUserTopGenres(client, userId, limit = 5) {
+// db: pool hoặc client — bất kỳ đối tượng nào có .query()
+async function getUserTopGenres(db, userId, limit = 5) {
   try {
-    const result = await client.query(
+    const result = await db.query(
       `SELECT unnest(s.genres) AS genre, COUNT(*) AS cnt
        FROM user_story_views usv
        JOIN stories s ON s.id = usv.story_id
@@ -105,9 +107,12 @@ function buildLibrarySystemPrompt(ctx, userGenres = []) {
 7. TUYỆT ĐỐI không tự đề xuất tên truyện cụ thể nào từ kiến thức của bạn — chỉ giới thiệu truyện khi có [KẾT QUẢ TỪ THƯ VIỆN]`;
 }
 
-function buildSystemPrompt(story, chapterNum, chapters, lastChapters, totalChaps, userGenres = []) {
+function buildSystemPrompt(story, chapterNum, chapters, lastChapters, totalChaps, userGenres = [], recap = null) {
   const genres = Array.isArray(story.genres) ? story.genres.join(", ") : story.genres || "";
   const summaryLine = story.ai_summary ? `\n- Tóm tắt AI: ${story.ai_summary}` : "";
+  const recapBlock = recap
+    ? `\n\n## Nội dung các chương người dùng ĐÃ ĐỌC (chương 1 → ${chapterNum})\n${recap}\nDùng đoạn này để trả lời chính xác khi người dùng hỏi lại nội dung đã đọc — không bịa thêm ngoài đây.`
+    : "";
 
   const latestChapNum = lastChapters?.length
     ? Math.max(...lastChapters.map((c) => c.chapter_num))
@@ -148,7 +153,7 @@ function buildSystemPrompt(story, chapterNum, chapters, lastChapters, totalChaps
 - Tên: ${story.title}
 - Tác giả: ${story.author || "Không rõ"}
 - Thể loại: ${genres || "Không rõ"}
-- Mô tả: ${story.description || "Không có mô tả"}${summaryLine}${progressLine}${chapterListText}${prefLine}
+- Mô tả: ${story.description || "Không có mô tả"}${summaryLine}${progressLine}${chapterListText}${prefLine}${recapBlock}
 
 ## Dữ liệu chính xác — trả lời trực tiếp từ đây, không suy đoán
 ${factsLines}
@@ -333,33 +338,33 @@ function initChat(io) {
       const validChapNum = chapNum > 0 ? chapNum : null;
       const userId = decoded.userId;
 
-      let client;
+      // Dùng pool.query trực tiếp (mỗi query tự mượn–trả connection): KHÔNG giữ một client
+      // cố định suốt lượt gọi AI streaming (tới 45s) — tránh giam connection làm cạn pool.
       let userMsgId = null;
       try {
-        client = await pool.connect();
-
         // Load tất cả dữ liệu song song
-        const [storyRow, chapResult, lastChapResult, historyRows, totalChapsRow, userGenres] = await Promise.all([
-          client.query(
+        const [storyRow, chapResult, lastChapResult, historyRows, totalChapsRow, userGenres, recap] = await Promise.all([
+          pool.query(
             "SELECT id, title, author, genres, description, ai_summary FROM stories WHERE id = $1",
             [sid]
           ),
-          client.query(
+          pool.query(
             "SELECT chapter_num, title FROM chapters WHERE story_id = $1 ORDER BY chapter_num ASC LIMIT $2",
             [sid, CHAPTER_CONTEXT_LIMIT]
           ),
-          client.query(
+          pool.query(
             "SELECT chapter_num FROM chapters WHERE story_id = $1 ORDER BY chapter_num DESC LIMIT $2",
             [sid, CHAPTER_LAST_LIMIT]
           ),
-          client.query(
+          pool.query(
             `SELECT role, content FROM chat_messages
              WHERE user_id = $1 AND story_id = $2
              ORDER BY created_at DESC LIMIT $3`,
             [userId, sid, HISTORY_LIMIT]
           ),
-          client.query("SELECT COUNT(*) AS total FROM chapters WHERE story_id = $1", [sid]),
-          getUserTopGenres(client, userId),
+          pool.query("SELECT COUNT(*) AS total FROM chapters WHERE story_id = $1", [sid]),
+          getUserTopGenres(pool, userId),
+          validChapNum ? getReadingRecap(sid, validChapNum).catch(() => null) : Promise.resolve(null),
         ]);
 
         if (!storyRow.rows.length) {
@@ -370,14 +375,14 @@ function initChat(io) {
         const totalChaps = parseInt(totalChapsRow.rows[0]?.total) || 0;
         const history = trimHistoryToFit([...historyRows.rows].reverse());
 
-        const insertResult = await client.query(
+        const insertResult = await pool.query(
           "INSERT INTO chat_messages (user_id, story_id, role, content) VALUES ($1, $2, 'user', $3) RETURNING id",
           [userId, sid, msg]
         );
         userMsgId = insertResult.rows[0].id;
 
         const messages = [
-          { role: "system", content: buildSystemPrompt(story, validChapNum, chapResult.rows, lastChapResult.rows, totalChaps, userGenres) },
+          { role: "system", content: buildSystemPrompt(story, validChapNum, chapResult.rows, lastChapResult.rows, totalChaps, userGenres, recap) },
           ...history.map((r) => ({ role: r.role, content: r.content })),
           { role: "user", content: msg },
         ];
@@ -395,7 +400,7 @@ function initChat(io) {
         const storyMetaJson = recommendedStories.length
           ? JSON.stringify({ story_ids: recommendedStories.map((s) => s.id) })
           : null;
-        await client.query(
+        await pool.query(
           "INSERT INTO chat_messages (user_id, story_id, role, content, metadata) VALUES ($1, $2, 'assistant', $3, $4)",
           [userId, sid, fullReply, storyMetaJson]
         );
@@ -404,12 +409,10 @@ function initChat(io) {
         emitStoryCards(socket, recommendedStories);
       } catch (err) {
         console.error("[chatRoutes] chatMessage:", err);
-        if (userMsgId && client) {
-          await client.query("DELETE FROM chat_messages WHERE id = $1", [userMsgId]).catch(() => {});
+        if (userMsgId) {
+          await pool.query("DELETE FROM chat_messages WHERE id = $1", [userMsgId]).catch(() => {});
         }
         socket.emit("chatError", { message: "Lỗi server, vui lòng thử lại" });
-      } finally {
-        if (client) client.release();
       }
     });
 
@@ -431,25 +434,23 @@ function initChat(io) {
       }
 
       const userId = decoded.userId;
-      let client;
+      // Dùng pool.query trực tiếp — không giữ client cố định suốt lượt gọi AI (xem chatMessage).
       let userMsgId = null;
       try {
-        client = await pool.connect();
-
         const [libCtx, historyRows, userGenres] = await Promise.all([
           getLibraryContext(),
-          client.query(
+          pool.query(
             `SELECT role, content FROM chat_messages
              WHERE user_id = $1 AND story_id IS NULL
              ORDER BY created_at DESC LIMIT $2`,
             [userId, HISTORY_LIMIT]
           ),
-          getUserTopGenres(client, userId),
+          getUserTopGenres(pool, userId),
         ]);
 
         const history = trimHistoryToFit([...historyRows.rows].reverse());
 
-        const insertResult = await client.query(
+        const insertResult = await pool.query(
           "INSERT INTO chat_messages (user_id, story_id, role, content) VALUES ($1, NULL, 'user', $2) RETURNING id",
           [userId, msg]
         );
@@ -473,7 +474,7 @@ function initChat(io) {
         const libMetaJson = recommendedStories.length
           ? JSON.stringify({ story_ids: recommendedStories.map((s) => s.id) })
           : null;
-        await client.query(
+        await pool.query(
           "INSERT INTO chat_messages (user_id, story_id, role, content, metadata) VALUES ($1, NULL, 'assistant', $2, $3)",
           [userId, fullReply, libMetaJson]
         );
@@ -482,12 +483,10 @@ function initChat(io) {
         emitStoryCards(socket, recommendedStories);
       } catch (err) {
         console.error("[chatRoutes] libraryMessage:", err);
-        if (userMsgId && client) {
-          await client.query("DELETE FROM chat_messages WHERE id = $1", [userMsgId]).catch(() => {});
+        if (userMsgId) {
+          await pool.query("DELETE FROM chat_messages WHERE id = $1", [userMsgId]).catch(() => {});
         }
         socket.emit("chatError", { message: "Lỗi server, vui lòng thử lại" });
-      } finally {
-        if (client) client.release();
       }
     });
   });

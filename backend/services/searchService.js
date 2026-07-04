@@ -119,12 +119,17 @@ async function syncStoriesFromSql() {
 
 // ========== Search ==========
 async function searchStoriesWithSqlFallback({ search, page = 1, limit = 12, status = null, genres = null, sort = "newest", length = null }) {
-  const hasAdvancedFilter = !!(length || (genres && genres.length) || sort !== "newest");
+  // length và sort khác "newest" (views/rating/az) cần dữ liệu không có trong chỉ mục
+  // Elasticsearch hiện tại (số chương, rating trung bình, title.keyword để sort chữ cái),
+  // nên luôn xử lý bằng SQL. genres thì đã có sẵn trong mapping nên có thể lọc ngay trong ES.
+  const needsSqlOnlySort = !!(length || (sort && sort !== "newest"));
+  const hasGenreFilter = !!(genres && genres.length);
 
-  // Chỉ dùng ES cho text search thuần — advanced filter (genres/sort/length) dùng SQL
-  if (search && !hasAdvancedFilter && isEsUp()) {
+  // Dùng ES cho text search kết hợp được với lọc thể loại — chỉ rơi về SQL khi cần sort/length
+  // mà ES không có dữ liệu để xử lý
+  if (search && !needsSqlOnlySort && isEsUp()) {
     try {
-      return await searchStoriesWithElasticsearch({ search, page, limit, status });
+      return await searchStoriesWithElasticsearch({ search, page, limit, status, genres: hasGenreFilter ? genres : null });
     } catch (err) {
       console.warn("[Elasticsearch] search error:", err.message || err.name);
       esAvailable = false;
@@ -133,17 +138,29 @@ async function searchStoriesWithSqlFallback({ search, page = 1, limit = 12, stat
   }
 
   // Default view không có filter → fast path
-  if (!search && !hasAdvancedFilter && !status) {
+  if (!search && !needsSqlOnlySort && !hasGenreFilter && !status) {
     return listStoriesFromSql({ page, limit, status: null });
   }
 
   return searchStoriesFromSql({ search, page, limit, status, genres, sort, length, fallback: !!(search && !isEsUp()) });
 }
 
-async function searchStoriesWithElasticsearch({ search, page, limit, status = null }) {
+async function searchStoriesWithElasticsearch({ search, page, limit, status = null, genres = null }) {
   const offset = (page - 1) * limit;
   const normalizedSearch = removeVietnameseTones(search.toLowerCase());
-  const statusFilter = status ? [{ term: { status } }] : [];
+  const filterClauses = [];
+  if (status) filterClauses.push({ term: { status } });
+  if (genres && genres.length) {
+    // genres là text field đã phân tích (asciifolding) — dùng match thay vì term,
+    // should + minimum_should_match 1 để khớp ngữ nghĩa "có ít nhất một thể loại trùng"
+    // tương đương phép toán && (overlap) đang dùng ở nhánh SQL
+    filterClauses.push({
+      bool: {
+        should: genres.map((g) => ({ match: { genres: g } })),
+        minimum_should_match: 1,
+      },
+    });
+  }
 
   // Bước 1 — match_phrase ưu tiên tên chính xác
   let result = await client.search({
@@ -151,7 +168,7 @@ async function searchStoriesWithElasticsearch({ search, page, limit, status = nu
     from: offset,
     size: limit,
     track_total_hits: true,
-    query: { bool: { must: { match_phrase: { title: { query: search, slop: 1 } } }, filter: statusFilter } },
+    query: { bool: { must: { match_phrase: { title: { query: search, slop: 1 } } }, filter: filterClauses } },
   });
 
   if (getHitTotal(result) > 0) {
@@ -165,37 +182,32 @@ async function searchStoriesWithElasticsearch({ search, page, limit, status = nu
     };
   }
 
-  // Bước 2 — Hybrid search nếu có OPENAI_KEY, không thì multi_match + fuzzy
-  //
-  // minimum_should_match "2<75%":
-  //   ≤ 2 từ → tất cả phải khớp (tránh "tu" match lung tung)
-  //   > 2 từ → 75% phải khớp (floor: 3 từ→2, 4 từ→3)
-  // Điều này lọc kết quả chỉ khớp 1 từ chung chung như "truyen"
-  //
-  // Boost: keyword 0.7, KNN 0.3 — keyword relevance là yếu tố chính,
-  // KNN chỉ dùng để nâng hạng khi điểm keyword bằng nhau
+  // Bước 2 — Tìm kiếm ngữ nghĩa bằng KNN nếu có OPENAI_KEY, ngược lại rơi xuống Bước 3
   if (process.env.OPENAI_KEY) {
     const vector = await embedText(search);
     if (vector) {
-      // Pure KNN — cosine similarity làm thước đo duy nhất để tránh BM25 scale lấn át
-      const knnFilter = statusFilter.length ? { bool: { filter: statusFilter } } : undefined;
+      // Pure KNN — cosine similarity làm thước đo duy nhất để tránh BM25 scale lấn át.
+      // total lấy theo k (kích thước pool ứng viên) vì knn không có khái niệm "tổng số tài
+      // liệu khớp" như query thường — nó luôn xếp hạng toàn bộ index rồi cắt lấy k láng giềng
+      // gần nhất, nên from/size chỉ có ý nghĩa phân trang trong phạm vi k đó.
+      const k = Math.max(limit * 4, 50);
+      const knnFilter = filterClauses.length ? { bool: { filter: filterClauses } } : undefined;
       result = await client.search({
         index: indexName,
+        from: offset,
         size: limit,
-        track_total_hits: true,
         knn: {
           field: "embedding",
           query_vector: vector,
-          k: Math.max(limit * 4, 50),
+          k,
           num_candidates: Math.max(limit * 8, 100),
           ...(knnFilter && { filter: knnFilter }),
         },
       });
-      const total = getHitTotal(result);
       return {
         page,
-        total: total || result.hits.hits.length,
-        totalPages: Math.ceil((total || result.hits.hits.length) / limit),
+        total: k,
+        totalPages: Math.ceil(k / limit),
         stories: mapHits(result),
         source: "elasticsearch-hybrid",
       };
@@ -203,6 +215,11 @@ async function searchStoriesWithElasticsearch({ search, page, limit, status = nu
   }
 
   // Fallback — keyword search
+  //
+  // minimum_should_match "2<75%":
+  //   ≤ 2 từ → tất cả phải khớp (tránh "tu" match lung tung)
+  //   > 2 từ → 75% phải khớp (floor: 3 từ→2, 4 từ→3)
+  // Điều này lọc kết quả chỉ khớp 1 từ chung chung như "truyen"
   result = await client.search({
     index: indexName,
     from: offset,
@@ -219,7 +236,7 @@ async function searchStoriesWithElasticsearch({ search, page, limit, status = nu
             minimum_should_match: "2<75%",
           },
         },
-        filter: statusFilter,
+        filter: filterClauses,
       },
     },
   });
@@ -341,7 +358,7 @@ async function searchStoriesFromSql({ search, page, limit, status = null, genres
 
 // ========== Suggest (autocomplete) ==========
 const _suggestCache = new Map();
-const SUGGEST_CACHE_TTL_MS = 5_000;
+const SUGGEST_CACHE_TTL_MS = 10_000;
 
 // Xóa cache entry cũ mỗi phút để tránh memory leak
 setInterval(() => {
@@ -352,68 +369,75 @@ setInterval(() => {
 }, 60_000);
 
 async function suggestStories(query) {
-  if (!query) return [];
+  if (!query) return [];  // Nếu query rỗng, trả về mảng rỗng ngay lập tức
 
-  const cached = _suggestCache.get(query);
-  if (cached && Date.now() - cached.ts < SUGGEST_CACHE_TTL_MS) return cached.data;
+  const cached = _suggestCache.get(query); // Kiểm tra cache để tránh gọi ES/SQL quá nhiều lần trong thời gian ngắn
+  if (cached && Date.now() - cached.ts < SUGGEST_CACHE_TTL_MS) return cached.data;  // Nếu cache còn hạn, trả về dữ liệu đã lưu
 
   let data;
-  if (isEsUp()) {
+  if (isEsUp()) {  // Kiểm tra ES đang hoạt động, nếu không sẽ fallback về SQL
     try {
-      data = await suggestStoriesWithElasticsearch(query);
+      data = await suggestStoriesWithElasticsearch(query); // Gọi service để lấy gợi ý truyện từ Elasticsearch
     } catch (err) {
       console.warn("[Elasticsearch] suggest error:", err.message || err.name);
-      esAvailable = false;
-      scheduleEsRetry();
+      esAvailable = false;  // Cập nhật trạng thái ES không hoạt động
+      scheduleEsRetry();  // Lịch ping lại ES sau 1 phút
     }
   }
 
-  if (!data) data = await suggestStoriesFromSql(query);
+  if (!data) data = await suggestStoriesFromSql(query);  // Nếu ES không hoạt động hoặc lỗi, fallback về SQL 
 
-  _suggestCache.set(query, { data, ts: Date.now() });
+  _suggestCache.set(query, { data, ts: Date.now() });  // Lưu cache
   return data;
 }
 
+
+// Gọi service để lấy gợi ý truyện từ Elasticsearch
 async function suggestStoriesWithElasticsearch(query) {
-  const normalizedQuery = removeVietnameseTones(query.toLowerCase());
+  const normalizedQuery = removeVietnameseTones(query.toLowerCase()); // Chuẩn hóa query để tìm kiếm không phân biệt dấu tiếng Việt
 
   const result = await client.search({
     index: indexName,
-    size: 10,
+    size: 10, // tối đa 10 kết quả gợi ý
     query: {
       bool: {
-        should: [
+        should: [ // Sử dụng match_phrase_prefix để ưu tiên các truyện có title bắt đầu bằng query, 
+        // sau đó sử dụng multi_match để tìm kiếm nâng cao
           { match_phrase_prefix: { title: { query, slop: 1 } } },
           {
             multi_match: {
               query: normalizedQuery,
               fields: ["title^3", "author^2", "genres"],
-              fuzziness: "AUTO",
-              type: "bool_prefix",
+              fuzziness: "AUTO", // Cho phép tìm kiếm gần đúng (fuzzy search) để khớp các từ có lỗi chính tả hoặc biến thể
+              type: "bool_prefix", // Cho phép tìm kiếm các từ có tiền tố giống với query, ví dụ "truyen" sẽ khớp với "truyen tranh", "truyen ngắn", v.v.
             },
           },
         ],
-        minimum_should_match: 1,
+        minimum_should_match: 1, // Yêu cầu ít nhất một trong các điều kiện should phải khớp để trả về kết quả
       },
     },
-    _source: ["id", "title", "author", "cover_url"],
+    _source: ["id", "title", "author", "genres", "cover_url"], // Chỉ lấy các trường cần thiết để giảm tải dữ liệu trả về
   });
 
-  return mapHits(result).map(({ id, title, author, cover_url }) => ({
+  return mapHits(result).map(({ id, title, author, genres, cover_url }) => ({
     id,
     title,
     author,
+    genres,
     cover_url,
   }));
 }
 
+
+// Gọi service để lấy gợi ý truyện từ SQL nếu Elasticsearch không hoạt động hoặc lỗi
 async function suggestStoriesFromSql(query) {
   const keyword = `%${query}%`;
-  const result = await pool.query(
-    `SELECT id, title, author, cover_url
+  const result = await pool.query( // Sử dụng ILIKE để tìm kiếm không phân biệt chữ hoa/chữ thường
+    // truyện hot lên trước bằng ORDER BY view_count DESC NULLS LAST, sau đó giới hạn 10 kết quả
+    `SELECT id, title, author, genres, cover_url
      FROM stories
      WHERE title ILIKE $1 OR author ILIKE $1 OR array_to_string(genres, ' ') ILIKE $1
-     ORDER BY view_count DESC NULLS LAST
+     ORDER BY view_count DESC NULLS LAST  
      LIMIT 10;`,
     [keyword]
   );
