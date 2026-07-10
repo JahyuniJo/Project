@@ -1,3 +1,7 @@
+/**
+ * api/reports.js — Báo lỗi phía user: gửi báo lỗi mới (FormData vì có thể kèm
+ * ảnh chụp màn hình) và xem lịch sử báo lỗi của mình kèm phản hồi admin.
+ */
 import client from './client';
 
 export const submitReport  = (formData) =>

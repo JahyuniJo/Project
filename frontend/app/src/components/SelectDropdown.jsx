@@ -2,7 +2,9 @@ import { useRef, useState } from 'react';
 import useOutsideClick from '../hooks/useOutsideClick';
 
 /**
- * Custom select dropdown dùng chung toàn dự án.
+ * SelectDropdown — Custom select dropdown dùng chung toàn dự án, thay cho
+ * <select> mặc định để style đồng nhất. Click ra ngoài tự đóng (useOutsideClick);
+ * so sánh value bằng String() để chấp nhận cả số lẫn chuỗi.
  *
  * Props:
  *   options:     [{ value, label }]   — danh sách lựa chọn

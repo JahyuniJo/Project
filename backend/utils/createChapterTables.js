@@ -1,3 +1,11 @@
+/**
+ * Migration script (chạy 1 lần) — tạo 2 bảng cho tính năng đọc theo chương:
+ *   - `chapters`: metadata chương (số chương FLOAT để hỗ trợ chương 10.5,
+ *     UNIQUE(story_id, chapter_num) chống crawl trùng).
+ *   - `chapter_contents`: danh sách URL ảnh của chương (JSONB), PK = chapter_id
+ *     (quan hệ 1-1, chỉ tồn tại sau khi chương được lazy-crawl lần đầu).
+ * ON DELETE CASCADE: xóa truyện → tự dọn chương và ảnh. Idempotent.
+ */
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 const pool = require("../config/pool");

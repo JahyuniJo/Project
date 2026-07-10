@@ -5,6 +5,10 @@ import { getFavLists, createFavList, renameFavList, deleteFavList, getListStorie
 import { useAlert } from '../../context/AlertContext';
 
 // ── Single story thumbnail inside a list ──────────────────────────────────────
+/**
+ * StoryThumb — Thumbnail 1 truyện trong danh sách yêu thích: hover hiện overlay
+ * "Xem truyện", kèm nút gỡ khỏi danh sách (hiện khi hover).
+ */
 function StoryThumb({ story, onRemoved }) {
   return (
     <div className="relative group bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
@@ -40,6 +44,11 @@ function StoryThumb({ story, onRemoved }) {
 }
 
 // ── Single list row (collapsible) ─────────────────────────────────────────────
+/**
+ * ListRow — 1 danh sách yêu thích dạng accordion: bấm mở/đóng để xem lưới
+ * truyện bên trong (load lười khi mở lần đầu), đổi tên inline và xóa danh sách
+ * (confirm trước).
+ */
 function ListRow({ list, onDeleted }) {
   const { toast, confirm } = useAlert();
   const qc = useQueryClient();
@@ -174,6 +183,10 @@ function ListRow({ list, onDeleted }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+/**
+ * Fav (/fav) — Trang quản lý danh sách yêu thích (role user): tạo danh sách mới
+ * + các ListRow accordion chứa truyện đã lưu.
+ */
 export default function Fav() {
   const { toast } = useAlert();
   const qc = useQueryClient();

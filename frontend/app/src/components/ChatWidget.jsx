@@ -9,7 +9,14 @@ const MAX_LENGTH = 500;
 // Bug 3 fix: 60s > backend worst-case (8s intent detection + 45s stream)
 const STREAM_TIMEOUT_MS = 60000;
 
-// Incremental markdown renderer — XSS-safe (escape first, then pattern-match)
+/**
+ * Render markdown tối giản của tin nhắn AI thành HTML: `code`, **đậm**, *nghiêng*,
+ * danh sách gạch đầu dòng, xuống dòng. AN TOÀN XSS: escape toàn bộ HTML TRƯỚC
+ * rồi mới pattern-match markdown; inline code được thay bằng placeholder \x00C
+ * trước khi xử lý đậm/nghiêng để nội dung code không bị format nhầm.
+ * @param {string} text - Nội dung thô từ AI.
+ * @returns {string} Chuỗi HTML để đưa vào dangerouslySetInnerHTML.
+ */
 function renderMarkdown(text) {
   let s = String(text ?? '')
     .replace(/&/g, '&amp;')
@@ -43,11 +50,17 @@ function renderMarkdown(text) {
   return out.join('\n').replace(/\n\n+/g, '<br><br>').replace(/\n/g, '<br>');
 }
 
+// ID tự tăng làm React key cho tin nhắn — tin trong state không có ID từ DB
 let _msgId = 0;
 const nextId = () => ++_msgId;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+/**
+ * StoryCards — Khối card truyện gợi ý chèn vào luồng chat (nhận từ event
+ * `chatStories`): ảnh bìa nhỏ + tên + tối đa 2 thể loại, bấm vào đi thẳng
+ * trang đọc /read2. Ảnh lỗi thì ẩn khung ảnh thay vì hiện icon vỡ.
+ */
 function StoryCards({ stories }) {
   return (
     <div className="px-1 pb-1.5">
@@ -85,6 +98,14 @@ function StoryCards({ stories }) {
   );
 }
 
+/**
+ * ChatBubble — Render 1 phần tử trong luồng chat theo loại:
+ *   - story-cards → khối StoryCards.
+ *   - Đang streaming → bubble xám với phần đã render (rendered HTML) + phần
+ *     đuôi thô (raw) + con trỏ nhấp nháy; trạng thái thinking hiện "🔍 ..." pulse.
+ *   - Hoàn chỉnh → bubble user (tím, bên phải, plain text) hoặc assistant
+ *     (xám, bên trái, HTML từ renderMarkdown).
+ */
 function ChatBubble({ msg }) {
   if (msg.type === 'story-cards') return <StoryCards stories={msg.stories} />;
 
@@ -124,6 +145,28 @@ function ChatBubble({ msg }) {
 
 // ── Main widget ───────────────────────────────────────────────────────────────
 
+/**
+ * ChatWidget — Widget chatbot nổi góc phải dưới (nút tròn → panel 420px).
+ *
+ * Hai chế độ theo props: có `storyId` → STORY MODE (chat về truyện đang đọc,
+ * emit `chatMessage` kèm chapterNum để backend chống spoil); không có →
+ * LIBRARY MODE (trợ lý tìm truyện, emit `libraryMessage`).
+ *
+ * Luồng streaming qua Socket.io (dùng socket singleton):
+ *   gửi tin → thêm bubble user + bubble assistant rỗng cờ `streaming` →
+ *   `chatThinking` (hiện trạng thái đang tìm truyện) → từng `chatChunk`
+ *   (append vào buffer; phần trước newline cuối được render markdown ngay,
+ *   phần đuôi giữ thô — render tăng dần không vỡ cú pháp giữa chừng) →
+ *   `chatDone` (thay bằng reply chính thức từ server) / `chatStories`
+ *   (thêm card gợi ý) / `chatError`.
+ *
+ * Phòng hộ: watchdog timeout 60s (quá hạn không nhận gì → chuyển bubble thành
+ * báo lỗi, mở khóa input); đổi truyện → reset toàn bộ state; listener socket
+ * đăng ký theo tham chiếu hàm cụ thể để cleanup không gỡ nhầm listener của
+ * component khác. Lịch sử chat load lười khi mở panel lần đầu (kèm câu chào
+ * nếu chưa chat lần nào); có nút xóa lịch sử (confirm trước). Chưa đăng nhập →
+ * thay ô nhập bằng link /login.
+ */
 export default function ChatWidget({ storyId, chapterNum, storyTitle }) {
   const { user } = useAuth();
   const { toast, confirm } = useAlert();

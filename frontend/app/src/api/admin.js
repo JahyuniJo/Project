@@ -1,3 +1,8 @@
+/**
+ * api/admin.js — Toàn bộ lời gọi API cho khu quản trị (mọi endpoint đều yêu cầu
+ * role admin): thống kê dashboard, quản lý user (CRUD + khóa tài khoản),
+ * quản lý truyện (sync crawl, sửa/xóa), xử lý báo lỗi và giám sát log chatbot.
+ */
 import client from './client';
 
 // Dashboard

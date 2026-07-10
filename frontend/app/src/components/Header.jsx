@@ -7,6 +7,15 @@ import useOutsideClick from '../hooks/useOutsideClick';
 import client from '../api/client';
 
 /**
+ * Header — Thanh điều hướng chính của khu người đọc: logo, menu sort/thể loại,
+ * ô tìm kiếm có autocomplete (debounce 350ms, tối thiểu 2 ký tự — gọi
+ * /api/stories/search rồi hiện dropdown gợi ý), chuông thông báo và menu user
+ * (avatar, đăng xuất có confirm).
+ *
+ * Hai chế độ dùng lại: các callback onSort/onGenre/onSearch nếu ĐƯỢC truyền
+ * (trang Home tự lọc tại chỗ) thì render button gọi callback; không truyền
+ * thì render link điều hướng kèm query param.
+ *
  * Props:
  *   mode       - 'full' (default) | 'simple'
  *   pageTitle  - hiển thị ở simple mode

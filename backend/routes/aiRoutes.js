@@ -8,6 +8,20 @@ const { indexStory } = require("../services/searchService");
 // Ngăn nhiều request đồng thời gọi AI cho cùng 1 story
 const _pendingSummarize = new Set();
 
+/**
+ * POST /api/ai/summarize { story_id } — Tóm tắt giới thiệu truyện bằng AI, có cache.
+ *
+ * Thứ tự ưu tiên nguồn tóm tắt:
+ *   1. `stories.ai_summary` đã có trong DB → trả ngay, KHÔNG gọi AI (cache vĩnh viễn).
+ *   2. `aggregateIntroSummary()` — gộp tóm tắt vài chương đầu từ `chapter_summaries`
+ *      (dữ liệu vision đọc ảnh thật) → chính xác hơn description crawl được.
+ *   3. Fallback: gọi callAI() tóm tắt từ `description` với prompt chống spoil;
+ *      truyện không có cả description → 400.
+ *
+ * Kết quả được lưu lại vào `ai_summary` + re-index lên Elasticsearch (best-effort).
+ * Set `_pendingSummarize` chống race: 2 request F5 đồng thời cho cùng truyện —
+ * request sau nhận 429 thay vì đốt trùng token AI (add đồng bộ TRƯỚC mọi await).
+ */
 router.post("/summarize", async (req, res) => {
   const { story_id } = req.body;
 

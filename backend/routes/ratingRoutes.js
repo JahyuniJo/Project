@@ -5,7 +5,11 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const VALID_RATINGS = [1, 2, 3, 4, 5];
 
-// Lấy rating trung bình của truyện
+/**
+ * GET /api/rating?story_id=N — Điểm đánh giá trung bình + tổng lượt đánh giá
+ * của 1 truyện (public, không cần đăng nhập).
+ * AVG được COALESCE về 0 khi chưa ai đánh giá và làm tròn 1 chữ số thập phân.
+ */
 router.get("/", async (req, res) => {
   const story_id = parseInt(req.query.story_id);
   if (!story_id || story_id <= 0) {
@@ -29,7 +33,13 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Tạo hoặc cập nhật rating
+/**
+ * POST /api/rating — User đánh giá truyện (1-5 sao), cần đăng nhập.
+ *
+ * Upsert bằng ON CONFLICT trên UNIQUE(story_id, user_id): mỗi user chỉ có
+ * 1 rating/truyện — đánh giá lại sẽ GHI ĐÈ điểm cũ thay vì tạo dòng mới.
+ * Validate: story_id > 0, rating phải là số nguyên thuộc {1..5}.
+ */
 router.post("/", authMiddleware, async (req, res) => {
   const story_id = parseInt(req.body.story_id);
   const rating = parseInt(req.body.rating);

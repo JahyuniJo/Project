@@ -1,3 +1,13 @@
+/**
+ * crawlers/crawlChapterList.js — Crawl DANH SÁCH CHƯƠNG và ẢNH CHƯƠNG từ nguồn
+ * (comi.mobi, theme WordPress Madara). Chiến lược chung: thử cách rẻ trước
+ * (Axios + Cheerio), chỉ leo thang lên Puppeteer (trình duyệt thật, đắt) khi
+ * trang cần chạy JavaScript hoặc yêu cầu đăng nhập.
+ *
+ * Export:
+ *   - crawlChapterList(storyUrl): danh sách chương (5 phương pháp fallback).
+ *   - crawlChapterImages(chapterUrl): ảnh 1 chương (3 tầng leo thang).
+ */
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
@@ -11,7 +21,10 @@ const HEADERS = {
 const COOKIES_FILE = path.join(__dirname, "../config/comiCookies.json");
 
 // ─── Cookie persistence ───────────────────────────────────────────────
+// Cookie đăng nhập comi (từ Puppeteer) được lưu ra file JSON để tái dùng giữa
+// các lần crawl và giữa các lần restart server — tránh phải login lại mỗi chương.
 
+/** Ghi mảng cookie (định dạng Puppeteer) ra file cache; lỗi ghi chỉ log, không throw. */
 function saveCookies(cookies) {
   try {
     fs.writeFileSync(COOKIES_FILE, JSON.stringify(cookies, null, 2));
@@ -20,6 +33,12 @@ function saveCookies(cookies) {
   }
 }
 
+/**
+ * Đọc cookie từ file cache, lọc bỏ cookie đã hết hạn (so `expires` với thời điểm
+ * hiện tại). Trả null khi file không tồn tại/hỏng/toàn cookie hết hạn —
+ * caller hiểu là "chưa đăng nhập".
+ * @returns {Array<object>|null}
+ */
 function loadCookies() {
   try {
     if (!fs.existsSync(COOKIES_FILE)) return null;
@@ -32,16 +51,32 @@ function loadCookies() {
   }
 }
 
+/** Xóa file cookie cache — gọi khi phát hiện cookie hết hạn (vẫn bị chặn dù đã gửi). */
 function deleteCookies() {
   try { fs.unlinkSync(COOKIES_FILE); } catch {}
 }
 
+/** Chuyển mảng cookie Puppeteer thành chuỗi header `Cookie: name=value; ...` cho Axios. */
 function cookiesToHeader(cookies) {
   return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
 }
 
 // ─── Chapter list crawl ───────────────────────────────────────────────
 
+/**
+ * Bóc tách danh sách chương từ 1 document Cheerio, theo 2 pass:
+ *
+ *   Pass 1 — selector chuẩn theme Madara (li.wp-manga-chapter...): lấy URL +
+ *   số chương từ text ("Chương 10.5") hoặc từ URL (/chuong-10_5/); "oneshot"
+ *   được quy ước là chương 1.
+ *   Pass 2 — fallback khi trang tùy biến CSS class: quét mọi thẻ <a> trong các
+ *   container quen thuộc, chỉ nhận link có pattern chuong/chapter-N trong URL.
+ *
+ * Set `seen` khử URL trùng (nhiều selector match cùng element).
+ * @param {cheerio.CheerioAPI} $ - HTML đã load bằng cheerio.
+ * @returns {Array<{chapter_num: number, title: string, source_url: string}>}
+ *   Danh sách chương sắp theo chapter_num tăng dần.
+ */
 function extractChapters($) {
   const chapters = [];
   const seen = new Set();
@@ -124,6 +159,15 @@ function extractChapters($) {
   return chapters.sort((a, b) => a.chapter_num - b.chapter_num);
 }
 
+/**
+ * Trích WordPress nonce (token chống CSRF) từ trang truyện — cần cho lời gọi
+ * admin-ajax.php ở một số bản Madara. Thử 3 nguồn theo thứ tự: hidden input
+ * chứa "nonce" → data-nonce của khối danh sách chương → pattern "nonce":"..."
+ * trong script inline. Không thấy → chuỗi rỗng (caller vẫn thử gọi không nonce).
+ * @param {cheerio.CheerioAPI} $
+ * @param {string[]} scripts - Nội dung các thẻ <script> inline.
+ * @returns {string}
+ */
 function extractNonce($, scripts) {
   // Ưu tiên trích từ hidden input (WordPress pattern phổ biến)
   const inputVal = $('input[name*="nonce"], input[id*="nonce"]').first().val();
@@ -141,6 +185,15 @@ function extractNonce($, scripts) {
   return "";
 }
 
+/**
+ * Fallback cuối của crawlChapterList: mở trang bằng Puppeteer (Chrome headless)
+ * để JavaScript của trang tự render danh sách chương, rồi bóc tách ngay trong
+ * browser context bằng page.evaluate với cùng logic 2-pass như extractChapters
+ * (bản DOM API thay vì Cheerio). Inject cookie đã lưu nếu có. Lỗi → trả mảng
+ * rỗng, không throw.
+ * @param {string} storyUrl
+ * @returns {Promise<Array<{chapter_num, title, source_url}>>}
+ */
 async function crawlChapterListWithPuppeteer(storyUrl) {
   const puppeteer = require("puppeteer");
   let browser;
@@ -246,7 +299,15 @@ async function crawlChapterListWithPuppeteer(storyUrl) {
   }
 }
 
-// Gọi admin-ajax.php với một body nhất định, trả về mảng chương (có thể rỗng)
+/**
+ * Gọi endpoint WordPress admin-ajax.php với 1 body cho trước (giả header
+ * XMLHttpRequest + Referer như request từ trang thật), parse HTML trả về
+ * thành danh sách chương.
+ * @param {string} origin - Origin của trang nguồn (https://comi.mobi).
+ * @param {string} storyUrl - Dùng làm Referer.
+ * @param {string} bodyStr - Body form-urlencoded (action, manga id, nonce...).
+ * @returns {Promise<Array>} Danh sách chương, có thể rỗng.
+ */
 async function tryAdminAjax(origin, storyUrl, bodyStr) {
   const { data: ajaxData } = await axios.post(
     `${origin}/wp-admin/admin-ajax.php`,
@@ -265,6 +326,22 @@ async function tryAdminAjax(origin, storyUrl, bodyStr) {
   return html ? extractChapters(cheerio.load(html)) : [];
 }
 
+/**
+ * ENTRY POINT crawl danh sách chương của 1 truyện — thử lần lượt 5 phương pháp
+ * từ rẻ đến đắt, dừng ngay khi có kết quả:
+ *
+ *   1. HTML tĩnh: chương có sẵn trong trang (extractChapters trực tiếp).
+ *   2. POST {storyUrl}/ajax/chapters/ — endpoint Madara mới, không cần nonce.
+ *   3. POST admin-ajax.php với nonce (trích từ trang).
+ *   4. POST admin-ajax.php không nonce / đổi tham số manga → post_id.
+ *   5. Puppeteer render JS thật (crawlChapterListWithPuppeteer).
+ *
+ * postId lấy từ class `postid-NNN` trên <body> (quy ước WordPress).
+ * Log dùng console.error để không lẫn vào stdout khi chạy như child process.
+ *
+ * @param {string} storyUrl - URL trang chi tiết truyện.
+ * @returns {Promise<Array<{chapter_num, title, source_url}>>}
+ */
 async function crawlChapterList(storyUrl) {
   const { data } = await axios.get(storyUrl, { headers: HEADERS, timeout: 15000 });
   const $ = cheerio.load(data);
@@ -351,6 +428,18 @@ async function crawlChapterList(storyUrl) {
 
 // ─── Axios crawl (không auth) ─────────────────────────────────────────
 
+/**
+ * Bóc tách URL ảnh chương từ document Cheerio.
+ *
+ * Pass 1: quét các selector khung đọc quen thuộc; với mỗi <img> thử lần lượt
+ * data-src → data-lazy-src → data-cfsrc → src (trang lazy-load để URL thật
+ * trong data-* còn src chỉ là placeholder). Bỏ ảnh data: URI, khử trùng lặp.
+ * Pass 2 (fallback): parse mảng `theChapterData.imgs` trong thẻ <script>
+ * (một số bản Madara render ảnh bằng JS từ JSON này).
+ *
+ * @param {cheerio.CheerioAPI} $
+ * @returns {string[]} URL ảnh theo đúng thứ tự trang.
+ */
 function extractImages($) {
   const seen = new Set();
   const images = [];
@@ -402,6 +491,12 @@ function extractImages($) {
   return images;
 }
 
+/**
+ * Tầng 1 — crawl ảnh chương bằng Axios thuần (không đăng nhập): nhanh nhất,
+ * đủ cho các chương không bị khóa.
+ * @param {string} chapterUrl
+ * @returns {Promise<string[]>}
+ */
 async function crawlWithAxios(chapterUrl) {
   const { data: html } = await axios.get(chapterUrl, { headers: HEADERS, timeout: 20000 });
   return extractImages(cheerio.load(html));
@@ -409,6 +504,14 @@ async function crawlWithAxios(chapterUrl) {
 
 // ─── Axios crawl (với saved cookies) ─────────────────────────────────
 
+/**
+ * Tầng 2 — crawl ảnh bằng Axios kèm cookie đăng nhập đã cache: đọc được chương
+ * khóa mà KHÔNG phải khởi động Puppeteer (đắt). Nếu trang vẫn hiện overlay chặn
+ * (#comi-blocked-chapter) nghĩa là cookie đã hết hạn → báo caller xóa cache.
+ * @param {string} chapterUrl
+ * @param {Array<object>} cookies - Cookie đã lưu từ lần login trước.
+ * @returns {Promise<{images: string[], cookiesExpired: boolean}>}
+ */
 async function crawlWithAxiosCookies(chapterUrl, cookies) {
   const { data: html } = await axios.get(chapterUrl, {
     headers: { ...HEADERS, Cookie: cookiesToHeader(cookies) },
@@ -426,6 +529,21 @@ async function crawlWithAxiosCookies(chapterUrl, cookies) {
 
 // ─── Puppeteer login (modal-based) ────────────────────────────────────
 
+/**
+ * Đăng nhập comi.mobi ngay trong browser context của Puppeteer, dùng tài khoản
+ * COMI_USERNAME/COMI_PASSWORD trong .env.
+ *
+ * Cách làm: page.evaluate đọc form login (#form-login) TRỰC TIẾP từ DOM —
+ * tên field, action, các hidden input (testcookie, redirect_to, nonce) đều lấy
+ * động thay vì hardcode, vì comi dùng wp-login.php chuẩn WordPress và có thể
+ * đổi cấu trúc. Submit bằng fetch(credentials:'include') để cookie tự set vào
+ * browser. Thành công được xác nhận bằng sự xuất hiện của cookie
+ * `wordpress_logged_in*` (thử reload 1 lần nếu chưa thấy), rồi lưu toàn bộ
+ * cookie ra file cache cho các lần crawl sau.
+ *
+ * @param {import("puppeteer").Page} page - Page đang mở trang comi.
+ * @returns {Promise<boolean>} true nếu đăng nhập và lưu cookie thành công.
+ */
 async function loginToComi(page) {
   const username = process.env.COMI_USERNAME;
   const password = process.env.COMI_PASSWORD;
@@ -517,6 +635,20 @@ async function loginToComi(page) {
 
 // ─── Puppeteer crawl ──────────────────────────────────────────────────
 
+/**
+ * Tầng 3 (cuối) — crawl ảnh bằng Puppeteer, xử lý được cả trang render JS
+ * lẫn chương yêu cầu đăng nhập.
+ *
+ * Thu ảnh từ 2 nguồn bổ trợ nhau: DOM (các <img> trong khung đọc) và network
+ * (listener bắt mọi response ảnh từ CDN khác origin — bắt được ảnh do JS load
+ * mà DOM chưa kịp gắn). Nếu gặp overlay chặn mà DOM không có ảnh:
+ * xóa cookie cũ (đã hết hạn) → loginToComi → load lại trang → thu ảnh lần nữa.
+ * Vẫn không được → trả { blocked: true } để chapterRoutes trả 403 báo người dùng
+ * chương này cần tài khoản nguồn.
+ *
+ * @param {string} chapterUrl
+ * @returns {Promise<{images: string[], blocked: boolean}>}
+ */
 async function crawlWithPuppeteer(chapterUrl) {
   const puppeteer = require("puppeteer");
   let browser;
@@ -606,6 +738,22 @@ async function crawlWithPuppeteer(chapterUrl) {
 
 // ─── Main entry point ─────────────────────────────────────────────────
 
+/**
+ * ENTRY POINT crawl ảnh 1 chương (được chapterRoutes gọi khi lazy-crawl) —
+ * leo thang 3 tầng từ rẻ đến đắt:
+ *
+ *   1. Axios không auth — đủ cho chương mở.
+ *   2. Axios + cookie đã cache — chương khóa nhưng từng login; cookie hết hạn
+ *      thì xóa cache.
+ *   3. Puppeteer (kèm tự động login lại nếu cần).
+ *
+ * Ngưỡng "≥ 3 ảnh" mới coi là thành công: chương thật hiếm khi dưới 3 trang,
+ * còn trang bị chặn thường chỉ lộ 1-2 ảnh UI — tránh nhận nhầm kết quả rác.
+ *
+ * @param {string} chapterUrl - source_url của chương trong DB.
+ * @returns {Promise<{images: string[], blocked: boolean}>} blocked = true khi
+ *   chương yêu cầu tài khoản nguồn mà không đăng nhập được.
+ */
 async function crawlChapterImages(chapterUrl) {
   // 1. Axios không auth (nhanh nhất, đủ cho chương không bị khóa)
   const axiosImages = await crawlWithAxios(chapterUrl).catch(() => []);

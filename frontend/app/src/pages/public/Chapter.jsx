@@ -7,6 +7,7 @@ import useOutsideClick from '../../hooks/useOutsideClick';
 import ChatWidget from '../../components/ChatWidget';
 
 // ── Chapter dropdown ──────────────────────────────────────────────────────────
+/** ChapterDropdown — Dropdown nhảy nhanh tới chương bất kỳ, highlight chương đang đọc. */
 function ChapterDropdown({ chapters, currentId, onSelect }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -49,6 +50,10 @@ function ChapterDropdown({ chapters, currentId, onSelect }) {
 }
 
 // ── Nav bar (top or bottom) ───────────────────────────────────────────────────
+/**
+ * ChapterNav — Thanh điều hướng chương (đặt cả đầu và cuối trang):
+ * nút Chương trước/sau (tự disable ở biên) + ChapterDropdown ở giữa.
+ */
 function ChapterNav({ chapters, currentId, onNav }) {
   const idx = chapters.findIndex((c) => c.id === currentId);
   const hasPrev = idx > 0;
@@ -82,6 +87,13 @@ function ChapterNav({ chapters, currentId, onNav }) {
 }
 
 // ── Main Chapter page ─────────────────────────────────────────────────────────
+/**
+ * Chapter (/chapter/:id) — Trang ĐỌC 1 chương truyện tranh: tải ảnh chương qua
+ * getChapterContent (lần đầu backend lazy-crawl nên có thể chậm), hiển thị ảnh
+ * dọc liền mạch, thanh điều hướng chương trên/dưới, nút scroll-to-top (hiện khi
+ * cuộn quá 400px), và ChatWidget story mode (truyền chapterNum để chatbot biết
+ * tiến độ đọc, không spoil). Đổi chương → cuộn về đầu trang.
+ */
 export default function Chapter() {
   const { id } = useParams();
   const chapterId = parseInt(id);

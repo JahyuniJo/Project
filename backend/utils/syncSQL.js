@@ -1,3 +1,8 @@
+/**
+ * Script CLI `npm run es:sync` — đồng bộ toàn bộ bảng `stories` từ PostgreSQL
+ * sang Elasticsearch (full re-index, kèm sinh embedding nếu có OPENAI_KEY).
+ * Chạy sau khi crawl thủ công hoặc khi index bị lệch dữ liệu. Lỗi → exit code 1.
+ */
 const { syncStoriesFromSql } = require("../services/searchService");
 
 syncStoriesFromSql()

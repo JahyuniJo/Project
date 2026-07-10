@@ -6,6 +6,10 @@ import { useAlert } from '../../context/AlertContext';
 import { getChatStats, getChatLogs, deleteChatMessage } from '../../api/admin';
 
 // ── Activity chart (2 lines: user + AI) ──────────────────────────────────────
+/**
+ * ActivityChart — Biểu đồ đường Chart.js 2 series: số tin nhắn người dùng vs
+ * tin AI trả lời theo ngày (7 ngày). Destroy instance cũ trước khi vẽ lại.
+ */
 function ActivityChart({ daily }) {
   const ref = useRef(null);
   const inst = useRef(null);
@@ -67,6 +71,7 @@ function ActivityChart({ daily }) {
 }
 
 // ── Stat cards ────────────────────────────────────────────────────────────────
+/** StatCard — Ô số liệu chatbot (tổng tin, hôm nay, 7 ngày, user hoạt động). */
 function StatCard({ icon, bg, color, label, value }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
@@ -99,6 +104,12 @@ function Pagination({ page, totalPages, onChange }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+/**
+ * AdminChat (/admin/chat) — Trang giám sát chatbot AI: các ô thống kê +
+ * ActivityChart (từ /api/admin/chat/stats), và bảng log hội thoại toàn hệ thống
+ * (lọc theo mode story/library, user, truyện; phân trang) kèm nút xóa tin nhắn
+ * vi phạm (confirm trước).
+ */
 export default function AdminChat() {
   const { toast, confirm } = useAlert();
   const qc = useQueryClient();

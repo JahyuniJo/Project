@@ -23,6 +23,22 @@ setInterval(() => {
   }
 }, 60_000);
 
+/**
+ * Sinh vector embedding 1536 chiều cho 1 đoạn text bằng OpenAI
+ * `text-embedding-3-small` — nền tảng của semantic search (KNN trên ES).
+ *
+ * Các lớp bảo vệ (embedding là tính năng TÙY CHỌN — mọi lỗi đều trả null
+ * để search rơi êm về keyword, không bao giờ throw):
+ *   - Không có OPENAI_KEY → null ngay.
+ *   - Circuit breaker hết credit: lỗi 429 `insufficient_quota` → tự tắt 10 phút
+ *     (tránh spam API + log trong khi chắc chắn thất bại) rồi tự thử lại.
+ *   - 429 rate limit thường → chỉ log, không tắt (lỗi thoáng qua).
+ *   - Cache theo nội dung (trim + lowercase, TTL 5 phút) — cùng câu tìm kiếm
+ *     lặp lại không tốn thêm lượt gọi API.
+ *
+ * @param {string} text
+ * @returns {Promise<number[]|null>} Vector embedding, hoặc null nếu không khả dụng.
+ */
 async function embedText(text) {
   if (!openaiClient) return null;
 
@@ -62,6 +78,15 @@ async function embedText(text) {
   }
 }
 
+/**
+ * Sinh embedding đại diện cho 1 TRUYỆN: ghép title + author + genres +
+ * description (+ ai_summary nếu có) thành 1 văn bản rồi embedText.
+ * Càng nhiều trường có nghĩa, vector càng phản ánh đúng nội dung truyện
+ * khi so cosine với câu tìm kiếm của người dùng.
+ *
+ * @param {object} story - Row từ bảng stories.
+ * @returns {Promise<number[]|null>} Vector cho field `embedding` trên ES, null nếu tắt.
+ */
 async function createStoryEmbedding(story) {
   if (!openaiClient) return null;
   const parts = [

@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../../api/auth';
 
+/**
+ * Register (/register) — Form đăng ký: username/email/mật khẩu + xác nhận
+ * mật khẩu (so khớp phía client trước khi gọi API; validate chi tiết còn lại
+ * do backend đảm nhiệm). Thành công → tự chuyển về /login sau 2s.
+ */
 export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm_password: '' });

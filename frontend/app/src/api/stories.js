@@ -1,3 +1,8 @@
+/**
+ * api/stories.js — Các hàm gọi API truyện phía người đọc: danh sách + tìm kiếm
+ * (getStories nhận params search/genres/sort/length/page), chi tiết, danh sách
+ * chương, autocomplete, thể loại, rating, truyện hot tuần, crawl chương (admin).
+ */
 import client from './client';
 
 export const getStories   = (params) => client.get('/api/stories', { params }).then(r => r.data);

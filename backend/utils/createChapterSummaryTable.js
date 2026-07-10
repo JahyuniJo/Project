@@ -1,3 +1,12 @@
+/**
+ * Migration script (chạy 1 lần) — tạo bảng `chapter_summaries` lưu tóm tắt
+ * chương do vision AI sinh ra (chapterSummaryService).
+ *
+ * story_id + chapter_num được denormalize (lặp từ bảng chapters) có chủ đích:
+ * query range "tóm tắt chương 1→N của truyện X" cho tính năng recap chỉ cần
+ * quét index (story_id, chapter_num), không phải JOIN qua chapters.
+ * Cột `model` ghi lại model AI đã dùng để tiện đối chiếu chất lượng. Idempotent.
+ */
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 const pool = require("../config/pool");

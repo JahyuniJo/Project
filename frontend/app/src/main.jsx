@@ -1,3 +1,12 @@
+/**
+ * main.jsx — Điểm khởi động SPA: mount cây React vào #root với các provider
+ * bọc ngoài (thứ tự từ ngoài vào trong):
+ *   BrowserRouter — routing phía client (URL sạch, không dùng hash).
+ *   QueryClientProvider — TanStack Query: cache server state, retry 1 lần,
+ *     dữ liệu được coi là "tươi" 30s (khỏi refetch khi chuyển trang qua lại).
+ *   AuthProvider — trạng thái đăng nhập toàn cục.
+ *   AlertProvider — toast + modal alert/confirm toàn cục.
+ */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

@@ -4,7 +4,14 @@ const pool = require("../config/pool");
 const authMiddleware = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
 
-// Thống kê tổng quan (admin)
+/**
+ * GET /api/stat — Thống kê tổng quan cho dashboard admin (Admin only).
+ *
+ * 11 query COUNT/SUM chạy song song bằng Promise.all: tổng user, truyện, lượt xem,
+ * chương, truyện có chương, comment, báo lỗi pending, phân bố trạng thái truyện,
+ * lượt xem 7 ngày theo ngày (múi giờ Asia/Ho_Chi_Minh để cột ngày khớp giờ VN),
+ * tổng tin chat, và số truyện đã có ai_summary.
+ */
 router.get("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const [
@@ -53,7 +60,11 @@ router.get("/", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-// Truyện hot trong tuần (công khai)
+/**
+ * GET /api/stat/popular-week — Top 6 truyện được xem nhiều nhất 7 ngày qua (public).
+ * Đếm theo `user_story_views` (lượt xem có đăng nhập) — dùng cho khối
+ * "Truyện hot tuần" ở trang chủ.
+ */
 router.get("/popular-week", async (req, res) => {
   try {
     const result = await pool.query(`

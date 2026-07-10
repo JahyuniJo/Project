@@ -14,6 +14,21 @@ const TOAST_COLORS = {
   info:    'bg-blue-600',
 };
 
+/**
+ * AlertProvider — Hệ thống thông báo UI tập trung, thay thế alert()/confirm()
+ * mặc định của browser (theo quy tắc dự án: mọi confirm đều phải là popup đẹp).
+ *
+ * Cung cấp qua useAlert():
+ *   - toast(message, type, duration): thông báo nổi góc phải dưới, tự biến mất
+ *     sau `duration` ms (mặc định 3s), xếp chồng được nhiều cái.
+ *   - showAlert(type, message, title): modal chỉ có nút OK → Promise resolve
+ *     khi người dùng bấm.
+ *   - confirm(message, title): modal OK + Hủy → Promise<boolean> — dùng như
+ *     `if (await confirm('Xóa truyện này?')) ...`.
+ *
+ * resolveRef giữ hàm resolve của Promise đang chờ; handleOk/handleCancel
+ * resolve true/false rồi đóng modal.
+ */
 export function AlertProvider({ children }) {
   const [modal, setModal] = useState({ open: false });
   const [toasts, setToasts] = useState([]);

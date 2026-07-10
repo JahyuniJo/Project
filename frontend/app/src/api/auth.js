@@ -1,3 +1,9 @@
+/**
+ * api/auth.js — Các hàm gọi API xác thực & tài khoản: đăng nhập/đăng ký,
+ * pipeline quên mật khẩu (gửi OTP → verify → reset), đổi mật khẩu, thống kê
+ * cá nhân, upload avatar, ghi lượt xem và yêu cầu tóm tắt AI.
+ * Mỗi hàm trả về Promise resolve thẳng `response.data`.
+ */
 import client from './client';
 
 export const login         = (data)  => client.post('/api/users/login', data).then(r => r.data);

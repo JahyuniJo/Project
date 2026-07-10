@@ -6,7 +6,18 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const { Client } = require("pg");
 
-// 🧩 Crawl 1 truyện cụ thể, nhưng trả về dữ liệu (không lưu DB ở đây)
+/**
+ * Crawl metadata 1 truyện từ trang chi tiết — TRẢ VỀ object, không lưu DB
+ * (việc lưu do caller quyết định, tách trách nhiệm crawl/persist).
+ *
+ * Mỗi trường thử nhiều selector fallback (|| chuỗi selector) vì các trang
+ * cùng theme Madara nhưng cấu trúc hơi khác nhau. Status được chuẩn hóa
+ * về ongoing/completed/stopped. Không lấy được title (đổi layout, bị chặn)
+ * hoặc lỗi mạng → trả null để caller skip, không throw làm gãy cả đợt crawl.
+ *
+ * @param {string} url - URL trang chi tiết truyện.
+ * @returns {Promise<object|null>} { title, cover_url, url, genres, author, description, status }.
+ */
 async function crawlStory(url) {
   try {
     console.log(`🔍 Crawling: ${url}`);
@@ -50,7 +61,15 @@ async function crawlStory(url) {
   }
 }
 
-// 🧩 Crawl danh sách truyện trong 1 trang (vd: /truyen-tranh)
+/**
+ * Crawl toàn bộ truyện của 1 chuyên mục, duyệt phân trang `page/1/, page/2/...`
+ * cho tới khi trang không còn link truyện hoặc trả lỗi (thường là 404 hết trang).
+ * Với mỗi link truyện tìm được → gọi crawlStory(); nghỉ 1.2s giữa các truyện
+ * để không dội request khiến nguồn chặn IP.
+ *
+ * @param {string} baseUrl - URL chuyên mục (vd: https://comi.mobi/truyen-tranh/).
+ * @returns {Promise<Array<object>>} Danh sách truyện crawl thành công.
+ */
 async function crawlList(baseUrl) {
   const results = [];
   console.log(`📚 Đang tải danh sách từ: ${baseUrl}`);
@@ -90,7 +109,11 @@ async function crawlList(baseUrl) {
   return results;
 }
 
-// 🧩 Crawl toàn bộ (cả truyện tranh + tiểu thuyết)
+/**
+ * Crawl tất cả chuyên mục nguồn (truyện tranh + tiểu thuyết) tuần tự,
+ * gộp kết quả thành 1 mảng. Đây là hàm được export cho nơi khác dùng.
+ * @returns {Promise<Array<object>>} Toàn bộ truyện crawl được.
+ */
 async function crawlAllStories() {
   const categories = [
     "https://comi.mobi/truyen-tranh/",
@@ -108,7 +131,9 @@ async function crawlAllStories() {
   return allStories;
 }
 
-// 🧩 Nếu chạy trực tiếp file này: lưu vào DB luôn
+// Khi chạy trực tiếp (node crawlALL.js — cách storyController.syncStories gọi
+// qua execFile): crawl xong upsert từng truyện vào DB theo UNIQUE(title),
+// crawl lại chỉ cập nhật metadata chứ không tạo trùng.
 if (require.main === module) {
   (async () => {
     const client = new Client({

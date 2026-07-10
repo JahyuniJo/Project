@@ -16,6 +16,7 @@ const ROLE_BADGE = {
   user:  { label: 'Người dùng',    cls: 'bg-indigo-100 text-indigo-700 border border-indigo-200' },
 };
 
+/** StatCard — Ô thống kê nhỏ (số truyện đã đọc, danh sách yêu thích, báo lỗi đã gửi). */
 function StatCard({ value, label, icon, color }) {
   const c = STAT_COLORS[color];
   return (
@@ -28,6 +29,7 @@ function StatCard({ value, label, icon, color }) {
   );
 }
 
+/** PasswordField — Ô nhập mật khẩu có nút con mắt ẩn/hiện nội dung. */
 function PasswordField({ id, placeholder, value, onChange }) {
   const [show, setShow] = useState(false);
   return (
@@ -52,6 +54,11 @@ function PasswordField({ id, placeholder, value, onChange }) {
   );
 }
 
+/**
+ * Info (/info) — Trang thông tin cá nhân: hồ sơ (username/email/role badge),
+ * thống kê hoạt động, đổi avatar (upload ảnh → refreshUser cập nhật Header ngay)
+ * và form đổi mật khẩu (yêu cầu mật khẩu hiện tại, xác nhận mật khẩu mới).
+ */
 export default function Info() {
   const { user, refreshUser } = useAuth();
   const { toast } = useAlert();

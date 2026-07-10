@@ -1,3 +1,8 @@
+/**
+ * Script CLI `npm run es:create-index` — tạo index `stories` trên Elasticsearch
+ * với mapping chuẩn (qua ensureStoriesIndex). Chạy 1 lần khi setup môi trường;
+ * index đã tồn tại thì chỉ báo lại, không tạo đè. Lỗi → exit code 1.
+ */
 const { ensureStoriesIndex } = require("../services/searchService");
 
 ensureStoriesIndex()

@@ -6,7 +6,12 @@ const authMiddleware = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
 const { EMAIL_REGEX } = require("../utils/validators");
 
-// Lấy danh sách người dùng (phân trang, tìm kiếm, lọc role)
+/**
+ * GET /api/usercontroll — Danh sách user cho trang quản lý admin (Admin only).
+ * Hỗ trợ: phân trang (page/limit), tìm kiếm ILIKE trên username/email,
+ * lọc theo role (chỉ nhận "user"/"admin", giá trị khác bị bỏ qua).
+ * Không trả cột password; kèm locked_until để UI hiển thị trạng thái khóa.
+ */
 router.get("/", authMiddleware, requireAdmin, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -51,7 +56,11 @@ router.get("/", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-// Thêm người dùng
+/**
+ * POST /api/usercontroll — Admin tạo user mới trực tiếp (không qua đăng ký).
+ * Validate như /register + được chọn role (mặc định "user"); mật khẩu vẫn
+ * hash bcrypt như luồng đăng ký thường. Thành công → 201.
+ */
 router.post("/", authMiddleware, requireAdmin, async (req, res) => {
   const { username, email, password, role } = req.body;
 
@@ -87,7 +96,11 @@ router.post("/", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-// Sửa người dùng (password tuỳ chọn — để trống nghĩa là không đổi)
+/**
+ * PUT /api/usercontroll/:id — Admin sửa username/email/role của 1 user.
+ * Kiểm tra email mới không trùng với tài khoản KHÁC (loại trừ chính user đang sửa).
+ * Không đụng tới mật khẩu — đổi mật khẩu đi qua luồng riêng của user.
+ */
 router.put("/:id", authMiddleware, requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
@@ -131,7 +144,15 @@ router.put("/:id", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-// Khóa / Mở khóa tài khoản
+/**
+ * PATCH /api/usercontroll/:id/lock — Khóa hoặc mở khóa tài khoản có thời hạn.
+ *
+ * Body { duration_hours }: số nguyên 0–8760 (tối đa 1 năm).
+ *   - > 0: set `locked_until = NOW() + N giờ` — user bị chặn ở cả login lẫn
+ *     authMiddleware cho tới khi hết hạn.
+ *   - = 0: mở khóa (locked_until = NULL).
+ * Admin không thể tự khóa chính mình (chống tự khóa mất quyền quản trị).
+ */
 router.patch("/:id/lock", authMiddleware, requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
@@ -177,7 +198,10 @@ router.patch("/:id/lock", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-// Xóa người dùng
+/**
+ * DELETE /api/usercontroll/:id — Admin xóa user. Không thể tự xóa chính mình.
+ * Dữ liệu liên quan (chat, comment, favorite...) tự dọn nhờ FK ON DELETE CASCADE.
+ */
 router.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {

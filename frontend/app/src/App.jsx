@@ -28,6 +28,17 @@ import AdminStories from './pages/admin/Stories';
 import AdminReports from './pages/admin/Reports';
 import AdminChat from './pages/admin/Chat';
 
+/**
+ * App — Khai báo TOÀN BỘ route của SPA, nhóm theo layout:
+ *   - AuthLayout: các trang đăng nhập/đăng ký/quên mật khẩu (không header).
+ *   - Layout (Header + Footer): trang public (Home, Read, Chapter) và trang
+ *     cần đăng nhập — bọc trong ProtectedRoute (không role = chỉ cần đăng nhập,
+ *     roles=['user'] = chặn cả admin vào trang thuần user).
+ *   - AdminLayout (sidebar cố định): toàn bộ /admin/*, bọc ProtectedRoute
+ *     roles=['admin'].
+ * Route lạ → redirect về trang chủ. Lưu ý: guard ở đây chỉ là UX — bảo vệ
+ * thật nằm ở API (authMiddleware/requireAdmin phía backend).
+ */
 export default function App() {
   return (
     <Routes>

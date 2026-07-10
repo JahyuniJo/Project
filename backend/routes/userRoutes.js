@@ -8,6 +8,8 @@ const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middleware/authMiddleware");
 const { EMAIL_REGEX, MIN_PASSWORD_LENGTH } = require("../utils/validators");
 
+// Cấu hình multer cho upload avatar: lưu vào backend/uploads/, tên file =
+// timestamp + đuôi gốc (tránh trùng tên), chỉ nhận MIME ảnh, giới hạn 5MB.
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, "../uploads")),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
@@ -22,7 +24,12 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
-// Đăng ký
+/**
+ * POST /api/users/register — Đăng ký tài khoản mới.
+ * Validate: đủ 3 field, username 3-50 ký tự, email đúng định dạng, mật khẩu ≥ 6 ký tự,
+ * email chưa tồn tại. Mật khẩu được hash bằng bcrypt (10 salt rounds) trước khi lưu —
+ * DB không bao giờ chứa mật khẩu gốc. Thành công → 201.
+ */
 router.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -58,7 +65,17 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Đăng nhập
+/**
+ * POST /api/users/login — Đăng nhập, phát hành JWT trong HTTP-only cookie.
+ *
+ * - Sai email và sai mật khẩu trả CÙNG một message "Sai tài khoản hoặc mật khẩu"
+ *   (401) — không cho attacker dò được email nào tồn tại.
+ * - Tài khoản đang bị khóa (`locked_until` trong tương lai) → 403 kèm thời điểm hết khóa.
+ * - Thành công: ký JWT 24h chứa { userId, role, email, username }, set cookie
+ *   `authToken` httpOnly (JS phía client không đọc trộm được — chống XSS),
+ *   `secure` khi production (chỉ gửi qua HTTPS), sameSite Lax, maxAge khớp hạn token.
+ * - Response trả `role` để frontend điều hướng (admin → /admin, user → /home).
+ */
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -113,13 +130,21 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Đăng xuất
+/**
+ * GET /api/users/logout — Đăng xuất bằng cách xóa cookie `authToken`.
+ * Options của clearCookie phải khớp với lúc set (httpOnly, secure, path)
+ * thì browser mới chịu xóa. JWT stateless nên không cần thu hồi phía server.
+ */
 router.get("/logout", (req, res) => {
   res.clearCookie("authToken", { httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
   res.json({ message: "Đăng xuất thành công" });
 });
 
-// Lấy thông tin người dùng
+/**
+ * GET /api/users/info — Thông tin hồ sơ (username, email, avatar_url) của user
+ * đang đăng nhập — dùng cho trang Thông tin cá nhân. Lấy tươi từ DB thay vì
+ * từ token để phản ánh thay đổi mới nhất (vd: vừa đổi avatar).
+ */
 router.get("/info", authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
@@ -137,7 +162,11 @@ router.get("/info", authMiddleware, async (req, res) => {
   }
 });
 
-// Thống kê hoạt động của người dùng
+/**
+ * GET /api/users/stats — Thống kê hoạt động cá nhân hiển thị ở trang Info:
+ * số truyện đã đọc (DISTINCT story_id trong lịch sử xem), số danh sách yêu thích,
+ * số báo lỗi đã gửi. 3 query COUNT chạy song song.
+ */
 router.get("/stats", authMiddleware, async (req, res) => {
   try {
     const [viewsRes, listsRes, reportsRes] = await Promise.all([
@@ -166,7 +195,14 @@ router.get("/stats", authMiddleware, async (req, res) => {
   }
 });
 
-// Upload avatar
+/**
+ * POST /api/users/upload-avatar — Upload ảnh đại diện (multipart, field `avatar`).
+ *
+ * Middleware đầu bọc multer thủ công để dịch lỗi của nó thành message tiếng Việt
+ * rõ nghĩa: quá 5MB → "không được vượt quá 5MB", sai loại file → liệt kê định dạng
+ * chấp nhận. Handler sau lưu đường dẫn `/uploads/<file>` vào `users.avatar_url`
+ * và trả về cho client cập nhật UI ngay.
+ */
 router.post("/upload-avatar", authMiddleware, (req, res, next) => {
   upload.single("avatar")(req, res, (err) => {
     if (err instanceof multer.MulterError) {

@@ -1,3 +1,7 @@
+/**
+ * Footer — Chân trang. `simple = true` (trang auth): chỉ 1 dòng copyright;
+ * mặc định: logo + thông tin liên hệ (Github, email).
+ */
 export default function Footer({ simple = false }) {
   if (simple) {
     return (

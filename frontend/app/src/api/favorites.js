@@ -1,3 +1,7 @@
+/**
+ * api/favorites.js — Danh sách yêu thích: CRUD danh sách (tạo/đổi tên/xóa)
+ * và quản lý truyện trong từng danh sách (xem/thêm/bỏ).
+ */
 import client from './client';
 
 export const getFavLists    = ()           => client.get('/api/favlists', { withCredentials: true }).then(r => r.data);

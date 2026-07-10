@@ -29,6 +29,11 @@ const SORT_OPTS = [
 ];
 
 // ── Hero Banner ───────────────────────────────────────────────────────────────
+/**
+ * HeroBanner — Carousel truyện hot tuần trên đầu trang chủ: tự chuyển slide
+ * mỗi 4s, có nút trái/phải + dot điều hướng (bấm tay sẽ reset đồng hồ tự chạy
+ * để slide không nhảy ngay sau thao tác).
+ */
 function HeroBanner({ stories }) {
   const { user } = useAuth();
   const [idx, setIdx] = useState(0);
@@ -232,6 +237,10 @@ function GenreSelect({ selected, onChange }) {
 }
 
 // Xây URLSearchParams từ object filter (dùng bên ngoài component để tránh tạo lại)
+/**
+ * Chuyển object filter thành query params cho URL — chỉ giữ giá trị khác
+ * mặc định để URL luôn gọn (trang 1, sort newest... không xuất hiện trên URL).
+ */
 function buildSearchParams(f) {
   const p = {};
   if (f.page > 1)         p.page   = f.page;
@@ -244,6 +253,16 @@ function buildSearchParams(f) {
 }
 
 // ── Main Home page ────────────────────────────────────────────────────────────
+/**
+ * Home (/) — Trang chủ công khai: HeroBanner truyện hot tuần + lưới truyện
+ * 12 cuốn/trang với bộ lọc đầy đủ (đa thể loại, trạng thái, độ dài, sort, tìm kiếm).
+ *
+ * Điểm thiết kế chính: TOÀN BỘ trạng thái filter nằm trên URL query params
+ * (?genres=...&status=...&q=...) chứ không trong state — nhờ đó share/bookmark/F5
+ * giữ nguyên bộ lọc, và Header có thể điều hướng kèm filter mà trang tự phản ứng.
+ * Dữ liệu qua React Query, `placeholderData` giữ trang cũ hiển thị trong lúc
+ * fetch trang mới (không nháy trắng khi chuyển trang).
+ */
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterOpen, setFilterOpen] = useState(false);

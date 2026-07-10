@@ -27,12 +27,25 @@ setInterval(() => {
 }, 60_000);
 
 // ── Context window management ─────────────────────────────────────────────────
-// ~3 ký tự/token với tiếng Việt (ước lượng bảo thủ)
+/**
+ * Ước lượng số token của 1 đoạn text theo tỷ lệ ~3 ký tự/token với tiếng Việt
+ * (ước lượng bảo thủ — thà đoán dư còn hơn vượt context limit của model).
+ * @param {string} text
+ * @returns {number} Số token ước lượng.
+ */
 function estimateTokens(text) {
   return Math.ceil((text || "").length / 3);
 }
 
-// Giữ lại history gần nhất vừa với ngưỡng token — tránh lỗi context limit
+/**
+ * Cắt bớt lịch sử chat để tổng token không vượt ngưỡng — tránh lỗi context limit
+ * khi gửi lên Groq. Duyệt từ tin MỚI NHẤT ngược về cũ, giữ lại nhiều tin gần đây
+ * nhất có thể; tin cũ vượt ngưỡng bị bỏ (chúng ít giá trị nhất cho ngữ cảnh).
+ *
+ * @param {Array<{role: string, content: string}>} history - Lịch sử theo thứ tự cũ → mới.
+ * @param {number} [maxTokens=MAX_HISTORY_TOKENS] - Ngưỡng token cho phần history.
+ * @returns {Array} History đã cắt, vẫn giữ thứ tự cũ → mới.
+ */
 function trimHistoryToFit(history, maxTokens = MAX_HISTORY_TOKENS) {
   let used = 0;
   const kept = [];
@@ -45,7 +58,19 @@ function trimHistoryToFit(history, maxTokens = MAX_HISTORY_TOKENS) {
 }
 
 // ── User preferences — top genres từ lịch sử đọc ─────────────────────────────
-// db: pool hoặc client — bất kỳ đối tượng nào có .query()
+/**
+ * Lấy các thể loại người dùng hay đọc nhất, suy ra từ lịch sử xem (`user_story_views`
+ * JOIN `stories`, unnest mảng genres rồi đếm tần suất). Kết quả được nhúng vào
+ * system prompt để chatbot cá nhân hóa gợi ý.
+ *
+ * Lỗi query → trả mảng rỗng thay vì throw: sở thích chỉ là thông tin phụ,
+ * không được phép làm hỏng cả lượt chat.
+ *
+ * @param {object} db - pool hoặc client — bất kỳ đối tượng nào có .query().
+ * @param {number} userId
+ * @param {number} [limit=5] - Số thể loại tối đa.
+ * @returns {Promise<string[]>} Thể loại xếp theo tần suất đọc giảm dần.
+ */
 async function getUserTopGenres(db, userId, limit = 5) {
   try {
     const result = await db.query(
@@ -69,6 +94,15 @@ let _libCtxCache = null;
 let _libCtxCachedAt = 0;
 const LIB_CTX_TTL_MS = 5 * 60 * 1000;
 
+/**
+ * Lấy thông tin tổng quan thư viện (tổng số truyện + danh sách thể loại distinct)
+ * để nhúng vào system prompt của chatbot library mode.
+ *
+ * Cache in-memory TTL 5 phút: dữ liệu này thay đổi chậm (chỉ khi crawl thêm truyện)
+ * nên không cần query lại mỗi tin nhắn chat.
+ *
+ * @returns {Promise<{totalStories: number, genres: string[]}>}
+ */
 async function getLibraryContext() {
   const now = Date.now();
   if (_libCtxCache && now - _libCtxCachedAt < LIB_CTX_TTL_MS) return _libCtxCache;
@@ -85,6 +119,19 @@ async function getLibraryContext() {
 }
 
 // ── System prompts ────────────────────────────────────────────────────────────
+/**
+ * Dựng system prompt cho chatbot LIBRARY MODE (chat chung, không gắn với truyện nào):
+ * AI đóng vai trợ lý thư viện giúp tìm truyện.
+ *
+ * Prompt nhúng: tổng số truyện, tối đa 30 thể loại có sẵn, sở thích người dùng (nếu có),
+ * và các quy tắc chống ảo giác — quan trọng nhất là AI CHỈ được giới thiệu truyện
+ * xuất hiện trong khối [KẾT QUẢ TỪ THƯ VIỆN] (kết quả search thật), tuyệt đối không
+ * tự bịa tên truyện từ kiến thức nền.
+ *
+ * @param {{totalStories: number, genres: string[]}} ctx - Từ getLibraryContext().
+ * @param {string[]} [userGenres] - Thể loại hay đọc, từ getUserTopGenres().
+ * @returns {string} System prompt hoàn chỉnh.
+ */
 function buildLibrarySystemPrompt(ctx, userGenres = []) {
   const genreList = ctx.genres.slice(0, 30).join(", ");
   const prefLine = userGenres.length
@@ -107,6 +154,30 @@ function buildLibrarySystemPrompt(ctx, userGenres = []) {
 7. TUYỆT ĐỐI không tự đề xuất tên truyện cụ thể nào từ kiến thức của bạn — chỉ giới thiệu truyện khi có [KẾT QUẢ TỪ THƯ VIỆN]`;
 }
 
+/**
+ * Dựng system prompt cho chatbot STORY MODE (đang chat trong trang đọc 1 truyện cụ thể).
+ *
+ * Prompt nhúng nhiều lớp ngữ cảnh:
+ *   - Metadata truyện: tên, tác giả, thể loại, mô tả, ai_summary.
+ *   - Tiến độ đọc: chương đang đọc / tổng số chương, kèm cảnh báo KHÔNG spoil
+ *     nội dung các chương sau nếu người dùng chưa đọc hết.
+ *   - Recap: tóm tắt nội dung các chương 1→N đã đọc (từ chapter_summaries) — cho phép
+ *     AI trả lời chính xác "tóm tắt lại những gì tôi đã đọc" mà không bịa.
+ *   - Danh sách chương đầu + "Dữ liệu chính xác" (tổng chương, chương mới nhất)
+ *     để AI trả lời thẳng các câu hỏi đếm số thay vì suy đoán.
+ *   - Sở thích thể loại của người dùng.
+ *   - Quy tắc trả lời: tiếng Việt, ngắn gọn, không ảo giác, chỉ giới thiệu truyện
+ *     có trong [KẾT QUẢ TỪ THƯ VIỆN].
+ *
+ * @param {object} story - Row từ bảng stories (title, author, genres, description, ai_summary).
+ * @param {number|null} chapterNum - Chương người dùng đang đọc (null nếu chat từ trang giới thiệu).
+ * @param {Array<{chapter_num, title}>} chapters - Các chương đầu (tối đa CHAPTER_CONTEXT_LIMIT).
+ * @param {Array<{chapter_num}>} lastChapters - Vài chương mới nhất (suy ra chương mới nhất).
+ * @param {number} totalChaps - Tổng số chương của truyện.
+ * @param {string[]} [userGenres] - Thể loại hay đọc của người dùng.
+ * @param {string|null} [recap] - Recap chương 1→N từ getReadingRecap(), null nếu chưa có.
+ * @returns {string} System prompt hoàn chỉnh.
+ */
 function buildSystemPrompt(story, chapterNum, chapters, lastChapters, totalChaps, userGenres = [], recap = null) {
   const genres = Array.isArray(story.genres) ? story.genres.join(", ") : story.genres || "";
   const summaryLine = story.ai_summary ? `\n- Tóm tắt AI: ${story.ai_summary}` : "";
@@ -168,6 +239,17 @@ ${factsLines}
 7. TUYỆT ĐỐI không tự đề xuất tên truyện cụ thể nào từ kiến thức của bạn — chỉ giới thiệu truyện khi có [KẾT QUẢ TỪ THƯ VIỆN]`;
 }
 
+/**
+ * Định dạng kết quả search thành khối [KẾT QUẢ TỪ THƯ VIỆN] để tiêm vào tin nhắn
+ * người dùng trước khi gửi AI — AI chỉ được giới thiệu truyện từ khối này.
+ *
+ * Mỗi truyện gồm tên, tác giả, thể loại và 100 ký tự đầu của mô tả (đủ để AI
+ * viết lời giới thiệu, không tốn token thừa). Mảng rỗng → khối "0 truyện" kèm
+ * hướng dẫn AI thông báo không tìm thấy và gợi ý người dùng mô tả lại.
+ *
+ * @param {Array<object>} stories - Kết quả từ searchByDescription().
+ * @returns {string} Khối context dạng text.
+ */
 function buildRecommendContext(stories) {
   if (!stories.length) {
     return "[KẾT QUẢ TỪ THƯ VIỆN — 0 truyện]\n\nThư viện DH.Story không tìm thấy truyện phù hợp. Hãy thông báo điều này và gợi ý người dùng mô tả lại (ví dụ: thể loại cụ thể, đặc điểm nhân vật, bối cảnh).";
@@ -183,12 +265,26 @@ function buildRecommendContext(stories) {
 }
 
 // ── Cookie / JWT ──────────────────────────────────────────────────────────────
+/**
+ * Trích giá trị cookie `authToken` từ raw Cookie header.
+ * Socket.io handshake không đi qua middleware cookie-parser của Express
+ * nên phải tự parse bằng regex.
+ * @param {string|undefined} cookieHeader - Header `Cookie` thô từ handshake.
+ * @returns {string|null} JWT token, hoặc null nếu không có.
+ */
 function parseCookieToken(cookieHeader) {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(/(?:^|;\s*)authToken=([^;]+)/);
   return match ? match[1] : null;
 }
 
+/**
+ * Xác thực người dùng từ Socket.io connection: lấy JWT từ cookie handshake
+ * rồi verify chữ ký. Đây là chốt auth thật của chat qua socket (thay cho
+ * authMiddleware vốn chỉ áp dụng cho HTTP route).
+ * @param {import("socket.io").Socket} socket
+ * @returns {object|null} Payload JWT đã decode ({ userId, ... }), null nếu chưa đăng nhập / token hỏng / hết hạn.
+ */
 function getUserFromSocket(socket) {
   try {
     const token = parseCookieToken(socket.handshake.headers.cookie);
@@ -199,6 +295,14 @@ function getUserFromSocket(socket) {
   }
 }
 
+/**
+ * Kiểm tra + ghi nhận cooldown chống spam chat: mỗi user chỉ được gửi 1 tin
+ * mỗi CHAT_COOLDOWN_MS (2s). Tính theo userId chứ không theo socket để user
+ * mở nhiều tab không lách được giới hạn. Nếu hợp lệ thì đồng thời cập nhật
+ * mốc thời gian mới (side effect có chủ đích).
+ * @param {number} userId
+ * @returns {boolean} true nếu được phép gửi.
+ */
 function checkCooldown(userId) {
   const now = Date.now();
   const lastTime = userCooldowns.get(userId) || 0;
@@ -207,6 +311,46 @@ function checkCooldown(userId) {
   return true;
 }
 
+/**
+ * Guard chung chạy đầu mọi socket event chat, gom 3 lớp kiểm tra theo thứ tự:
+ *   1. Tin nhắn: phải là string không rỗng, ≤ MAX_MESSAGE_LENGTH (500) ký tự.
+ *   2. Đăng nhập: JWT hợp lệ trong cookie (getUserFromSocket).
+ *   3. Cooldown: chưa gửi tin nào trong 2s gần nhất (checkCooldown).
+ *
+ * @param {import("socket.io").Socket} socket
+ * @param {unknown} message - Payload thô từ client (chưa tin cậy được kiểu).
+ * @returns {{msg: string, userId: number}|null} Tin đã trim + userId khi hợp lệ;
+ *   null khi vi phạm (đã tự emit `chatError` cho client, caller chỉ cần return).
+ */
+function guardChatEvent(socket, message) {
+  const msg = typeof message === "string" ? message.trim() : "";
+  if (!msg || msg.length > MAX_MESSAGE_LENGTH) {
+    socket.emit("chatError", {
+      message: msg ? `Tin nhắn tối đa ${MAX_MESSAGE_LENGTH} ký tự` : "Tin nhắn không được trống",
+    });
+    return null;
+  }
+
+  const decoded = getUserFromSocket(socket);
+  if (!decoded) {
+    socket.emit("chatError", { message: "Vui lòng đăng nhập để dùng tính năng này" });
+    return null;
+  }
+  if (!checkCooldown(decoded.userId)) {
+    socket.emit("chatError", { message: "Vui lòng chờ trước khi gửi tin tiếp theo" });
+    return null;
+  }
+
+  return { msg, userId: decoded.userId };
+}
+
+/**
+ * Emit event `chatStories` gửi danh sách truyện gợi ý cho client render thành
+ * card có ảnh bìa (đẹp hơn text thuần trong bubble chat). Chỉ pick các field
+ * cần hiển thị — không lộ description/metadata thừa. Mảng rỗng → không emit gì.
+ * @param {import("socket.io").Socket} socket
+ * @param {Array<object>} stories - Truyện đã được AI gợi ý trong lượt chat này.
+ */
 function emitStoryCards(socket, stories) {
   if (!stories.length) return;
   socket.emit("chatStories", {
@@ -216,6 +360,13 @@ function emitStoryCards(socket, stories) {
   });
 }
 
+/**
+ * Chạy tìm kiếm truyện cho chatbot: gọi searchByDescription (ES + AI expand +
+ * SQL fallback) rồi đóng gói kết quả thành khối context [KẾT QUẢ TỪ THƯ VIỆN].
+ * @param {string} query - Từ khóa đã trích từ intent người dùng.
+ * @param {number|null} excludeId - ID truyện đang đọc cần loại khỏi kết quả.
+ * @returns {Promise<{stories: Array<object>, context: string}>}
+ */
 async function runSearch(query, excludeId) {
   const stories = await searchByDescription({
     query: query || "",
@@ -225,9 +376,20 @@ async function runSearch(query, excludeId) {
   return { stories, context: buildRecommendContext(stories) };
 }
 
-// Phát hiện intent tìm kiếm & trích xuất query — dùng model nhỏ, nhanh, reliable
-// mode='story': chỉ trigger khi user rõ ràng muốn tìm truyện KHÁC (không phải hỏi về truyện đang đọc)
-// mode='library': trigger rộng hơn — hầu hết câu hỏi đều liên quan đến việc tìm truyện
+/**
+ * Phát hiện intent tìm kiếm & trích xuất từ khóa từ tin nhắn người dùng —
+ * dùng model nhỏ qua callAIRaw (temperature 0, maxTokens 25) để nhanh và deterministic.
+ *
+ * Hai mức độ nhạy theo mode:
+ *   - 'story': rất conservative — chỉ trả từ khóa khi user NÓI RÕ muốn tìm truyện KHÁC
+ *     ("gợi ý truyện tương tự"...); hỏi về nội dung/nhân vật truyện đang đọc → NONE.
+ *   - 'library': rộng — hầu hết câu hỏi trong chat thư viện đều là tìm truyện.
+ *
+ * @param {string} userMessage - Tin nhắn gốc của người dùng.
+ * @param {string} [mode="library"] - 'story' | 'library'.
+ * @returns {Promise<string|null>} Từ khóa tìm kiếm, hoặc null nếu không có intent / AI lỗi
+ *   (lỗi được nuốt — thiếu search chỉ làm câu trả lời kém phong phú, không được chặn chat).
+ */
 async function getSearchIntent(userMessage, mode = "library") {
   const prompt =
     mode === "story"
@@ -270,12 +432,42 @@ const STORY_SEARCH_TRIGGERS = [
   'gợi ý', 'recommend', 'đề xuất',
 ];
 
+/**
+ * Kiểm tra nhanh (không gọi AI) tin nhắn trong story mode có chứa cụm từ thể hiện
+ * ý muốn tìm truyện khác không — khớp substring không phân biệt hoa thường với
+ * danh sách STORY_SEARCH_TRIGGERS.
+ * @param {string} message
+ * @returns {boolean} true nếu nên kích hoạt luồng tìm kiếm gợi ý.
+ */
 function storyModeWantsSearch(message) {
   const lower = message.toLowerCase();
   return STORY_SEARCH_TRIGGERS.some((kw) => lower.includes(kw));
 }
 
 // ── Handler chung cho cả 2 mode ───────────────────────────────────────────────
+/**
+ * Lõi xử lý 1 lượt chat, dùng chung cho cả story mode và library mode:
+ *
+ *   1. Xác định có cần tìm truyện không:
+ *      - story mode: pre-filter keyword (storyModeWantsSearch) trước, rồi mới gọi AI
+ *        trích từ khóa; AI không trích được → dùng nguyên tin nhắn làm query.
+ *      - library mode: luôn thử trích từ khóa bằng AI (getSearchIntent).
+ *   2. Có từ khóa → emit `chatThinking` (client hiện trạng thái "đang tìm..."),
+ *      chạy runSearch rồi TIÊM khối [KẾT QUẢ TỪ THƯ VIỆN] vào tin nhắn cuối
+ *      để AI giới thiệu đúng truyện có thật trong thư viện.
+ *   3. Gọi callAIStream — từng chunk được emit ngay qua event `chatChunk`.
+ *
+ * Lỗi ở bước intent/search chỉ log warn rồi chat tiếp bình thường (best-effort).
+ *
+ * @param {object} opts
+ * @param {import("socket.io").Socket} opts.socket
+ * @param {Array<{role, content}>} opts.messages - [system, ...history, user] đã dựng sẵn.
+ * @param {string} opts.thinkingStatus - Text hiển thị khi đang tìm kiếm.
+ * @param {number|null} opts.excludeId - ID truyện đang đọc (loại khỏi gợi ý), null ở library mode.
+ * @param {string} [opts.mode="library"] - 'story' | 'library'.
+ * @returns {Promise<{fullReply: string, recommendedStories: Array<object>}>}
+ *   Câu trả lời đầy đủ (để lưu DB) + danh sách truyện đã gợi ý (để lưu metadata & emit card).
+ */
 async function runAgenticChat({ socket, messages: inMessages, thinkingStatus, excludeId, mode = "library" }) {
   const messages = [...inMessages];
   const userMessage = messages[messages.length - 1]?.content || "";
@@ -310,33 +502,43 @@ async function runAgenticChat({ socket, messages: inMessages, thinkingStatus, ex
 }
 
 // ── Socket init ───────────────────────────────────────────────────────────────
+/**
+ * Đăng ký các Socket.io event handler cho chatbot — gọi 1 lần từ app.js khi khởi động.
+ *
+ * Event nhận từ client:
+ *   - `chatMessage`   { storyId, message, chapterNum } — chat trong trang đọc truyện (story mode).
+ *   - `libraryMessage` { message } — chat tổng ở widget thư viện (library mode).
+ *
+ * Event server emit về client:
+ *   - `chatThinking` { status }  — đang tìm truyện trong thư viện.
+ *   - `chatChunk`    { chunk }   — từng mẩu text AI đang sinh (streaming).
+ *   - `chatDone`     { reply }   — AI trả lời xong, kèm full text.
+ *   - `chatStories`  { stories } — card truyện gợi ý (nếu có).
+ *   - `chatError`    { message } — lỗi validate/auth/server.
+ *
+ * @param {import("socket.io").Server} io - Socket.io server instance.
+ */
 function initChat(io) {
   io.on("connection", (socket) => {
     // ── Story mode ────────────────────────────────────────────────────────────
+    // Luồng: validate storyId → guard (msg/auth/cooldown) → load song song mọi ngữ
+    // cảnh (truyện, chương, history, recap, sở thích) → lưu tin user vào DB →
+    // dựng system prompt → runAgenticChat stream trả lời → lưu tin assistant
+    // (kèm metadata story_ids nếu có gợi ý) → emit chatDone + card truyện.
+    // Lỗi giữa chừng: xóa tin user vừa lưu (rollback thủ công) để history không
+    // chứa câu hỏi chưa từng được trả lời.
     socket.on("chatMessage", async ({ storyId, message, chapterNum }) => {
       const sid = parseInt(storyId);
       if (!sid || sid <= 0) {
         return socket.emit("chatError", { message: "Story không hợp lệ" });
       }
 
-      const msg = typeof message === "string" ? message.trim() : "";
-      if (!msg || msg.length > MAX_MESSAGE_LENGTH) {
-        return socket.emit("chatError", {
-          message: msg ? `Tin nhắn tối đa ${MAX_MESSAGE_LENGTH} ký tự` : "Tin nhắn không được trống",
-        });
-      }
-
-      const decoded = getUserFromSocket(socket);
-      if (!decoded) {
-        return socket.emit("chatError", { message: "Vui lòng đăng nhập để dùng tính năng này" });
-      }
-      if (!checkCooldown(decoded.userId)) {
-        return socket.emit("chatError", { message: "Vui lòng chờ trước khi gửi tin tiếp theo" });
-      }
+      const guard = guardChatEvent(socket, message);
+      if (!guard) return;
+      const { msg, userId } = guard;
 
       const chapNum = chapterNum != null ? parseFloat(chapterNum) : null;
       const validChapNum = chapNum > 0 ? chapNum : null;
-      const userId = decoded.userId;
 
       // Dùng pool.query trực tiếp (mỗi query tự mượn–trả connection): KHÔNG giữ một client
       // cố định suốt lượt gọi AI streaming (tới 45s) — tránh giam connection làm cạn pool.
@@ -417,23 +619,14 @@ function initChat(io) {
     });
 
     // ── Library mode ──────────────────────────────────────────────────────────
+    // Như chatMessage nhưng không gắn với truyện nào (story_id = NULL trong DB):
+    // ngữ cảnh là tổng quan thư viện (getLibraryContext) thay vì metadata 1 truyện,
+    // và luôn sẵn sàng tìm kiếm gợi ý theo mọi câu hỏi.
     socket.on("libraryMessage", async ({ message }) => {
-      const msg = typeof message === "string" ? message.trim() : "";
-      if (!msg || msg.length > MAX_MESSAGE_LENGTH) {
-        return socket.emit("chatError", {
-          message: msg ? `Tin nhắn tối đa ${MAX_MESSAGE_LENGTH} ký tự` : "Tin nhắn không được trống",
-        });
-      }
+      const guard = guardChatEvent(socket, message);
+      if (!guard) return;
+      const { msg, userId } = guard;
 
-      const decoded = getUserFromSocket(socket);
-      if (!decoded) {
-        return socket.emit("chatError", { message: "Vui lòng đăng nhập để dùng tính năng này" });
-      }
-      if (!checkCooldown(decoded.userId)) {
-        return socket.emit("chatError", { message: "Vui lòng chờ trước khi gửi tin tiếp theo" });
-      }
-
-      const userId = decoded.userId;
       // Dùng pool.query trực tiếp — không giữ client cố định suốt lượt gọi AI (xem chatMessage).
       let userMsgId = null;
       try {
@@ -495,6 +688,16 @@ function initChat(io) {
 // ── HTTP routes ───────────────────────────────────────────────────────────────
 const router = express.Router();
 
+/**
+ * GET /api/chat/history?story_id=N — Tải lịch sử chat để widget hiển thị lại khi mở.
+ *
+ * - Có story_id → lịch sử chat của truyện đó; không có → lịch sử library mode
+ *   (story_id IS NULL). Trả tối đa HISTORY_DISPLAY_LIMIT (50) tin, cũ → mới.
+ * - Tin assistant có metadata.story_ids (từng gợi ý truyện) → batch-fetch tất cả
+ *   truyện bằng 1 query ANY($1::int[]) rồi gắn vào field `story_cards` để client
+ *   render lại card; truyện đã bị xóa được lọc bỏ êm.
+ * - Chỉ trả tin của chính user đang đăng nhập (authMiddleware + WHERE user_id).
+ */
 router.get("/history", authMiddleware, async (req, res) => {
   const rawId = req.query.story_id;
   const storyId = rawId ? parseInt(rawId) : null;
@@ -552,6 +755,11 @@ router.get("/history", authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/chat/history?story_id=N — Người dùng xóa lịch sử chat của mình.
+ * Có story_id → chỉ xóa hội thoại với truyện đó; không có → xóa lịch sử library mode.
+ * Scope theo user_id từ JWT nên không thể xóa nhầm chat của người khác.
+ */
 router.delete("/history", authMiddleware, async (req, res) => {
   const rawId = req.query.story_id;
   const storyId = rawId ? parseInt(rawId) : null;
@@ -581,6 +789,14 @@ router.delete("/history", authMiddleware, async (req, res) => {
 // ── Admin routes ──────────────────────────────────────────────────────────────
 const adminRouter = express.Router();
 
+/**
+ * GET /api/admin/chat/stats — Số liệu tổng quan chatbot cho trang admin (Admin only).
+ *
+ * 5 query chạy song song: tổng tin nhắn toàn hệ thống, tin hôm nay, tin 7 ngày,
+ * số user hoạt động 7 ngày, và hoạt động theo ngày (tách cột user/assistant,
+ * ngày tính theo múi giờ Asia/Ho_Chi_Minh để cột "hôm nay" khớp giờ Việt Nam)
+ * — dùng vẽ biểu đồ dashboard.
+ */
 adminRouter.get("/stats", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const [total, today, week, activeUsers, daily] = await Promise.all([
@@ -617,6 +833,14 @@ adminRouter.get("/stats", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/chat/logs — Xem log chat toàn hệ thống, phân trang (Admin only).
+ *
+ * Query params: page, limit (tối đa 50), mode (all | library | story),
+ * user_id, story_id — điều kiện WHERE được build động nhưng luôn parameterized.
+ * JOIN thêm tên truyện + username/email để admin đọc log không phải tra ID.
+ * Trả { total, page, totalPages, messages } sắp xếp mới nhất trước.
+ */
 adminRouter.get("/logs", authMiddleware, requireAdmin, async (req, res) => {
   const page   = Math.max(1, parseInt(req.query.page)  || 1);
   const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
@@ -674,6 +898,11 @@ adminRouter.get("/logs", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/admin/chat/messages/:id — Admin xóa 1 tin nhắn chat bất kỳ
+ * (nội dung vi phạm, v.v.). RETURNING id để phân biệt 404 (không tồn tại)
+ * với xóa thành công.
+ */
 adminRouter.delete("/messages/:id", authMiddleware, requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) return res.status(400).json({ message: "ID không hợp lệ" });

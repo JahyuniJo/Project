@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { forgotPassword } from '../../api/auth';
 
+/**
+ * ForgotPassword (/forgot) — Bước 1 của luồng quên mật khẩu: nhập email,
+ * gọi API gửi OTP rồi chuyển sang /reset-password?email=... để nhập mã.
+ * Server luôn trả message chung dù email có tồn tại hay không (chống dò email).
+ */
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');

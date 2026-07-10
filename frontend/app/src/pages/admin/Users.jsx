@@ -6,17 +6,20 @@ import { useAlert } from '../../context/AlertContext';
 import { getUsers, createUser, updateUser, deleteUser, lockUser } from '../../api/admin';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+/** Định dạng ISO date thành dd/mm/yyyy kiểu Việt Nam; rỗng → "—". */
 function formatDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+/** Định dạng thời điểm hết khóa thành "dd/mm/yyyy hh:mm" để hiện tooltip/badge. */
 function formatLocked(iso) {
   const d = new Date(iso);
   const p = n => String(n).padStart(2, '0');
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/** Tài khoản có đang bị khóa không (locked_until còn ở tương lai). */
 function isLocked(locked_until) { return locked_until && new Date(locked_until) > new Date(); }
 
 const LOCK_OPTIONS = [
@@ -56,6 +59,11 @@ function Pagination({ page, totalPages, onChange }) {
 }
 
 // ── User Add/Edit Modal ───────────────────────────────────────────────────────
+/**
+ * UserModal — Modal thêm/sửa user dùng chung: `editing` null → form tạo mới
+ * (bắt buộc mật khẩu), có giá trị → form sửa (username/email/role, không đổi
+ * mật khẩu).
+ */
 function UserModal({ editing, onClose, onSave }) {
   const { toast } = useAlert();
   const [form, setForm] = useState({
@@ -128,6 +136,10 @@ function UserModal({ editing, onClose, onSave }) {
 }
 
 // ── Lock Modal ────────────────────────────────────────────────────────────────
+/**
+ * LockModal — Modal chọn thời hạn khóa tài khoản (1 giờ → 30 ngày, theo
+ * LOCK_OPTIONS) trước khi gọi API PATCH /lock.
+ */
 function LockModal({ userId, username, onClose, onConfirm }) {
   const { toast } = useAlert();
   const [duration, setDuration] = useState(24);
@@ -168,6 +180,12 @@ function LockModal({ userId, username, onClose, onConfirm }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+/**
+ * AdminUsers (/admin/users) — Bảng quản lý người dùng: tìm kiếm theo tên/email,
+ * lọc role, phân trang; thao tác thêm/sửa (UserModal), khóa/mở khóa có thời hạn
+ * (LockModal) và xóa (confirm trước). Mọi thay đổi xong đều invalidate query
+ * danh sách để bảng tự refetch.
+ */
 export default function AdminUsers() {
   const { user: me } = useAuth();
   const { toast, confirm } = useAlert();

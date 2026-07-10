@@ -7,8 +7,12 @@ export const ICONS = {
 };
 
 /**
- * Modal dùng chung cho confirm và alert.
- * Dùng qua useAlert(): confirm(), showAlert() — không render trực tiếp.
+ * AlertModal — Modal dùng chung cho confirm và alert, do AlertProvider render
+ * (component khác dùng qua useAlert(): confirm(), showAlert() — KHÔNG render trực tiếp).
+ *
+ * Giao diện theo `modal.type` (success/error/info/warning/question — icon + màu
+ * từ bảng ICONS, accent bar trên cùng cùng tông). `modal.hasCancel` quyết định
+ * hiện 1 nút OK (alert) hay OK + Hủy (confirm). Click nền tối bên ngoài = Hủy.
  */
 export default function AlertModal({ modal, onOk, onCancel }) {
   if (!modal.open) return null;

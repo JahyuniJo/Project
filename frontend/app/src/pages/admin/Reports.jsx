@@ -19,6 +19,7 @@ const STATUS_OPTIONS_LIST = Object.entries(STATUS_LABELS).map(([value, { text }]
 const FILTERS = [{ value: '', label: 'Tất cả' }, ...STATUS_OPTIONS_LIST];
 
 // ── Lightbox ──────────────────────────────────────────────────────────────────
+/** Lightbox — Phóng to ảnh chụp màn hình đính kèm báo lỗi; click nền tối để đóng. */
 function Lightbox({ src, onClose }) {
   return (
     <div
@@ -51,6 +52,11 @@ function Pagination({ page, totalPages, onChange }) {
 }
 
 // ── [1] Card thay thế table row ───────────────────────────────────────────────
+/**
+ * ReportCard — Card 1 báo lỗi: tiêu đề, người gửi, nội dung, ảnh screenshot
+ * (bấm mở Lightbox), badge trạng thái; kèm form phản hồi inline cho admin
+ * chọn trạng thái mới + viết phản hồi (gửi xong user được thông báo realtime).
+ */
 function ReportCard({ report, onResponded }) {
   const { toast, confirm } = useAlert();
   const [status, setStatus] = useState(report.status || 'pending');
@@ -210,6 +216,10 @@ function ReportCard({ report, onResponded }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+/**
+ * AdminReports (/admin/reports) — Trang xử lý báo lỗi: lọc theo trạng thái,
+ * phân trang 10 báo lỗi/trang, mỗi báo lỗi là 1 ReportCard có form phản hồi.
+ */
 export default function AdminReports() {
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(1);

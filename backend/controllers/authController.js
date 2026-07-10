@@ -8,6 +8,8 @@ const authMiddleware = require("../middleware/authMiddleware");
 const { EMAIL_REGEX } = require("../utils/validators");
 const OTP_EXPIRY_MS = 2 * 60 * 1000; // 2 phút
 
+// Transporter gửi mail OTP qua Gmail — dùng App Password (EMAIL_PASS trong .env),
+// không phải mật khẩu Gmail thường.
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -21,7 +23,15 @@ const transporter = nodemailer.createTransport({
 // Bước 1 → Bước 2 → Bước 3 (trong một request)
 // ─────────────────────────────────────────────
 
-// Bước 1: Gửi OTP về email
+/**
+ * POST /api/auth/forgot-password { email } — Bước 1: gửi OTP về email.
+ *
+ * - Email không tồn tại vẫn trả CÙNG message thành công "Nếu email tồn tại..."
+ *   → chống email enumeration (attacker không dò được email nào có tài khoản).
+ * - OTP 6 số sinh bằng crypto.randomInt (an toàn hơn Math.random), hiệu lực
+ *   2 phút, lưu vào users.otp/otp_expires — OTP mới ghi đè OTP cũ.
+ * - Gửi mail HTML qua Gmail transporter.
+ */
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
@@ -71,8 +81,12 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// Bước 2: Xác nhận OTP
-// Frontend gọi để check OTP trước khi cho nhập mật khẩu mới
+/**
+ * POST /api/auth/verify-otp { email, otp } — Bước 2: kiểm tra OTP còn hạn không.
+ * Chỉ để UX: frontend xác nhận OTP đúng rồi mới cho nhập mật khẩu mới.
+ * KHÔNG tiêu hủy OTP ở bước này — bước 3 vẫn phải gửi lại OTP để verify lần cuối
+ * (endpoint này không thay được bước 3).
+ */
 router.post("/verify-otp", async (req, res) => {
   const { email, otp } = req.body;
 
@@ -97,8 +111,14 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-// Bước 3: Đặt lại mật khẩu (phải kèm OTP — verify lần cuối)
-// Frontend gửi email + otp + newPassword trong một request
+/**
+ * POST /api/auth/reset-password { email, otp, newPassword } — Bước 3: đặt lại mật khẩu.
+ *
+ * Chạy trong TRANSACTION với FOR UPDATE trên row user: verify OTP lần cuối và
+ * khóa row — 2 request reset đồng thời với cùng OTP thì chỉ 1 bên thành công
+ * (chống race dùng lại OTP). Mật khẩu mới hash bcrypt; OTP bị xóa NGAY sau khi
+ * dùng (nguyên tắc dùng 1 lần) trong cùng câu UPDATE.
+ */
 router.post("/reset-password", async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
@@ -145,9 +165,12 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────
-// Đổi mật khẩu khi đã đăng nhập
-// ─────────────────────────────────────────────
+/**
+ * POST /api/auth/change-password { currentPassword, newPassword } — Đổi mật khẩu
+ * khi ĐÃ đăng nhập (khác luồng quên mật khẩu — không cần OTP).
+ * Bắt buộc nhập đúng mật khẩu hiện tại (bcrypt.compare) trước khi đổi —
+ * chặn kẻ chiếm được session đổi luôn mật khẩu; mật khẩu mới phải khác cũ.
+ */
 router.post("/change-password", authMiddleware, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 

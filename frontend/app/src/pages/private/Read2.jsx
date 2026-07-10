@@ -15,6 +15,10 @@ import client from '../../api/client';
 const CHAPTER_INIT = 30;
 
 // ── Rating modal ──────────────────────────────────────────────────────────────
+/**
+ * RatingModal — Modal chấm sao 1-5: chọn sao rồi gửi qua postRating (đánh giá
+ * lại ghi đè điểm cũ), xong invalidate cache rating để điểm trung bình cập nhật.
+ */
 function RatingModal({ storyId, onClose }) {
   const { toast } = useAlert();
   const qc = useQueryClient();
@@ -60,6 +64,10 @@ function RatingModal({ storyId, onClose }) {
 }
 
 // ── Favourite modal ───────────────────────────────────────────────────────────
+/**
+ * FavModal — Modal "Thêm vào yêu thích": chọn danh sách có sẵn hoặc tạo nhanh
+ * danh sách mới ngay trong modal; truyện đã có sẵn trong list được báo riêng.
+ */
 function FavModal({ storyId, onClose }) {
   const { toast, showAlert } = useAlert();
   const [newName, setNewName] = useState('');
@@ -130,6 +138,10 @@ function FavModal({ storyId, onClose }) {
 }
 
 // ── Chapter list ──────────────────────────────────────────────────────────────
+/**
+ * ChapterList — Lưới link chương của truyện, hiện 30 chương đầu + nút
+ * "Xem thêm" mở dần theo lô 30.
+ */
 function ChapterList({ storyId }) {
   const [visible, setVisible] = useState(CHAPTER_INIT);
   const { data: chapters = [], isLoading } = useQuery({
@@ -181,6 +193,11 @@ function ChapterList({ storyId }) {
 }
 
 // ── AI Summary ────────────────────────────────────────────────────────────────
+/**
+ * AISummary — Nút "Tóm tắt bằng AI": bấm lần đầu gọi POST /api/ai/summarize
+ * (backend ưu tiên summary vision từ chương thật, cache vào ai_summary nên
+ * các lần sau trả ngay); đã có text thì nút chỉ toggle ẩn/hiện, không gọi lại.
+ */
 function AISummary({ storyId }) {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -218,6 +235,10 @@ function AISummary({ storyId }) {
 }
 
 // ── Recommend section ─────────────────────────────────────────────────────────
+/**
+ * RecommendSection — Cột "Gợi ý cho bạn" (sidebar): 6 truyện từ /api/recommend
+ * chấm điểm theo lịch sử đọc; user mới chưa có gợi ý thì ẩn cả khối.
+ */
 function RecommendSection() {
   const { user } = useAuth();
   const { data = [] } = useQuery({
@@ -254,6 +275,13 @@ function RecommendSection() {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+/**
+ * Read2 (/read2?id=N) — Trang chi tiết truyện BẢN ĐẦY ĐỦ cho user đã đăng nhập:
+ * thông tin truyện + rating (RatingModal) + thêm yêu thích (FavModal) +
+ * tóm tắt AI + danh sách chương + gợi ý cá nhân hóa + bình luận (CommentTree) +
+ * ChatWidget story mode. Vào trang lần đầu tự ghi lịch sử xem (recordView,
+ * chặn gọi trùng bằng viewedRef) — dữ liệu nuôi gợi ý và thống kê tuần.
+ */
 export default function Read2() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

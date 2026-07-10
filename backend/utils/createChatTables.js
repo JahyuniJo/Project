@@ -1,3 +1,12 @@
+/**
+ * Migration script (chạy 1 lần: `node backend/utils/createChatTables.js`) —
+ * tạo bảng `chat_messages` lưu lịch sử chatbot + composite index
+ * (user_id, story_id, created_at DESC) phục vụ query "N tin gần nhất của user
+ * trong 1 truyện". Idempotent nhờ IF NOT EXISTS — chạy lại không gây lỗi.
+ *
+ * Lưu ý: story_id NOT NULL ở đây là schema ban đầu; migration
+ * `migrateChatNullableStory.js` sau này đã nới thành nullable cho library mode.
+ */
 require("dotenv").config({ path: require("path").join(__dirname, "../../.env") });
 const pool = require("../config/pool");
 

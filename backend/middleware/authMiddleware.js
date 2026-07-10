@@ -2,6 +2,19 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/pool");
 const JWT_SECRET = process.env.JWT_SECRET;
 
+/**
+ * Middleware BẮT BUỘC đăng nhập — gắn trước mọi API cần user.
+ *
+ * Quy trình kiểm tra:
+ *   1. Lấy JWT từ HTTP-only cookie `authToken` — không có → 401.
+ *   2. Verify chữ ký + hạn token — hỏng/hết hạn → 401.
+ *   3. Đối chiếu DB (khác optionalAuth ở điểm này): user phải còn tồn tại,
+ *      và không đang bị khóa (`locked_until` trong tương lai → 403).
+ *      Nhờ bước này, xóa user / khóa tài khoản có hiệu lực NGAY cả khi
+ *      token cũ chưa hết hạn.
+ *   4. Hợp lệ → gắn `req.user = { userId, ..., role }` (role lấy mới từ DB,
+ *      không tin role trong token) rồi cho request đi tiếp.
+ */
 module.exports = async function authMiddleware(req, res, next) {
   const token = req.cookies.authToken;
 

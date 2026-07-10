@@ -5,7 +5,20 @@ const { summarizeChapterImages } = require("../services/chapterSummaryService");
 
 const router = express.Router();
 
-// GET /api/chapters/:id/content — lấy ảnh chương (lazy crawl + cache DB)
+/**
+ * GET /api/chapters/:id/content — Trả danh sách ảnh của 1 chương, theo chiến lược
+ * LAZY CRAWL + CACHE: chỉ crawl từ nguồn khi có người đọc lần đầu, các lần sau
+ * đọc thẳng từ DB.
+ *
+ * Luồng xử lý:
+ *   1. Tra cache `chapter_contents` — có rồi → trả ngay (kèm metadata chương).
+ *   2. Chưa có → lấy `source_url` từ `chapters`, gọi crawlChapterImages()
+ *      (Axios+Cheerio, fallback Puppeteer). Nguồn chặn/yêu cầu đăng nhập → 403;
+ *      crawl được 0 ảnh → 404.
+ *   3. Lưu ảnh vào cache (ON CONFLICT DO NOTHING — 2 request đua nhau chỉ 1 bên ghi).
+ *   4. Kích hoạt tóm tắt chương bằng vision AI theo kiểu FIRE-AND-FORGET
+ *      (không await) — người đọc nhận ảnh ngay, không phải chờ AI.
+ */
 router.get("/:id/content", async (req, res) => {
   const chapterId = parseInt(req.params.id);
   if (!chapterId || chapterId <= 0) {

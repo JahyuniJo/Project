@@ -8,6 +8,11 @@ import CommentTree from '../../components/CommentTree';
 
 const CHAPTER_INIT = 30;
 
+/**
+ * ChapterList — Danh sách chương của truyện: hiện 30 chương đầu + nút "Xem thêm",
+ * kèm nút "Sync chương" (chỉ admin thấy) gọi API crawl lại danh sách chương
+ * từ nguồn rồi refetch.
+ */
 function ChapterList({ storyId }) {
   const { user } = useAuth();
   const { toast } = useAlert();
@@ -90,6 +95,12 @@ function ChapterList({ storyId }) {
   );
 }
 
+/**
+ * Read (/read?id=N) — Trang chi tiết truyện cho KHÁCH (chưa đăng nhập):
+ * thông tin truyện, danh sách chương và khu bình luận (chỉ xem).
+ * User đã đăng nhập vào trang này sẽ tự chuyển sang /read2 (bản đầy đủ
+ * tính năng: rating, yêu thích, chatbot, tóm tắt AI).
+ */
 export default function Read() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

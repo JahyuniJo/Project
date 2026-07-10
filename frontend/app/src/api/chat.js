@@ -1,3 +1,8 @@
+/**
+ * api/chat.js — Lịch sử chatbot qua HTTP (phần gửi/nhận tin realtime đi qua
+ * Socket.io trong ChatWidget, không qua đây). Có storyId → lịch sử chat của
+ * truyện đó; bỏ trống → lịch sử chat thư viện (library mode).
+ */
 import client from './client';
 
 export const getChatHistory = (storyId) => {

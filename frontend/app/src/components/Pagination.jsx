@@ -1,3 +1,13 @@
+/**
+ * Pagination — Thanh phân trang dùng chung: nút Trước/Sau, cửa sổ trượt tối đa
+ * 5 nút số quanh trang hiện tại, kèm nút trang 1/trang cuối + dấu "…" khi
+ * cửa sổ không chạm biên. Ẩn hoàn toàn khi chỉ có 1 trang.
+ *
+ * Props:
+ *   current - trang hiện tại (1-based).
+ *   total   - tổng số trang.
+ *   onPage  - callback(page) khi người dùng chọn trang.
+ */
 export default function Pagination({ current, total, onPage }) {
   if (total <= 1) return null;
 

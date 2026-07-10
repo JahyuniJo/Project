@@ -3,7 +3,11 @@ const router = express.Router();
 const pool = require("../config/pool");
 const authMiddleware = require("../middleware/authMiddleware");
 
-// Lấy tất cả danh sách yêu thích kèm số lượng truyện
+/**
+ * GET /api/favlists — Tất cả danh sách yêu thích của user đang đăng nhập,
+ * kèm số truyện trong mỗi danh sách (LEFT JOIN + COUNT để danh sách rỗng
+ * vẫn hiện với story_count = 0). Mới tạo xếp trước.
+ */
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
@@ -22,9 +26,13 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Tạo danh sách mới
 const MAX_LIST_NAME_LENGTH = 100;
 
+/**
+ * POST /api/favlists — Tạo danh sách yêu thích mới.
+ * Tên bắt buộc, tối đa 100 ký tự, không trùng (so sánh không phân biệt hoa thường)
+ * với danh sách khác CỦA CHÍNH user đó. Thành công → 201 kèm { id, name } vừa tạo.
+ */
 router.post("/", authMiddleware, async (req, res) => {
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
 
@@ -56,7 +64,11 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Đổi tên danh sách
+/**
+ * PUT /api/favlists/:id — Đổi tên danh sách. Validate như lúc tạo (check trùng
+ * loại trừ chính nó). UPDATE có điều kiện `iduser = $3` — user không thể đổi
+ * tên danh sách của người khác dù đoán được ID (404 thay vì lộ tồn tại).
+ */
 router.put("/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params.id);
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
@@ -96,7 +108,10 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// Xóa danh sách
+/**
+ * DELETE /api/favlists/:id — Xóa danh sách yêu thích (scope theo iduser như PUT).
+ * Truyện trong danh sách tự dọn nhờ FK favorite_stories ON DELETE CASCADE.
+ */
 router.delete("/:id", authMiddleware, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
@@ -120,7 +135,11 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// Lấy truyện trong danh sách
+/**
+ * GET /api/favlists/:id/stories — Danh sách truyện trong 1 favorite list.
+ * Kiểm tra quyền sở hữu trước (list không phải của user → 403), rồi JOIN
+ * sang stories lấy thông tin hiển thị card, truyện thêm gần nhất xếp trước.
+ */
 router.get("/:id/stories", authMiddleware, async (req, res) => {
   const listId = parseInt(req.params.id);
   if (!listId || listId <= 0) {
@@ -152,7 +171,12 @@ router.get("/:id/stories", authMiddleware, async (req, res) => {
   }
 });
 
-// Thêm truyện vào danh sách
+/**
+ * POST /api/favlists/:id/stories { storyId } — Thêm truyện vào danh sách.
+ * Kiểm tra quyền sở hữu list → INSERT với ON CONFLICT DO NOTHING trên
+ * UNIQUE(list_id, story_id): rowCount = 0 nghĩa là truyện đã có sẵn → 400
+ * với message rõ ràng thay vì lỗi constraint. Thành công → 201.
+ */
 router.post("/:id/stories", authMiddleware, async (req, res) => {
   const listId = parseInt(req.params.id);
   const storyId = parseInt(req.body.storyId);
@@ -189,7 +213,11 @@ router.post("/:id/stories", authMiddleware, async (req, res) => {
   }
 });
 
-// Xóa truyện khỏi danh sách
+/**
+ * DELETE /api/favlists/:listId/stories/:storyId — Bỏ truyện khỏi danh sách.
+ * DELETE ... USING favorite_lists gộp kiểm tra quyền sở hữu và xóa vào MỘT query
+ * nguyên tử — tránh race condition giữa bước check và bước xóa nếu tách làm hai.
+ */
 router.delete("/:listId/stories/:storyId", authMiddleware, async (req, res) => {
   const listId = parseInt(req.params.listId);
   const storyId = parseInt(req.params.storyId);

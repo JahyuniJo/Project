@@ -13,6 +13,10 @@ const LIMIT = 12;
 const INIT_VISIBLE = 30;
 
 // ── Hero Banner ───────────────────────────────────────────────────────────────
+/**
+ * HeroBanner — Carousel truyện hot tuần đầu trang (bản dành cho user đã đăng nhập,
+ * ảnh nền blur toàn khung): tự chuyển slide 4s, bấm điều hướng tay sẽ reset timer.
+ */
 function HeroBanner({ stories }) {
   const [idx, setIdx] = useState(0);
   const timerRef = useRef(null);
@@ -118,6 +122,10 @@ function HeroBanner({ stories }) {
 }
 
 // ── Mini story card ───────────────────────────────────────────────────────────
+/**
+ * MiniCard — Card truyện gọn cho các khối "Hot tuần"/"Đề xuất": ảnh bìa,
+ * lượt xem, và hoặc badge HOT (khi truyền `badge`) hoặc điểm rating.
+ */
 function MiniCard({ story, color = 'indigo', badge }) {
   return (
     <Link
@@ -148,6 +156,10 @@ function MiniCard({ story, color = 'indigo', badge }) {
 }
 
 // ── Favourite modal ───────────────────────────────────────────────────────────
+/**
+ * FavModal — Modal "Thêm vào yêu thích": liệt kê danh sách của user để chọn,
+ * kèm ô tạo nhanh danh sách mới ngay trong modal. Click ra ngoài để đóng.
+ */
 function FavModal({ storyId, onClose }) {
   const { toast, showAlert } = useAlert();
   const [newName, setNewName] = useState('');
@@ -236,6 +248,11 @@ function FavModal({ storyId, onClose }) {
 }
 
 // ── Genre dropdown ────────────────────────────────────────────────────────────
+/**
+ * GenreDropdown — Dropdown chọn NHIỀU thể loại (checkbox), nhãn nút tóm tắt
+ * lựa chọn ("Tất cả" / tên thể loại / "N thể loại đã chọn"). Danh sách thể loại
+ * load qua React Query.
+ */
 function GenreDropdown({ selected, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -295,6 +312,7 @@ function GenreDropdown({ selected, onChange }) {
 }
 
 // ── Single-select dropdown ────────────────────────────────────────────────────
+/** SelectDropdown — Dropdown chọn 1 giá trị cho panel lọc (status/sort/độ dài). */
 function SelectDropdown({ value, options, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -350,6 +368,12 @@ const SORT_OPTIONS = [
 ];
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+/**
+ * Home2 (/home) — Trang chủ cho user ĐÃ đăng nhập: như Home public nhưng thêm
+ * khối "Đề xuất cho bạn" (API /api/recommend theo lịch sử đọc) và nút thêm
+ * truyện vào danh sách yêu thích ngay trên card (FavModal).
+ * Filter khởi tạo từ URL params và ghi ngược lại URL khi thay đổi.
+ */
 export default function Home2() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -540,6 +564,10 @@ export default function Home2() {
 }
 
 // ── Story Grid with per-card rating ──────────────────────────────────────────
+/**
+ * StoryCard (bản Home2) — Card truyện trong lưới chính: badge HOT, rating
+ * (React Query cache 60s) và nút "Yêu thích" mở FavModal qua callback onFav.
+ */
 function StoryCard({ story, onFav }) {
   const { data: rating } = useQuery({
     queryKey: ['rating', story.id],
@@ -589,6 +617,7 @@ function StoryCard({ story, onFav }) {
   );
 }
 
+/** StoryGrid — Lưới card truyện responsive; rỗng thì hiện trạng thái trống thân thiện. */
 function StoryGrid({ stories, onFav }) {
   if (!stories.length) {
     return (

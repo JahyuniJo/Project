@@ -9,6 +9,10 @@ import useOutsideClick from '../hooks/useOutsideClick';
 const MAX_VISUAL_DEPTH = 3;
 const MAX_COMMENT_LENGTH = 2000;
 
+/**
+ * Định dạng thời gian ISO thành chuỗi giờ:phút ngày/tháng/năm kiểu Việt Nam;
+ * giá trị rỗng/không parse được → chuỗi rỗng (không crash UI).
+ */
 function formatTime(value) {
   if (!value) return '';
   const d = new Date(value);
@@ -19,6 +23,7 @@ function formatTime(value) {
   });
 }
 
+/** Avatar tròn của người bình luận — ảnh lỗi/thiếu tự thay bằng logo mặc định. */
 function Avatar({ src, name }) {
   return (
     <img
@@ -30,6 +35,11 @@ function Avatar({ src, name }) {
   );
 }
 
+/**
+ * CommentMenu — Menu "···" của 1 comment, chỉ hiện các mục user có quyền
+ * (cờ canEdit/canDelete/canHide do backend tính sẵn theo góc nhìn user hiện tại):
+ * chủ comment thấy Sửa/Xóa, người khác thấy Ẩn. Không có quyền nào → không render.
+ */
 function CommentMenu({ comment, onEdit, onDelete, onHide }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -78,6 +88,20 @@ function CommentMenu({ comment, onEdit, onDelete, onHide }) {
   );
 }
 
+/**
+ * CommentItem — 1 comment + toàn bộ replies lồng bên trong (render ĐỆ QUY).
+ *
+ * - Thụt lề theo depth nhưng chặn trần MAX_VISUAL_DEPTH (3) — thread sâu hơn
+ *   không thụt thêm để không vỡ layout mobile.
+ * - Các thao tác dùng React Query mutation, xong đều invalidate cache
+ *   ['comments', storyId] để refetch cây mới: like/unlike, reply (tự mở thread
+ *   sau khi gửi), sửa tại chỗ (textarea inline), xóa (confirm trước — nhắc rõ
+ *   replies con cũng mất theo).
+ * - "Ẩn" chỉ là state cục bộ phía client (đổi bubble thành placeholder có nút
+ *   Hiện lại), không gọi API.
+ * - Thread replies đóng/mở theo Set `openReplies` do CommentTree quản lý tập trung.
+ * - id={`comment-N`} làm anchor cho deep-link từ thông báo (#comment-N).
+ */
 function CommentItem({ comment, depth, storyId, openReplies, onToggleReplies }) {
   const { user } = useAuth();
   const { toast, confirm } = useAlert();
@@ -289,6 +313,18 @@ function CommentItem({ comment, depth, storyId, openReplies, onToggleReplies }) 
 
 // ── Top-level component ───────────────────────────────────────────────────────
 
+/**
+ * CommentTree — Khu bình luận của 1 truyện (dùng ở trang đọc).
+ *
+ * - Load cây comment qua React Query (queryKey kèm !!user vì backend trả cờ
+ *   quyền khác nhau giữa khách và user đăng nhập).
+ * - Form gửi comment gốc ở trên cùng; từng comment render bằng CommentItem đệ quy.
+ * - Quản lý tập trung Set `openReplies` (thread nào đang mở) cho toàn cây.
+ * - Deep-link #comment-N (từ chuông thông báo): sau khi comment load xong,
+ *   tìm đường đi từ gốc tới comment đích, mở toàn bộ thread cha, rồi scroll +
+ *   highlight comment đó (cơ chế 2 phase qua scrollSignal vì phải chờ React
+ *   render xong các thread vừa mở mới scroll được).
+ */
 export default function CommentTree({ storyId }) {
   const { user } = useAuth();
   const { toast } = useAlert();

@@ -1,3 +1,8 @@
+/**
+ * crawlers/crawler.js — Script crawl THỬ NGHIỆM cho 1 truyện cố định (chạy tay:
+ * `node backend/crawlers/crawler.js`). Là phiên bản đơn giản nhất để kiểm tra
+ * selector trước khi áp vào crawlALL.js; không được app import.
+ */
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 const axios = require("axios");
@@ -6,6 +11,13 @@ const { Client } = require("pg");
 
 const url = "https://comi.mobi/truyen/quan-at-chu-bai/";
 
+/**
+ * Tải HTML trang truyện bằng Axios, bóc tách metadata bằng Cheerio (selector CSS
+ * theo theme Madara của comi.mobi): title, ảnh bìa, thể loại, tác giả, mô tả,
+ * trạng thái (chuẩn hóa "hoàn/complete" → completed, "drop/ngưng" → dropped).
+ * Rồi upsert vào bảng `stories` theo UNIQUE(title) — chạy lại chỉ cập nhật,
+ * không tạo bản ghi trùng.
+ */
 async function crawl() {
   console.log(`🔍 Đang tải: ${url}`);
   const { data } = await axios.get(url);

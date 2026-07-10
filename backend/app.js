@@ -1,3 +1,8 @@
+/**
+ * app.js — Entry point của backend: dựng Express app + HTTP server + Socket.io,
+ * mount toàn bộ API routes, serve SPA React đã build và xử lý graceful shutdown.
+ * Chạy qua `npm start` (nodemon → node backend/app.js), lắng nghe PORT (mặc định 3001).
+ */
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -45,6 +50,9 @@ app.use((req, res, next) => {
 });
 
 // ========== SOCKET LOGIC ==========
+// Realtime notification: client emit `registerEmail` sau khi đăng nhập → socket
+// join room theo email. Từ đó server (report.js, commentRoutes.js) chỉ cần
+// io.to(email).emit("newNotification", ...) là đến đúng user, kể cả nhiều tab.
 io.on("connection", (socket) => {
   socket.on("registerEmail", (email) => {
     if (!email) return;
@@ -60,6 +68,9 @@ io.on("connection", (socket) => {
 });
 
 // ========== API ROUTES ==========
+// Mount tất cả router theo prefix /api/*. Các router cần emit realtime
+// (report, comments) là factory nhận `io`; chatbot đăng ký socket event
+// riêng qua initChat(io).
 const { router: chatRouter, adminRouter: adminChatRouter, initChat } = require("./routes/chatRoutes");
 initChat(io);
 app.use("/api/chat", chatRouter);
@@ -79,10 +90,13 @@ app.use("/api/ai", require("./routes/aiRoutes"));
 app.use("/api/recommend", require("./routes/recommendRoutes"));
 app.use("/api/chapters", require("./routes/chapterRoutes"));
 // ========== STATIC + SPA ==========
+// Production: Express serve luôn frontend — build Vite (dist), assets tĩnh
+// (logo, favicon) và file upload (avatar, screenshot báo lỗi).
 app.use(express.static(SPA_DIST));
 app.use("/assets", express.static(ASSETS_DIR));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-// SPA catch-all — phục vụ index.html cho mọi route không phải /api
+// SPA catch-all — mọi đường dẫn KHÔNG bắt đầu bằng /api đều trả index.html
+// để React Router xử lý phía client (F5 tại /admin/users vẫn hoạt động).
 app.get(/^(?!\/api).*/, (req, res) =>
   res.sendFile(path.join(SPA_DIST, "index.html")));
 

@@ -11,9 +11,15 @@ const { getReadingRecap } = require("../services/chapterSummaryService");
 const router = express.Router();
 // GET /api/stories cần để trên cùng vì các route khác chứa /:id sẽ bị trùng với /search
 // --> Nên đặt api động vào cuối cùng, ví dụ /api/stories/:id/chapters, /api/stories/:id/recap, /api/stories/:id/crawl-chapters, /api/stories/:id/view
+// GET /api/stories/search — autocomplete (storyController.getStories)
 router.get("/search", getStories);
+// POST /api/stories/sync — crawl toàn bộ + sync ES (storyController.syncStories)
 router.post("/sync", authMiddleware, syncStories);
 
+/**
+ * GET /api/stories/genres — Danh sách tất cả thể loại distinct trong hệ thống
+ * (unnest mảng genres), sắp theo alphabet — dùng đổ dropdown lọc thể loại.
+ */
 router.get("/genres", async (req, res) => {
   try {
     const result = await pool.query(
@@ -26,6 +32,10 @@ router.get("/genres", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/stories/top-rated — Truyện xếp theo rating trung bình giảm dần
+ * (đồng hạng thì so view_count), phân trang — dùng cho tab "Đánh giá cao".
+ */
 router.get("/top-rated", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 12;
@@ -49,6 +59,9 @@ router.get("/top-rated", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/stories/newest — Truyện mới thêm gần nhất (created_at DESC), phân trang.
+ */
 router.get("/newest", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 12;
@@ -67,6 +80,10 @@ router.get("/newest", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/stories/by-genre?genre=X — Lọc truyện chứa đúng 1 thể loại
+ * (`$1 = ANY(genres)`), mới nhất trước, phân trang. COUNT + data chạy song song.
+ */
 router.get("/by-genre", async (req, res) => {
   const { genre } = req.query;
   if (!genre) {
@@ -94,6 +111,14 @@ router.get("/by-genre", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/stories — Endpoint danh sách/tìm kiếm chính của trang Đọc truyện.
+ *
+ * Nhận đủ bộ filter: search (hoặc q), status, genres (chuỗi "a,b,c" → mảng),
+ * sort (newest/views/rating/az) và length (short/medium/long) — giá trị lạ bị
+ * đưa về mặc định thay vì báo lỗi. Toàn bộ logic chọn engine (Elasticsearch
+ * hay SQL) ủy quyền cho searchStoriesWithSqlFallback (searchService).
+ */
 router.get("/", async (req, res) => {
   const page   = parseInt(req.query.page, 10) || 1;
   const limit  = parseInt(req.query.limit, 10) || 12;
@@ -119,7 +144,11 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/stories/status-counts — đếm số truyện theo trạng thái
+/**
+ * GET /api/stories/status-counts — Đếm truyện theo trạng thái
+ * (ongoing/completed/stopped + total) cho các tab lọc trên UI.
+ * Status lạ ngoài 3 giá trị chuẩn chỉ được cộng vào total.
+ */
 router.get("/status-counts", async (req, res) => {
   try {
     const result = await pool.query(
@@ -138,7 +167,16 @@ router.get("/status-counts", async (req, res) => {
   }
 });
 
-// GET /api/stories/crawl-all-chapters/stream — SSE: đồng bộ chương toàn bộ truyện (admin)
+/**
+ * GET /api/stories/crawl-all-chapters/stream — Đồng bộ danh sách chương của
+ * TOÀN BỘ truyện, stream tiến độ realtime bằng Server-Sent Events (Admin only).
+ *
+ * Vì crawl hàng trăm truyện mất nhiều phút, response giữ mở và đẩy từng event:
+ *   { type: "start", total } → { type: "progress" }/{ type: "item", status: ok|failed|error }
+ *   cho mỗi truyện → { type: "done", success, failed } khi xong.
+ * Chương được upsert (ON CONFLICT DO UPDATE) nên chạy lại an toàn; nghỉ 400ms
+ * giữa các truyện để không dội request làm nguồn chặn IP.
+ */
 router.get("/crawl-all-chapters/stream", authMiddleware, async (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Không đủ quyền" });
@@ -207,7 +245,10 @@ router.get("/crawl-all-chapters/stream", authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/stories/:id/chapters — danh sách chương (không cần auth)
+/**
+ * GET /api/stories/:id/chapters — Danh sách chương của 1 truyện (public),
+ * sắp theo chapter_num tăng dần — đổ vào dropdown chọn chương ở trang đọc.
+ */
 router.get("/:id/chapters", async (req, res) => {
   const storyId = parseInt(req.params.id);
   if (!storyId || storyId <= 0) {
@@ -225,7 +266,12 @@ router.get("/:id/chapters", async (req, res) => {
   }
 });
 
-// GET /api/stories/:id/recap?chapter=N — tóm tắt nội dung các chương ĐÃ ĐỌC (1 → N), dùng AI vision cache
+/**
+ * GET /api/stories/:id/recap?chapter=N — Tóm tắt nội dung các chương ĐÃ ĐỌC (1 → N).
+ * Ủy quyền cho getReadingRecap (chapterSummaryService): gộp các bản tóm tắt vision
+ * đã cache trong `chapter_summaries`, có cache in-memory 10 phút. Truyện chưa được
+ * tóm tắt chương nào trong khoảng đó → 404.
+ */
 router.get("/:id/recap", async (req, res) => {
   const storyId = parseInt(req.params.id);
   if (!storyId || storyId <= 0) {
@@ -249,7 +295,12 @@ router.get("/:id/recap", async (req, res) => {
   }
 });
 
-// POST /api/stories/:id/crawl-chapters — crawl danh sách chương (admin)
+/**
+ * POST /api/stories/:id/crawl-chapters — Crawl danh sách chương cho MỘT truyện
+ * (Admin only) — bản đơn lẻ của crawl-all-chapters/stream, trả JSON thường.
+ * Lấy URL nguồn từ DB → crawlChapterList() → upsert từng chương
+ * (ON CONFLICT (story_id, chapter_num) DO UPDATE — crawl lại để cập nhật title/url).
+ */
 router.post("/:id/crawl-chapters", authMiddleware, async (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Không đủ quyền" });
@@ -291,6 +342,11 @@ router.post("/:id/crawl-chapters", authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/stories/:id — Chi tiết 1 truyện (public), đồng thời tăng view_count.
+ * Gộp tăng view + lấy dữ liệu vào 1 câu UPDATE ... RETURNING * thay vì 2 query.
+ * Route param động nên phải khai báo SAU các route path tĩnh (/search, /genres...).
+ */
 router.get("/:id", optionalAuth, async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id || id <= 0) {
@@ -314,6 +370,12 @@ router.get("/:id", optionalAuth, async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/stories/:id — Admin sửa thông tin truyện.
+ * genres nhận cả mảng lẫn chuỗi "a, b, c"; status được chuẩn hóa qua
+ * normalizeStoryStatus. Sau khi UPDATE thành công phải indexStory() để
+ * Elasticsearch khớp với DB (quy tắc sync sau mọi CREATE/UPDATE/DELETE).
+ */
 router.put("/:id", authMiddleware, async (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Không đủ quyền" });
@@ -352,6 +414,10 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/stories/:id — Admin xóa truyện. Chương/ảnh/comment/rating liên quan
+ * tự dọn nhờ FK ON DELETE CASCADE; document trên Elasticsearch xóa qua deleteStory().
+ */
 router.delete("/:id", authMiddleware, async (req, res) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Không đủ quyền" });
@@ -377,6 +443,11 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/stories/:id/view — Ghi 1 dòng lịch sử xem của user (bảng
+ * user_story_views). Dữ liệu này nuôi tính năng gợi ý truyện, thống kê
+ * popular-week và recap tiến độ đọc. Khác với view_count (đếm ẩn danh ở GET /:id).
+ */
 router.post("/:id/view", authMiddleware, async (req, res) => {
   const storyId = parseInt(req.params.id);
   if (!storyId || storyId <= 0) {
@@ -395,6 +466,14 @@ router.post("/:id/view", authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * Chuẩn hóa trạng thái truyện tự do (tiếng Việt có dấu, tiếng Anh, viết hoa thường...)
+ * về 1 trong 3 giá trị chuẩn của DB: "ongoing" | "completed" | "stopped".
+ * So khớp trên bản đã bỏ dấu ("Hoàn thành" → "hoan thanh" → completed);
+ * không nhận diện được → mặc định "ongoing".
+ * @param {string|undefined} status - Giá trị thô từ form admin hoặc crawler.
+ * @returns {string} Trạng thái chuẩn.
+ */
 function normalizeStoryStatus(status) {
   const raw = removeVietnameseTones(String(status || "").trim()).toLowerCase();
   if (!raw) return "ongoing";

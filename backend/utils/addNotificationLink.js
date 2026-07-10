@@ -1,3 +1,8 @@
+/**
+ * Migration script (chạy 1 lần) — thêm cột `link` vào bảng `notifications`:
+ * URL đích khi người dùng bấm vào thông báo (vd: nhảy tới comment được reply).
+ * Idempotent nhờ ADD COLUMN IF NOT EXISTS.
+ */
 const pool = require('../config/pool');
 
 async function migrate() {

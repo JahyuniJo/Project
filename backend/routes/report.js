@@ -5,6 +5,8 @@ const pool = require("../config/pool");
 const authMiddleware = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
 
+// Cấu hình multer cho ảnh chụp màn hình đính kèm báo lỗi: lưu vào backend/uploads/,
+// tên file = timestamp + đuôi gốc, chỉ nhận MIME ảnh, tối đa 5MB.
 const ALLOWED_SCREENSHOT_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const screenshotStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, path.join(__dirname, "../uploads")),
@@ -19,10 +21,19 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+/**
+ * Router báo lỗi + thông báo. Export là FACTORY nhận `io` (Socket.io server)
+ * từ app.js — vì route "admin phản hồi" cần emit realtime tới user,
+ * mà io chỉ tồn tại sau khi HTTP server khởi tạo.
+ */
 module.exports = (io) => {
   const router = express.Router();
 
-  // 1. User gửi báo lỗi
+  /**
+   * POST /api/report — User gửi báo lỗi (multipart, screenshot tùy chọn).
+   * Middleware đầu bọc multer để dịch lỗi file (quá 5MB / sai định dạng) thành
+   * message tiếng Việt. Lưu với status 'pending', email lấy từ JWT (không tin body).
+   */
   router.post("/report", authMiddleware, (req, res, next) => {
     upload.single("screenshot")(req, res, (err) => {
       if (err instanceof multer.MulterError) {
@@ -59,7 +70,10 @@ module.exports = (io) => {
     }
   });
 
-  // 2a. Admin lấy số lượng báo lỗi pending
+  /**
+   * GET /api/admin/reports/pending-count — Số báo lỗi chưa xử lý (Admin only).
+   * Dùng cho badge đếm trên sidebar admin, gọi nhẹ hơn nhiều so với tải cả danh sách.
+   */
   router.get("/admin/reports/pending-count", authMiddleware, requireAdmin, async (req, res) => {
     try {
       const result = await pool.query(
@@ -72,7 +86,11 @@ module.exports = (io) => {
     }
   });
 
-  // 2. Admin lấy danh sách báo lỗi (phân trang)
+  /**
+   * GET /api/admin/reports — Danh sách báo lỗi cho admin, phân trang
+   * (limit chặn trần 50), lọc theo status tùy chọn, mới nhất trước.
+   * COUNT và SELECT data chạy song song.
+   */
   router.get("/admin/reports", authMiddleware, requireAdmin, async (req, res) => {
     const page   = Math.max(1, parseInt(req.query.page)  || 1);
     const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
@@ -108,7 +126,14 @@ module.exports = (io) => {
     }
   });
 
-  // 3. Admin phản hồi báo lỗi
+  /**
+   * POST /api/admin/reports/:id/respond { response, status } — Admin phản hồi báo lỗi.
+   * Làm 3 việc liên hoàn:
+   *   1. UPDATE reports: ghi phản hồi + trạng thái mới + updated_at.
+   *   2. INSERT notifications: tạo thông báo bền cho user (hiện ở chuông khi login lại).
+   *   3. Emit Socket.io `newNotification` tới room theo email — user đang online
+   *      thấy thông báo NGAY không cần refresh.
+   */
   router.post("/admin/reports/:id/respond", authMiddleware, requireAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const { response, status } = req.body;
@@ -153,7 +178,10 @@ module.exports = (io) => {
     }
   });
 
-  // 4. User lấy danh sách thông báo
+  /**
+   * GET /api/notifications — 50 thông báo gần nhất của user (mới nhất trước),
+   * kèm is_read để UI phân biệt đã đọc/chưa đọc và link đích khi bấm vào.
+   */
   router.get("/notifications", authMiddleware, async (req, res) => {
     try {
       const result = await pool.query(
@@ -171,7 +199,10 @@ module.exports = (io) => {
     }
   });
 
-  // 4.5 User xem lịch sử báo lỗi của mình
+  /**
+   * GET /api/reports/my — 20 báo lỗi gần nhất user đã gửi, kèm status và
+   * phản hồi của admin (nếu có) — hiển thị ở trang Báo lỗi của user.
+   */
   router.get("/reports/my", authMiddleware, async (req, res) => {
     try {
       const result = await pool.query(
@@ -186,7 +217,11 @@ module.exports = (io) => {
     }
   });
 
-  // 5. Đánh dấu một thông báo đã đọc
+  /**
+   * PUT /api/notifications/:id/read — Đánh dấu 1 thông báo đã đọc.
+   * UPDATE có điều kiện user_email từ JWT — không đánh dấu hộ được thông báo
+   * của người khác.
+   */
   router.put("/notifications/:id/read", authMiddleware, async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (!id || id <= 0) {
@@ -210,7 +245,10 @@ module.exports = (io) => {
     }
   });
 
-  // 5b. Đánh dấu tất cả thông báo đã đọc
+  /**
+   * PUT /api/notifications/read-all — Đánh dấu TẤT CẢ thông báo chưa đọc của user
+   * thành đã đọc (nút "đọc tất cả" trên chuông thông báo).
+   */
   router.put("/notifications/read-all", authMiddleware, async (req, res) => {
     try {
       await pool.query(

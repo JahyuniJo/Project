@@ -1,3 +1,8 @@
+/**
+ * api/comments.js — CRUD bình luận: lấy cây comment theo truyện, tạo/sửa/xóa,
+ * reply và toggle like. Các thao tác ghi đều cần đăng nhập (401 → client.js
+ * tự chuyển về /login).
+ */
 import client from './client';
 
 export const getComments = (storyId) =>

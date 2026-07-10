@@ -14,6 +14,7 @@ const ERROR_TYPES = [
   { value: 'other',   label: 'Khác' },
 ];
 
+/** StatusBadge — Nhãn màu trạng thái báo lỗi: pending vàng, resolved xanh, rejected đỏ. */
 function StatusBadge({ status }) {
   const map = {
     pending:  { cls: 'bg-yellow-100 text-yellow-700 border-yellow-300', label: 'Chờ xử lý',  icon: 'fa-clock' },
@@ -29,6 +30,11 @@ function StatusBadge({ status }) {
 }
 
 
+/**
+ * ErrorReport (/error-report) — Trang gửi báo lỗi (role user): form chọn loại lỗi,
+ * URL truyện, mô tả, kèm ảnh chụp màn hình tùy chọn (gửi FormData multipart);
+ * bên cạnh là lịch sử báo lỗi của chính mình với StatusBadge + phản hồi admin.
+ */
 export default function ErrorReport() {
   const { user } = useAuth();
   const { toast } = useAlert();

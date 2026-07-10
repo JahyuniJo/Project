@@ -4,6 +4,13 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../context/AuthContext';
 import useOutsideClick from '../hooks/useOutsideClick';
 
+/**
+ * NotificationBell — Chuông thông báo trên Header: badge đếm số chưa đọc
+ * (hiện "9+" khi vượt 9), bấm mở dropdown danh sách thông báo (dữ liệu +
+ * realtime từ useNotifications). Mở dropdown khi đang có tin chưa đọc sẽ
+ * tự đánh dấu tất cả đã đọc; click ra ngoài để đóng (useOutsideClick).
+ * Bấm 1 thông báo có link → điều hướng tới trang đích (vd: comment được reply).
+ */
 export default function NotificationBell() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);

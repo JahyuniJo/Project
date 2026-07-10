@@ -1,3 +1,13 @@
+/**
+ * Script CLI `npm run es:sync-embeddings` — bổ sung/cập nhật embedding OpenAI
+ * cho các document truyện ĐÃ có sẵn trên Elasticsearch (partial update từng doc,
+ * không re-index toàn bộ như es:sync).
+ *
+ * Dùng khi: bật OPENAI_KEY sau khi đã sync dữ liệu, hoặc muốn làm mới vector.
+ * Chạy tuần tự + delay 250ms/truyện để tránh rate limit OpenAI; truyện sinh
+ * embedding thất bại chỉ bị skip và thống kê lại cuối script, không dừng cả đợt.
+ * Yêu cầu OPENAI_KEY trong .env — thiếu thì báo và thoát ngay.
+ */
 require("dotenv").config({ path: require("path").resolve(__dirname, "../../.env") });
 
 if (!process.env.OPENAI_KEY) {

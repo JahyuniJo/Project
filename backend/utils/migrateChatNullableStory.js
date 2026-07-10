@@ -1,3 +1,11 @@
+/**
+ * Migration script (chạy 1 lần) — mở đường cho chatbot LIBRARY MODE:
+ *   - Nới `chat_messages.story_id` thành nullable — tin nhắn không gắn với
+ *     truyện nào (chat thư viện) lưu story_id = NULL.
+ *   - Tạo partial index (user_id, created_at DESC) WHERE story_id IS NULL —
+ *     tối ưu riêng cho query lịch sử library mode, nhỏ hơn nhiều so với
+ *     index toàn bảng.
+ */
 require("dotenv").config({ path: require("path").join(__dirname, "../../.env") });
 const pool = require("../config/pool");
 

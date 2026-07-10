@@ -3,6 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 
+/**
+ * Login (/login) — Form đăng nhập. Thành công: server đã set cookie JWT,
+ * gọi login() của AuthContext để nạp lại thông tin user, rồi điều hướng theo
+ * role trả về (admin → /admin, user → /home). Lỗi hiện ngay dưới form.
+ */
 export default function Login() {
   const { login: setContextUser } = useAuth();
   const navigate = useNavigate();

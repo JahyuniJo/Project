@@ -12,6 +12,11 @@ const STATUS_MAP = {
 };
 
 // ── Weekly line chart ─────────────────────────────────────────────────────────
+/**
+ * WeeklyChart — Biểu đồ đường Chart.js: lượt đọc 7 ngày gần nhất. Tự dựng đủ
+ * trục 7 ngày (ngày không có dữ liệu = 0) rồi map số liệu API vào; destroy
+ * instance cũ trước khi vẽ lại để tránh leak khi re-render.
+ */
 function WeeklyChart({ weeklyViews = [] }) {
   const ref = useRef(null);
   const inst = useRef(null);
@@ -88,6 +93,10 @@ function WeeklyChart({ weeklyViews = [] }) {
 }
 
 // ── Doughnut chart ────────────────────────────────────────────────────────────
+/**
+ * StatusChart — Biểu đồ tròn Chart.js: phân bố truyện theo trạng thái
+ * (nhãn + màu theo STATUS_MAP).
+ */
 function StatusChart({ breakdown = [] }) {
   const ref = useRef(null);
   const inst = useRef(null);
@@ -157,6 +166,12 @@ function StatusChart({ breakdown = [] }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+/**
+ * AdminStat (/admin/stat) — Trang thống kê tổng quan: các ô số liệu (user,
+ * truyện, lượt xem, chương, comment, chat...) từ GET /api/stat, biểu đồ lượt
+ * đọc tuần (WeeklyChart), phân bố trạng thái truyện (StatusChart) và top
+ * truyện hot tuần.
+ */
 export default function AdminStat() {
   const [refreshing, setRefreshing] = useState(false);
 

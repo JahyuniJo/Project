@@ -2,6 +2,16 @@ import { useEffect, useState, useCallback } from 'react';
 import client from '../api/client';
 import { useSocket } from './useSocket';
 
+/**
+ * Hook quản lý chuông thông báo (NotificationBell) — kết hợp 2 nguồn:
+ *   - Load lần đầu qua GET /api/notifications (thông báo bền trong DB).
+ *   - Realtime: nghe event `newNotification` từ socket, prepend vào danh sách
+ *     và tăng unreadCount ngay lập tức.
+ *
+ * @param {boolean} enabled - Chỉ hoạt động khi user đã đăng nhập (tránh gọi API 401).
+ * @returns {{ notifications: Array, unreadCount: number, markAllRead: Function }}
+ *   markAllRead: gọi API đánh dấu tất cả đã đọc + cập nhật state lạc quan.
+ */
 export function useNotifications(enabled) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);

@@ -14,6 +14,7 @@ const STATUS_CFG = {
 const STATUS_TO_DISPLAY = { ongoing: 'Đang ra', completed: 'Hoàn thành', stopped: 'Tạm Ngưng' };
 const DISPLAY_TO_DB = { 'Đang ra': 'ongoing', 'Hoàn thành': 'completed', 'Tạm Ngưng': 'stopped' };
 
+/** StatusBadge — Nhãn màu trạng thái truyện (Đang ra / Hoàn thành / Tạm ngưng). */
 function StatusBadge({ status }) {
   const cfg = STATUS_CFG[status] || { cls: 'bg-gray-100 text-gray-500', label: status || 'Không rõ' };
   return <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${cfg.cls}`}>{cfg.label}</span>;
@@ -40,6 +41,11 @@ function Pagination({ page, totalPages, onChange }) {
 }
 
 // ── Edit Modal ────────────────────────────────────────────────────────────────
+/**
+ * EditModal — Modal sửa truyện: load chi tiết theo storyId rồi cho sửa
+ * title/author/cover/URL/mô tả/thể loại/trạng thái (nhãn tiếng Việt được map
+ * ngược về giá trị DB qua DISPLAY_TO_DB trước khi gửi PUT).
+ */
 function EditModal({ storyId, onClose, onSaved }) {
   const { toast } = useAlert();
   const [form, setForm] = useState({ title: '', author: '', status: 'Đang ra', cover_url: '', url: '' });
@@ -128,6 +134,12 @@ function EditModal({ storyId, onClose, onSaved }) {
 }
 
 // ── Sync All Chapters Modal (SSE) ─────────────────────────────────────────────
+/**
+ * SyncAllModal — Modal đồng bộ chương cho TOÀN BỘ truyện: mở kết nối SSE tới
+ * /api/stories/crawl-all-chapters/stream và hiển thị tiến độ realtime từng
+ * truyện (progress bar + log ok/failed), tổng kết khi xong. Đóng modal sẽ
+ * ngắt kết nối SSE.
+ */
 function SyncAllModal({ onClose }) {
   const logRef = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -222,6 +234,12 @@ function SyncAllModal({ onClose }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const LIMIT_OPTIONS = [8, 12, 24, 48];
 
+/**
+ * AdminStories (/admin/stories) — Bảng quản lý truyện: tìm kiếm, lọc trạng thái
+ * (kèm số đếm mỗi trạng thái), phân trang; thao tác: crawl toàn bộ truyện mới
+ * (syncStories), đồng bộ chương từng truyện (syncChapters) hoặc tất cả
+ * (SyncAllModal — SSE tiến độ realtime), sửa (EditModal) và xóa (confirm).
+ */
 export default function AdminStories() {
   const { toast, confirm } = useAlert();
   const qc = useQueryClient();

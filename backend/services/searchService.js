@@ -43,6 +43,11 @@ let esAvailable = null;
 const ES_RETRY_INTERVAL_MS = 30_000;
 let _esRetryTimer = null;
 
+/**
+ * Đặt lịch kiểm tra lại kết nối Elasticsearch sau ES_RETRY_INTERVAL_MS (30s).
+ * Idempotent: nếu đã có timer đang chờ thì không đặt thêm — tránh dồn nhiều
+ * lần ping khi liên tiếp gặp lỗi ES.
+ */
 function scheduleEsRetry() {
   if (_esRetryTimer) return;
   _esRetryTimer = setTimeout(() => {
@@ -51,6 +56,11 @@ function scheduleEsRetry() {
   }, ES_RETRY_INTERVAL_MS);
 }
 
+/**
+ * Ping Elasticsearch để cập nhật cờ trạng thái `esAvailable` (circuit breaker).
+ * Ping thất bại → đánh dấu ES down, log cảnh báo (chỉ 1 lần cho mỗi đợt down)
+ * và tự đặt lịch thử lại sau 30s. Được gọi ngay khi module load.
+ */
 async function checkElasticsearch() {
   try {
     await client.ping();
@@ -67,16 +77,34 @@ async function checkElasticsearch() {
 // Kiểm tra ngay khi module load
 checkElasticsearch();
 
+/**
+ * ES có đang sẵn sàng nhận query không (theo lần kiểm tra gần nhất).
+ * Các hàm search dùng cờ này để quyết định đi đường ES hay SQL fallback
+ * mà không phải ping trước mỗi query.
+ * @returns {boolean}
+ */
 function isEsUp() {
   return esAvailable === true;
 }
 
 // ========== Helpers ==========
+/**
+ * Lấy tổng số hit từ response ES — xử lý cả 2 format:
+ * số thuần (ES cũ / rest_total_hits_as_int) và object `{ value, relation }` (ES 7+).
+ * @param {object} result - Response từ client.search().
+ * @returns {number} Tổng số document khớp.
+ */
 function getHitTotal(result) {
   const total = result.hits?.total;
   return typeof total === "number" ? total : total?.value || 0;
 }
 
+/**
+ * Chuyển mảng hits của ES thành mảng story object phẳng:
+ * gộp `_source` và ép `_id` (string) về `id` (number) cho khớp kiểu với PostgreSQL.
+ * @param {object} result - Response từ client.search().
+ * @returns {Array<object>} Danh sách truyện.
+ */
 function mapHits(result) {
   return result.hits.hits.map((hit) => ({
     id: Number(hit._id),
@@ -85,6 +113,11 @@ function mapHits(result) {
 }
 
 // ========== Index management ==========
+/**
+ * Đảm bảo index `stories` tồn tại trên Elasticsearch — tạo mới với mapping chuẩn
+ * (vietnamese_analyzer bỏ dấu + dense_vector 1536 chiều cho semantic search) nếu chưa có.
+ * @returns {Promise<{created: boolean, indexName: string}>} `created: true` nếu vừa tạo mới.
+ */
 async function ensureStoriesIndex() {
   const exists = await client.indices.exists({ index: indexName });
   if (exists) return { created: false, indexName };
@@ -93,6 +126,17 @@ async function ensureStoriesIndex() {
   return { created: true, indexName };
 }
 
+/**
+ * Đồng bộ toàn bộ bảng `stories` từ PostgreSQL sang Elasticsearch (full re-index).
+ *
+ * - Với mỗi truyện, cố gắng sinh embedding OpenAI (tuần tự + delay 300ms để tránh
+ *   rate limit); truyện không sinh được embedding vẫn được index bình thường
+ *   (chỉ mất khả năng semantic search).
+ * - Đẩy tất cả bằng 1 lệnh bulk, `refresh: true` để kết quả tìm được ngay.
+ *
+ * Được gọi từ script `npm run es:sync` và sau khi crawl (POST /api/stories/sync).
+ * @returns {Promise<{indexed: number, withEmbedding?: number, errors: boolean}>}
+ */
 async function syncStoriesFromSql() {
   await ensureStoriesIndex();
 
@@ -118,6 +162,25 @@ async function syncStoriesFromSql() {
 }
 
 // ========== Search ==========
+/**
+ * Entry point tìm kiếm/liệt kê truyện cho GET /api/stories — tự chọn engine phù hợp.
+ *
+ * Thứ tự quyết định:
+ *   1. Có từ khóa + không cần sort/length đặc biệt + ES đang lên → Elasticsearch
+ *      (ES lỗi giữa chừng → hạ cờ circuit breaker, rơi tiếp xuống SQL).
+ *   2. Không filter gì cả (trang chủ mặc định) → fast path `listStoriesFromSql`.
+ *   3. Còn lại → `searchStoriesFromSql` (ILIKE + genre overlap + sort/length động).
+ *
+ * @param {object} opts
+ * @param {string} [opts.search] - Từ khóa tìm kiếm.
+ * @param {number} [opts.page=1] - Trang hiện tại (1-based).
+ * @param {number} [opts.limit=12] - Số truyện mỗi trang.
+ * @param {string|null} [opts.status] - Lọc theo trạng thái truyện.
+ * @param {string[]|null} [opts.genres] - Lọc: truyện có ít nhất 1 thể loại trùng.
+ * @param {string} [opts.sort="newest"] - newest | views | rating | az.
+ * @param {string|null} [opts.length] - short (<50 chương) | medium (50-200) | long (>200).
+ * @returns {Promise<{page, total, totalPages, stories, source}>} `source` cho biết engine đã dùng.
+ */
 async function searchStoriesWithSqlFallback({ search, page = 1, limit = 12, status = null, genres = null, sort = "newest", length = null }) {
   // length và sort khác "newest" (views/rating/az) cần dữ liệu không có trong chỉ mục
   // Elasticsearch hiện tại (số chương, rating trung bình, title.keyword để sort chữ cái),
@@ -145,6 +208,21 @@ async function searchStoriesWithSqlFallback({ search, page = 1, limit = 12, stat
   return searchStoriesFromSql({ search, page, limit, status, genres, sort, length, fallback: !!(search && !isEsUp()) });
 }
 
+/**
+ * Tìm truyện trên Elasticsearch theo chiến lược 3 bước, dừng ở bước đầu tiên có kết quả:
+ *
+ *   Bước 1 — `match_phrase` trên title (slop 1): ưu tiên khớp đúng tên truyện.
+ *   Bước 2 — KNN semantic search trên trường `embedding` (chỉ khi có OPENAI_KEY):
+ *            hiểu được query mô tả ý nghĩa thay vì từ khóa chính xác.
+ *   Bước 3 — `multi_match` fuzzy trên title/author/genres/description với
+ *            minimum_should_match "2<75%" để loại kết quả chỉ khớp 1 từ chung chung.
+ *
+ * Filter status/genres được áp ở cả 3 bước. Query được bỏ dấu tiếng Việt trước
+ * khi fuzzy match (khớp với asciifolding trong analyzer).
+ *
+ * @returns {Promise<{page, total, totalPages, stories, source}>}
+ *   `source`: "elasticsearch" hoặc "elasticsearch-hybrid" (đi đường KNN).
+ */
 async function searchStoriesWithElasticsearch({ search, page, limit, status = null, genres = null }) {
   const offset = (page - 1) * limit;
   const normalizedSearch = removeVietnameseTones(search.toLowerCase());
@@ -251,6 +329,12 @@ async function searchStoriesWithElasticsearch({ search, page, limit, status = nu
   };
 }
 
+/**
+ * Liệt kê truyện từ PostgreSQL không tìm kiếm — fast path cho trang chủ mặc định.
+ * Sort cố định theo `created_at DESC` (truyện mới nhất), phân trang bằng LIMIT/OFFSET,
+ * tùy chọn lọc theo status.
+ * @returns {Promise<{page, total, totalPages, stories, source: "postgres"}>}
+ */
 async function listStoriesFromSql({ page, limit, status = null }) {
   const offset = (page - 1) * limit;
 
@@ -276,6 +360,21 @@ async function listStoriesFromSql({ page, limit, status = null }) {
   return { page, total, totalPages: Math.ceil(total / limit), stories: result.rows, source: "postgres" };
 }
 
+/**
+ * Tìm kiếm truyện thuần SQL — xử lý mọi tổ hợp filter/sort mà ES không hỗ trợ,
+ * đồng thời là đường fallback khi ES down.
+ *
+ * Build câu SQL động (luôn parameterized $1, $2...):
+ *   - search: ILIKE trên title/author/description/genres (gộp mảng bằng array_to_string).
+ *   - genres: toán tử overlap `&&` — truyện có ít nhất 1 thể loại trùng.
+ *   - length: JOIN chapters + GROUP BY + HAVING COUNT theo ngưỡng short/medium/long.
+ *   - sort=rating: JOIN ratings + AVG; views: view_count DESC; az: title ASC.
+ *   - Câu COUNT tổng được chọn tương ứng (subquery khi có HAVING, COUNT DISTINCT khi có GROUP BY).
+ *
+ * @param {object} opts - Như searchStoriesWithSqlFallback, thêm:
+ * @param {boolean} [opts.fallback=false] - true khi được gọi do ES down (đánh dấu trong `source`).
+ * @returns {Promise<{page, total, totalPages, stories, source: "postgres"|"postgres-fallback"}>}
+ */
 async function searchStoriesFromSql({ search, page, limit, status = null, genres = null, sort = "newest", length = null, fallback = false }) {
   const offset = (page - 1) * limit;
   const params = [];
@@ -368,76 +467,91 @@ setInterval(() => {
   }
 }, 60_000);
 
+/**
+ * Autocomplete gợi ý truyện khi người dùng gõ ô tìm kiếm (GET /api/stories/search).
+ *
+ * - Cache in-memory 10s theo query — hấp thụ các lần gõ lặp/từng-ký-tự, giảm tải ES/DB.
+ * - Ưu tiên Elasticsearch (prefix match); ES lỗi → hạ cờ circuit breaker và
+ *   fallback SQL ILIKE trong suốt với caller.
+ *
+ * @param {string} query - Chuỗi người dùng đang gõ.
+ * @returns {Promise<Array<object>>} Tối đa 10 truyện gợi ý (id, title, author, genres, cover_url).
+ */
 async function suggestStories(query) {
-  if (!query) return [];  // Nếu query rỗng, trả về mảng rỗng ngay lập tức
+  if (!query) return [];
 
-  const cached = _suggestCache.get(query); // Kiểm tra cache để tránh gọi ES/SQL quá nhiều lần trong thời gian ngắn
-  if (cached && Date.now() - cached.ts < SUGGEST_CACHE_TTL_MS) return cached.data;  // Nếu cache còn hạn, trả về dữ liệu đã lưu
+  const cached = _suggestCache.get(query);
+  if (cached && Date.now() - cached.ts < SUGGEST_CACHE_TTL_MS) return cached.data;
 
   let data;
-  if (isEsUp()) {  // Kiểm tra ES đang hoạt động, nếu không sẽ fallback về SQL
+  if (isEsUp()) {
     try {
-      data = await suggestStoriesWithElasticsearch(query); // Gọi service để lấy gợi ý truyện từ Elasticsearch
+      data = await suggestStoriesWithElasticsearch(query);
     } catch (err) {
       console.warn("[Elasticsearch] suggest error:", err.message || err.name);
-      esAvailable = false;  // Cập nhật trạng thái ES không hoạt động
-      scheduleEsRetry();  // Lịch ping lại ES sau 1 phút
+      esAvailable = false;
+      scheduleEsRetry();
     }
   }
 
-  if (!data) data = await suggestStoriesFromSql(query);  // Nếu ES không hoạt động hoặc lỗi, fallback về SQL 
+  if (!data) data = await suggestStoriesFromSql(query);
 
-  _suggestCache.set(query, { data, ts: Date.now() });  // Lưu cache
+  _suggestCache.set(query, { data, ts: Date.now() });
   return data;
 }
 
 
-// Gọi service để lấy gợi ý truyện từ Elasticsearch
+/**
+ * Autocomplete trên Elasticsearch — kết hợp 2 chiến lược trong 1 bool should:
+ *   - `match_phrase_prefix` trên title: ưu tiên truyện có tên bắt đầu bằng query.
+ *   - `multi_match bool_prefix` trên bản đã bỏ dấu: khớp tiền tố từng từ
+ *     ("truyen" khớp "truyện tranh", "truyện ngắn", ...), có fuzzy chịu lỗi gõ.
+ * Chỉ lấy các field cần hiển thị dropdown (_source giới hạn), tối đa 10 kết quả.
+ * @param {string} query
+ * @returns {Promise<Array<object>>}
+ */
 async function suggestStoriesWithElasticsearch(query) {
-  const normalizedQuery = removeVietnameseTones(query.toLowerCase()); // Chuẩn hóa query để tìm kiếm không phân biệt dấu tiếng Việt
+  const normalizedQuery = removeVietnameseTones(query.toLowerCase());
 
   const result = await client.search({
     index: indexName,
-    size: 10, // tối đa 10 kết quả gợi ý
+    size: 10,
     query: {
       bool: {
-        should: [ // Sử dụng match_phrase_prefix để ưu tiên các truyện có title bắt đầu bằng query, 
-        // sau đó sử dụng multi_match để tìm kiếm nâng cao
+        should: [
           { match_phrase_prefix: { title: { query, slop: 1 } } },
           {
             multi_match: {
               query: normalizedQuery,
               fields: ["title^3", "author^2", "genres"],
-              fuzziness: "AUTO", // Cho phép tìm kiếm gần đúng (fuzzy search) để khớp các từ có lỗi chính tả hoặc biến thể
-              type: "bool_prefix", // Cho phép tìm kiếm các từ có tiền tố giống với query, ví dụ "truyen" sẽ khớp với "truyen tranh", "truyen ngắn", v.v.
+              fuzziness: "AUTO",
+              type: "bool_prefix",
             },
           },
         ],
-        minimum_should_match: 1, // Yêu cầu ít nhất một trong các điều kiện should phải khớp để trả về kết quả
+        minimum_should_match: 1,
       },
     },
-    _source: ["id", "title", "author", "genres", "cover_url"], // Chỉ lấy các trường cần thiết để giảm tải dữ liệu trả về
+    _source: ["id", "title", "author", "genres", "cover_url"],
   });
 
-  return mapHits(result).map(({ id, title, author, genres, cover_url }) => ({
-    id,
-    title,
-    author,
-    genres,
-    cover_url,
-  }));
+  return mapHits(result);
 }
 
 
-// Gọi service để lấy gợi ý truyện từ SQL nếu Elasticsearch không hoạt động hoặc lỗi
+/**
+ * Autocomplete fallback bằng SQL khi ES down: ILIKE trên title/author/genres,
+ * xếp theo view_count để truyện phổ biến nổi lên trước, tối đa 10 kết quả.
+ * @param {string} query
+ * @returns {Promise<Array<object>>}
+ */
 async function suggestStoriesFromSql(query) {
   const keyword = `%${query}%`;
-  const result = await pool.query( // Sử dụng ILIKE để tìm kiếm không phân biệt chữ hoa/chữ thường
-    // truyện hot lên trước bằng ORDER BY view_count DESC NULLS LAST, sau đó giới hạn 10 kết quả
+  const result = await pool.query(
     `SELECT id, title, author, genres, cover_url
      FROM stories
      WHERE title ILIKE $1 OR author ILIKE $1 OR array_to_string(genres, ' ') ILIKE $1
-     ORDER BY view_count DESC NULLS LAST  
+     ORDER BY view_count DESC NULLS LAST
      LIMIT 10;`,
     [keyword]
   );
@@ -446,6 +560,17 @@ async function suggestStoriesFromSql(query) {
 
 // ========== Search by description (chatbot recommendation) ==========
 
+/**
+ * Nhờ AI (callAIRaw — model nhỏ, nhanh) mở rộng query mô tả thành các từ khóa cụ thể.
+ *
+ * Ví dụ "truyện về đầu bếp" → ["ẩm thực", "nấu ăn", "món ăn"] — giúp keyword search
+ * bắt được truyện mà mô tả không chứa nguyên văn query. Kết quả được làm sạch
+ * (bỏ bullet/số thứ tự, lọc chuỗi quá ngắn/dài) và cắt còn tối đa 3 từ khóa.
+ * AI lỗi → trả mảng rỗng, search vẫn tiếp tục với query gốc.
+ *
+ * @param {string} query - Yêu cầu tìm truyện của người dùng.
+ * @returns {Promise<string[]>} Tối đa 3 từ khóa mở rộng.
+ */
 async function expandSearchQuery(query) {
   try {
     const result = await callAIRaw([
@@ -467,6 +592,18 @@ Chỉ trả về từ khoá, cách nhau bằng dấu phẩy, không giải thíc
   }
 }
 
+/**
+ * Tìm truyện theo mô tả tự do — dùng cho chatbot gợi ý truyện (chatRoutes).
+ *
+ * Pipeline: mở rộng query bằng AI (nếu query ≥ 4 ký tự) → tìm trên ES với toàn bộ
+ * từ khóa (query gốc được boost cao hơn) → ES lỗi/down thì fallback SQL ILIKE.
+ *
+ * @param {object} opts
+ * @param {string} opts.query - Mô tả/yêu cầu của người dùng.
+ * @param {number|null} [opts.excludeId] - Loại truyện đang đọc khỏi kết quả (tránh gợi ý lại chính nó).
+ * @param {number} [opts.limit=5] - Số truyện tối đa trả về.
+ * @returns {Promise<Array<object>>} Danh sách truyện phù hợp.
+ */
 async function searchByDescription({ query, excludeId = null, limit = 5 }) {
   // Chỉ expand khi query đủ dài và có ý nghĩa tìm kiếm
   const shouldExpand = query.length >= 4;
@@ -483,6 +620,18 @@ async function searchByDescription({ query, excludeId = null, limit = 5 }) {
   return searchByDescriptionSQL({ queries: allQueries, excludeId, limit });
 }
 
+/**
+ * Tìm theo mô tả trên Elasticsearch: mỗi từ khóa thành 1 clause `multi_match` fuzzy
+ * (genres được boost cao nhất vì gợi ý thường xoay quanh thể loại; query gốc boost x2).
+ * Nếu có OPENAI_KEY và sinh được embedding → chạy hybrid: KNN semantic (boost 0.5)
+ * cộng điểm với keyword search trong cùng 1 request.
+ *
+ * @param {object} opts
+ * @param {string[]} opts.queries - [query gốc, ...từ khóa mở rộng].
+ * @param {number|null} opts.excludeId - ID truyện cần loại (must_not).
+ * @param {number} opts.limit
+ * @returns {Promise<Array<object>>}
+ */
 async function searchByDescriptionES({ queries, excludeId, limit }) {
   const mustNot = excludeId ? [{ term: { id: excludeId } }] : [];
 
@@ -518,9 +667,7 @@ async function searchByDescriptionES({ queries, excludeId, limit }) {
         },
         _source: ["id", "title", "author", "cover_url", "genres", "description"],
       });
-      return mapHits(result).map(({ id, title, author, cover_url, genres, description }) => ({
-        id, title, author, cover_url, genres, description,
-      }));
+      return mapHits(result);
     }
   }
 
@@ -533,11 +680,17 @@ async function searchByDescriptionES({ queries, excludeId, limit }) {
     _source: ["id", "title", "author", "cover_url", "genres", "description"],
   });
 
-  return mapHits(result).map(({ id, title, author, cover_url, genres, description }) => ({
-    id, title, author, cover_url, genres, description,
-  }));
+  return mapHits(result);
 }
 
+/**
+ * Fallback SQL cho tìm theo mô tả: OR các điều kiện ILIKE của từng từ khóa trên
+ * title/author/description/genres, loại excludeId, xếp theo view_count DESC.
+ * Luôn parameterized để chống SQL injection.
+ *
+ * @param {object} opts - Cùng shape với searchByDescriptionES.
+ * @returns {Promise<Array<object>>}
+ */
 async function searchByDescriptionSQL({ queries, excludeId, limit }) {
   const params = [];
   const conditions = queries.map((q) => {
@@ -568,6 +721,17 @@ async function searchByDescriptionSQL({ queries, excludeId, limit }) {
 }
 
 // ========== Single story index/delete ==========
+/**
+ * Index (thêm/cập nhật) 1 truyện lên Elasticsearch — gọi sau mỗi CREATE/UPDATE truyện
+ * để chỉ mục tìm kiếm luôn khớp với PostgreSQL.
+ *
+ * Cố gắng sinh embedding trước khi index; refresh ngay để truyện tìm được tức thì.
+ * Best-effort: ES down hoặc lỗi → trả false và chỉ log warn, KHÔNG throw —
+ * thao tác ghi DB chính không được phép thất bại vì lỗi chỉ mục phụ.
+ *
+ * @param {object} story - Row truyện đầy đủ từ PostgreSQL.
+ * @returns {Promise<boolean>} true nếu index thành công.
+ */
 async function indexStory(story) {
   if (!isEsUp()) return false;
   try {
@@ -583,6 +747,14 @@ async function indexStory(story) {
   }
 }
 
+/**
+ * Xóa 1 truyện khỏi chỉ mục Elasticsearch — gọi sau khi DELETE truyện trong PostgreSQL.
+ * Best-effort như indexStory: ES down, document không tồn tại (404), hay lỗi khác
+ * đều trả false, không throw.
+ *
+ * @param {number} id - ID truyện cần xóa khỏi index.
+ * @returns {Promise<boolean>} true nếu xóa thành công.
+ */
 async function deleteStory(id) {
   if (!isEsUp()) return false;
   try {

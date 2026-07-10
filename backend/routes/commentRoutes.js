@@ -5,15 +5,32 @@ const optionalAuth = require("../middleware/optionalAuth");
 
 const MAX_COMMENT_LENGTH = 2000;
 
+/**
+ * Ép giá trị bất kỳ về số nguyên dương, sai kiểu/âm/thập phân → null.
+ * Dùng validate mọi ID (story_id, comment_id, parent_id) từ client.
+ * @param {unknown} value
+ * @returns {number|null}
+ */
 function toPositiveInt(value) {
     const id = Number(value);
     return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+/**
+ * Chuẩn hóa nội dung comment: trim khoảng trắng; không phải string → chuỗi rỗng
+ * (để validateContent phía sau báo lỗi thống nhất thay vì crash).
+ * @param {unknown} content
+ * @returns {string}
+ */
 function normalizeContent(content) {
     return typeof content === "string" ? content.trim() : "";
 }
 
+/**
+ * Kiểm tra nội dung comment: không rỗng, không vượt MAX_COMMENT_LENGTH (2000 ký tự).
+ * @param {string} content - Nội dung ĐÃ qua normalizeContent.
+ * @returns {string|null} Message lỗi tiếng Việt, hoặc null nếu hợp lệ.
+ */
 function validateContent(content) {
     if (!content) return "Nội dung không được để trống";
     if (content.length > MAX_COMMENT_LENGTH) {
@@ -22,6 +39,16 @@ function validateContent(content) {
     return null;
 }
 
+/**
+ * Gửi thông báo cho 1 user theo 2 kênh cùng lúc:
+ *   1. INSERT vào bảng `notifications` (bền — hiện ở chuông kể cả khi offline).
+ *   2. Emit Socket.io `newNotification` tới room theo email — user đang online
+ *      thấy ngay không cần refresh.
+ * @param {import("socket.io").Server} io
+ * @param {string} targetEmail - Email người nhận (cũng là tên room socket).
+ * @param {string} message - Nội dung thông báo.
+ * @param {string|null} [link] - URL đích khi bấm vào thông báo.
+ */
 async function sendNotification(io, targetEmail, message, link = null) {
     await pool.query(
         `INSERT INTO notifications (user_email, message, link, is_read, created_at)
@@ -36,6 +63,14 @@ async function sendNotification(io, targetEmail, message, link = null) {
     });
 }
 
+/**
+ * Phát hiện chuỗi parent_id bị vòng lặp (A → B → A) khi build cây comment —
+ * dữ liệu hỏng kiểu này sẽ làm đệ quy dựng cây chạy vô hạn nếu không chặn.
+ * Leo ngược từ comment lên tổ tiên, gặp lại ID đã đi qua → có vòng.
+ * @param {object} row - Comment đang xét.
+ * @param {Map<number, object>} rowById - Map id → row của toàn bộ comment.
+ * @returns {boolean} true nếu nối vào cha sẽ tạo vòng lặp.
+ */
 function wouldCreateCycle(row, rowById) {
     const seen = new Set([row.id]);
     let parentId = row.parent_id;
@@ -53,6 +88,20 @@ function wouldCreateCycle(row, rowById) {
     return false;
 }
 
+/**
+ * Chuyển mảng comment phẳng từ SQL thành CÂY lồng nhau để frontend render.
+ *
+ * - Mỗi node kèm cờ quyền theo góc nhìn user hiện tại: canEdit/canDelete
+ *   (chỉ chủ comment), canHide (người khác), likedByMe.
+ * - Comment mồ côi (cha bị xóa), tự trỏ chính nó, hoặc tạo vòng lặp
+ *   (wouldCreateCycle) được "cứu" thành comment gốc thay vì biến mất.
+ * - Sắp xếp 2 chiều ngược nhau có chủ đích: comment GỐC mới nhất trước
+ *   (đọc bình luận mới), còn REPLY cũ nhất trước (đọc hội thoại theo dòng thời gian).
+ *
+ * @param {Array<object>} rows - Kết quả SQL (đã JOIN username, avatar, likes, liked_by_me).
+ * @param {number|null} currentUserId - User đang xem, null nếu là khách.
+ * @returns {Array<object>} Mảng comment gốc, replies lồng trong `replies`.
+ */
 function buildCommentTree(rows, currentUserId) {
     const rowById = new Map();
     const nodeById = new Map();
@@ -110,9 +159,19 @@ function buildCommentTree(rows, currentUserId) {
     return roots;
 }
 
+// Router comment — export là factory nhận `io` để gửi thông báo realtime (reply/like).
 module.exports = function (io) {
     const router = express.Router();
 
+    /**
+     * Handler dùng chung cho POST / (comment gốc) và POST /reply (trả lời).
+     *
+     * Chạy trong TRANSACTION: khi là reply, khóa comment cha bằng FOR SHARE
+     * để cha không bị xóa giữa chừng (race với DELETE thread); story_id lấy theo
+     * comment cha (client gửi story_id lệch cha → 400). Sau COMMIT, nếu reply
+     * comment của NGƯỜI KHÁC thì gửi thông báo kèm link nhảy thẳng tới comment mới —
+     * lỗi thông báo chỉ log, không làm fail request (comment đã lưu thành công).
+     */
     async function createComment(req, res) {
         const storyIdFromBody = toPositiveInt(req.body.story_id);
         const parentId = toPositiveInt(req.body.parent_id);
@@ -194,6 +253,12 @@ module.exports = function (io) {
         }
     }
 
+    /**
+     * GET /api/comments?story_id=N — Toàn bộ comment của truyện dạng CÂY (optionalAuth:
+     * khách vẫn xem được, đăng nhập thì biết thêm likedByMe/canEdit...).
+     * 1 query duy nhất JOIN users + subquery đếm like + LEFT JOIN lượt like của
+     * chính mình, rồi buildCommentTree dựng cây phía Node.
+     */
     router.get("/", optionalAuth, async (req, res) => {
         const storyId = toPositiveInt(req.query.story_id);
         if (!storyId) {
@@ -242,13 +307,22 @@ module.exports = function (io) {
         }
     });
 
+    // POST /api/comments — tạo comment gốc (hoặc reply nếu body có parent_id)
     router.post("/", auth, createComment);
 
+    // POST /api/comments/reply — alias của createComment, chấp nhận cả tên field
+    // cũ `comment_id` lẫn `parent_id` để tương thích client cũ
     router.post("/reply", auth, (req, res) => {
         req.body.parent_id = req.body.parent_id || req.body.comment_id;
         return createComment(req, res);
     });
 
+    /**
+     * PUT /api/comments { comment_id, content } — Sửa nội dung comment.
+     * UPDATE có điều kiện `user_id = $3`: chỉ chủ comment sửa được; comment
+     * của người khác trả 404 (gộp "không tồn tại" và "không có quyền" —
+     * không lộ comment nào tồn tại). Cập nhật updated_at để UI hiện "đã sửa".
+     */
     router.put("/", auth, async (req, res) => {
         const commentId = toPositiveInt(req.body.comment_id);
         const content = normalizeContent(req.body.content);
@@ -281,6 +355,16 @@ module.exports = function (io) {
         }
     });
 
+    /**
+     * DELETE /api/comments { comment_id } — Xóa comment và TOÀN BỘ thread con.
+     *
+     * Trong transaction:
+     *   1. Khóa comment gốc bằng FOR UPDATE + kiểm tra quyền sở hữu.
+     *   2. CTE đệ quy `thread` gom comment + mọi hậu duệ (mảng `path` chống
+     *      vòng lặp parent_id vô hạn), xóa like của cả thread rồi xóa comment —
+     *      tất cả trong MỘT câu SQL nguyên tử.
+     * Trả `deletedCount` để UI biết đã xóa bao nhiêu comment con kéo theo.
+     */
     router.delete("/", auth, async (req, res) => {
         const commentId = toPositiveInt(req.body.comment_id);
         if (!commentId) {
@@ -340,6 +424,16 @@ module.exports = function (io) {
         }
     });
 
+    /**
+     * POST /api/comments/like { comment_id } — Toggle like/unlike trong transaction.
+     *
+     * INSERT với ON CONFLICT DO NOTHING trên UNIQUE(user_id, comment_id) vừa là
+     * thao tác vừa là phép thử: insert được → vừa LIKE (tăng likes denormalized);
+     * không insert được (đã like trước đó) → UNLIKE (xóa dòng like, giảm likes,
+     * GREATEST(...) chặn âm). FOR UPDATE trên comment tuần tự hóa 2 request
+     * like đồng thời. Like thành công comment người khác → gửi thông báo
+     * (best-effort, sau COMMIT). Trả { liked, likes } để UI cập nhật ngay.
+     */
     router.post("/like", auth, async (req, res) => {
         const commentId = toPositiveInt(req.body.comment_id);
         if (!commentId) {

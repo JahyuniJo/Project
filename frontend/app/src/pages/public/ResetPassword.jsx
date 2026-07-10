@@ -4,6 +4,12 @@ import { forgotPassword, resetPassword, verifyOtp } from '../../api/auth';
 
 const COUNTDOWN = 60;
 
+/**
+ * ResetPassword (/reset-password?email=...) — Bước 2+3 của luồng quên mật khẩu,
+ * 2 màn trong 1 trang: nhập OTP (verify-otp) → đặt mật khẩu mới (reset-password,
+ * gửi lại kèm OTP). Có đồng hồ đếm ngược 60s trước khi cho gửi lại mã.
+ * Vào thẳng trang không có ?email → đẩy về /forgot.
+ */
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email');

@@ -3,6 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { getRating } from '../api/stories';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * StoryCard — Card truyện dùng chung cho mọi lưới truyện (Home, Fav, gợi ý...):
+ * ảnh bìa lazy-load, badge 🔥 HOT khi view_count ≥ 100, tên/tác giả/thể loại,
+ * điểm rating lấy qua React Query (cache 5 phút theo story.id).
+ *
+ * Đích của link tự chọn theo trạng thái đăng nhập: user → /read2 (trang đọc
+ * đầy đủ tính năng), khách → /read; truyền prop `href` để override.
+ */
 export default function StoryCard({ story, href }) {
   const { user } = useAuth();
   const { data: rating } = useQuery({

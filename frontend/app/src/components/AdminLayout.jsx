@@ -10,6 +10,12 @@ const NAV = [
   { to: '/admin/chat',    icon: 'fa-robot',                label: 'Giám sát Chat AI' },
 ];
 
+/**
+ * AdminLayout — Khung riêng cho toàn bộ trang /admin/*: sidebar cố định bên trái
+ * (danh sách menu khai báo trong NAV, NavLink tự highlight mục đang active),
+ * header sticky hiển thị admin đang đăng nhập + nút đăng xuất, nội dung trang
+ * con render qua <Outlet />. Tách biệt hoàn toàn khỏi Layout công cộng.
+ */
 export default function AdminLayout() {
   const { user } = useAuth();
   const navigate = useNavigate();

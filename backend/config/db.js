@@ -1,3 +1,11 @@
+/**
+ * config/db.js — Kết nối Sequelize ORM tới PostgreSQL.
+ *
+ * CHỈ dùng cho các model ORM (vd: models/Story.js) — KHÔNG dùng để query trực tiếp;
+ * mọi SQL thuần phải đi qua `config/pool.js`. `logging: false` để tắt log SQL của
+ * Sequelize khỏi console. Khi module load sẽ `authenticate()` một lần để báo sớm
+ * nếu cấu hình DB sai.
+ */
 const path = require("path");
 const { Sequelize } = require("sequelize");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });

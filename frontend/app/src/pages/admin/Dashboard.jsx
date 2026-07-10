@@ -33,6 +33,11 @@ const CARDS = [
   },
 ];
 
+/**
+ * Dashboard (/admin) — Trang chủ khu quản trị: lưới card điều hướng tới 5 khu
+ * chức năng (khai báo trong CARDS); poll số báo lỗi pending mỗi 60s và hiện
+ * toast nhắc admin khi có báo lỗi chưa xử lý.
+ */
 export default function Dashboard() {
   const { toast } = useAlert();
 

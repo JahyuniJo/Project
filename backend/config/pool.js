@@ -1,3 +1,14 @@
+/**
+ * config/pool.js — Connection pool PostgreSQL (pg) dùng chung toàn app.
+ *
+ * Đây là module DUY NHẤT để chạy SQL query trực tiếp trong routes/services
+ * (`pool.query(...)`); còn `config/db.js` (Sequelize) chỉ dành cho định nghĩa model ORM.
+ *
+ * Cấu hình đọc từ `.env` ở thư mục gốc dự án:
+ *   - max 20 connection (override qua DB_POOL_MAX) — giới hạn theo khả năng DB server.
+ *   - connectionTimeoutMillis 5s: chờ mượn connection tối đa 5s rồi báo lỗi thay vì treo.
+ *   - idleTimeoutMillis 30s: connection rảnh quá 30s sẽ bị đóng trả tài nguyên.
+ */
 const path = require("path");
 const { Pool } = require("pg");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
