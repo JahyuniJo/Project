@@ -17,6 +17,7 @@ const indexName = process.env.ELASTICSEARCH_STORIES_INDEX || "stories";
 const username = process.env.ELASTICSEARCH_USERNAME;
 const password = process.env.ELASTICSEARCH_PASSWORD;
 
+// Nếu username/password không có trong .env thì client vẫn chạy được (dev mode)
 const config = {
   node,
   ...(username && password ? { auth: { username, password } } : {}),

@@ -122,7 +122,7 @@ export default function Header({ mode = 'full', pageTitle = '', onSort, onGenre,
   // ── Full mode ────────────────────────────────────────────────────────────
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="container mx-auto flex flex-col md:flex-row items-center justify-between py-4 px-6">
+      <div className="container mx-auto flex flex-col lg:flex-row items-center justify-between py-4 px-6">
 
         {/* Logo */}
         <Link to={homeUrl} className="flex items-center gap-2">
@@ -130,12 +130,12 @@ export default function Header({ mode = 'full', pageTitle = '', onSort, onGenre,
           <span className="font-bold text-indigo-600">DH.story</span>
         </Link>
 
-        <p className="italic text-gray-500 text-sm md:text-base mt-2 md:mt-0">
+        <p className="italic text-gray-500 text-sm lg:text-base mt-2 lg:mt-0">
           Chúc các bạn đọc truyện vui vẻ!
         </p>
 
         {/* Search + Genre + Sort */}
-        <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
+        <div className="flex flex-col lg:flex-row items-center gap-4 mt-4 lg:mt-0">
 
           {/* Search */}
           <div ref={sugRef} className="relative">
@@ -263,7 +263,7 @@ export default function Header({ mode = 'full', pageTitle = '', onSort, onGenre,
         </div>
 
         {/* User area */}
-        <div className="flex items-center gap-3 mt-4 md:mt-0">
+        <div className="flex items-center gap-3 mt-4 lg:mt-0">
           {user ? (
             <>
               <NotificationBell />
